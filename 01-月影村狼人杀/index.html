@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>月影村 - 多人狼人杀</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101522;
+      --panel: rgba(29, 37, 57, .94);
+      --panel-soft: rgba(255, 255, 255, .06);
+      --line: rgba(255, 255, 255, .12);
+      --text: #f5f2e9;
+      --muted: #b5bdca;
+      --gold: #f1bd64;
+      --red: #e56f67;
+      --green: #72c7a0;
+      --blue: #77a9e8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 50% -15%, rgba(109, 134, 190, .45), transparent 36rem),
+        linear-gradient(160deg, #111827, #090d16 72%);
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .25;
+      background-image: radial-gradient(#fff 1px, transparent 1px);
+      background-size: 55px 55px;
+      animation: stars-drift 28s linear infinite;
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      width: 190px;
+      height: 190px;
+      top: 38px;
+      right: 8vw;
+      z-index: -1;
+      border-radius: 50%;
+      opacity: .7;
+      background: radial-gradient(circle at 35% 30%, #fff4c5, #e9c778 52%, rgba(233, 199, 120, .08) 70%);
+      box-shadow: 0 0 58px rgba(241, 189, 100, .2);
+      animation: moon-float 7s ease-in-out infinite;
+    }
+    main { width: min(920px, calc(100% - 28px)); margin: 0 auto; padding: 30px 0 46px; }
+    header { text-align: center; margin-bottom: 20px; }
+    h1 { margin: 0; color: var(--gold); font-size: clamp(32px, 8vw, 54px); letter-spacing: .18em; }
+    header p { color: var(--muted); margin: 8px 0 0; }
+    .card {
+      position: relative;
+      padding: clamp(18px, 4vw, 30px);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: var(--panel);
+      box-shadow: 0 16px 55px rgba(0, 0, 0, .28);
+      animation: card-arrive .55s cubic-bezier(.2, .8, .2, 1);
+    }
+    h2 { margin: 0 0 8px; font-size: 26px; }
+    h3 { margin: 18px 0 10px; color: var(--gold); }
+    p { line-height: 1.7; }
+    .hint, .status { color: var(--muted); }
+    .status { margin: 0 0 18px; }
+    textarea, input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: var(--text);
+      background: rgba(0, 0, 0, .2);
+      font: inherit;
+      outline: none;
+    }
+    textarea { min-height: 166px; resize: vertical; line-height: 1.6; }
+    textarea:focus, input:focus { border-color: var(--gold); }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+    button {
+      border: 1px solid transparent;
+      border-radius: 12px;
+      padding: 11px 16px;
+      color: #1b2130;
+      background: var(--gold);
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .16s ease, opacity .16s ease, box-shadow .16s ease, background-color .16s ease;
+    }
+    button:hover { transform: translateY(-2px); box-shadow: 0 7px 18px rgba(0, 0, 0, .22); }
+    button:active { transform: scale(.97); }
+    button:disabled { cursor: not-allowed; opacity: .4; transform: none; }
+    button.secondary { color: var(--text); background: var(--panel-soft); border-color: var(--line); }
+    button.danger { color: #fff; background: #a84e50; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(138px, 1fr)); gap: 10px; }
+    .player {
+      min-height: 64px;
+      padding: 12px;
+      text-align: left;
+      color: var(--text);
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
+    }
+    .player.selected { color: #241b0e; background: var(--gold); border-color: var(--gold); }
+    .player.dead { opacity: .45; text-decoration: line-through; }
+    .role {
+      position: relative;
+      overflow: hidden;
+      margin: 18px 0;
+      padding: 24px 16px;
+      text-align: center;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(0, 0, 0, .18);
+      animation: role-reveal .7s cubic-bezier(.2, .8, .2, 1);
+    }
+    .role::after {
+      content: "";
+      position: absolute;
+      top: -45%;
+      left: -55%;
+      width: 42%;
+      height: 190%;
+      transform: rotate(18deg);
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .16), transparent);
+      animation: role-shine 1.2s .25s ease-out both;
+    }
+    .role strong { display: block; color: var(--gold); font-size: 42px; margin-bottom: 8px; }
+    .role-icon {
+      display: grid;
+      width: 86px;
+      height: 86px;
+      margin: 0 auto 12px;
+      place-items: center;
+      border: 1px solid rgba(241, 189, 100, .45);
+      border-radius: 50%;
+      background: rgba(241, 189, 100, .1);
+      box-shadow: 0 0 24px rgba(241, 189, 100, .16);
+      font-size: 48px;
+    }
+    .pill {
+      display: inline-block;
+      margin: 0 7px 7px 0;
+      padding: 5px 9px;
+      border-radius: 999px;
+      color: var(--muted);
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
+      font-size: 14px;
+      animation: pill-arrive .34s ease-out both;
+    }
+    .log { padding: 12px 14px; border-radius: 12px; background: rgba(0, 0, 0, .18); }
+    .log p { margin: 5px 0; }
+    .good { color: var(--green); }
+    .bad { color: var(--red); }
+    .info { color: var(--blue); }
+    .hidden { display: none !important; }
+    footer { margin-top: 16px; text-align: center; color: var(--muted); font-size: 13px; }
+    .celebrate { animation: celebrate 1.3s ease-in-out infinite alternate; }
+    @keyframes stars-drift {
+      from { background-position: 0 0; }
+      to { background-position: 55px 110px; }
+    }
+    @keyframes moon-float {
+      50% { transform: translateY(12px); filter: brightness(1.08); }
+    }
+    @keyframes card-arrive {
+      from { opacity: 0; transform: translateY(18px) scale(.985); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes role-reveal {
+      from { opacity: 0; transform: scale(.84) rotateX(12deg); }
+      to { opacity: 1; transform: scale(1) rotateX(0); }
+    }
+    @keyframes role-shine {
+      from { left: -55%; }
+      to { left: 120%; }
+    }
+    @keyframes pill-arrive {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes celebrate {
+      from { text-shadow: 0 0 5px rgba(241, 189, 100, .3); }
+      to { text-shadow: 0 0 26px rgba(241, 189, 100, .9); transform: scale(1.035); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>月影村</h1>
+      <p>同一台电脑轮流操作的多人狼人杀</p>
+    </header>
+    <section id="app" class="card"></section>
+    <footer>请把电脑交给当前操作的玩家，其他人暂时不要看屏幕。</footer>
+  </main>
+  <script>
+    const app = document.querySelector("#app");
+    const ROLE = {
+      wolf: { name: "狼人", icon: "🐺", text: "夜晚与狼人同伴选择一名玩家袭击。白天隐藏身份，争取存活。" },
+      wolfKing: { name: "狼王", icon: "👑", text: "属于狼人阵营，夜晚与狼人一起袭击。被白天投票出局时，可以开枪带走一名玩家。" },
+      hiddenWolf: { name: "隐狼", icon: "🌑", text: "属于狼人阵营。预言家查验时显示为好人。其他狼人全部出局后变成狼人，之后才能夜晚杀人。" },
+      wolfBeauty: { name: "狼美人", icon: "🌹", text: "属于狼人阵营。参与夜晚杀人后，可单独魅惑一名玩家。狼美人死亡时，当晚被魅惑的玩家一起死亡。" },
+      seer: { name: "预言家", icon: "🔮", text: "每晚可以查验一名存活玩家，知道对方是不是狼人。" },
+      witch: { name: "女巫", icon: "🧪", text: "整局游戏有一瓶解药和一瓶毒药，每瓶只能使用一次。" },
+      hunter: { name: "猎人", icon: "🏹", text: "出局时可以开枪，立即带走一名仍在游戏中的玩家。" },
+      guard: { name: "守卫", icon: "🛡️", text: "每晚可以保护一名玩家，使其不会被狼人袭击。不能连续两晚保护同一个人。" },
+      idiot: { name: "白痴", icon: "🎭", text: "第一次被投票出局时会翻牌并继续存活，但之后不能再参加投票。" },
+      sheriff: { name: "警长", icon: "⭐", text: "属于好人阵营。白天投票时，你的一票会自动计算为两票。" },
+      scapegoat: { name: "替罪羊", icon: "⚖️", text: "属于好人阵营。只要白天投票出现平票，你就会代替平票玩家出局。" },
+      angel: { name: "天使", icon: "🪽", text: "属于好人阵营。每晚天亮前可以复活一名玩家，没有次数限制。死亡时可指定带走一人。" },
+      hybrid: { name: "混血儿", icon: "🌓", text: "属于第三方阵营。第一夜最先选择一名榜样，获胜条件与榜样一致，但不会知道榜样的身份。" },
+      littleGirl: { name: "小女孩", icon: "👧", text: "属于好人阵营。狼人行动时可以眯眼偷看；如果被狼人发现，会立即死亡。" },
+      cupid: { name: "丘比特", icon: "💘", text: "第一夜选择两名玩家成为情侣。丘比特的获胜条件永远与情侣一致；情侣属于不同阵营时，两人和丘比特成为第三方阵营。" },
+      silencer: { name: "禁言长老", icon: "🤫", text: "属于好人阵营。每晚可以指定一名玩家，使其第二天不能发言。不能连续禁言同一名玩家，也可以不发动技能。" },
+      rogue: { name: "老流氓", icon: "🩹", text: "属于好人阵营。不会被狼美人魅惑杀死。被枪杀或毒杀时不会立即死亡，而会在第二天白天发言结束后死亡。" },
+      villager: { name: "村民", icon: "🏡", text: "没有夜晚技能。白天认真讨论，找出狼人。" }
+    };
+    let game = null;
+    let selected = null;
+
+    const shuffle = items => [...items].sort(() => Math.random() - .5);
+    const alive = () => game.players.filter(p => p.alive);
+    const byId = id => game.players.find(p => p.id === Number(id));
+    const isWolf = p => ["wolf", "wolfKing", "hiddenWolf", "wolfBeauty"].includes(p.role);
+    const isActiveWolf = p => isWolf(p) && (p.role !== "hiddenWolf" || p.hiddenWolfTransformed);
+    const isSeenAsWolf = p => isWolf(p) && p.role !== "hiddenWolf";
+    const followsWolves = p => isWolf(p) || (p.role === "hybrid" && game.hybridModel !== null && isWolf(byId(game.hybridModel)));
+    const wolves = () => game.players.filter(p => p.alive && isWolf(p));
+    const mixedLovers = () => game.lovers.length === 2 && isWolf(byId(game.lovers[0])) !== isWolf(byId(game.lovers[1]));
+    const roleName = role => ROLE[role].name;
+    const visibleName = p => `${p.name}${p.revealed || !p.alive ? `（${roleName(p.role)}）` : ""}`;
+    const wolfCountFor = count => count <= 7 ? 2 : count <= 10 ? 3 : 4;
+    const buttons = (players, allowSkip = false) => `
+      <div class="grid">
+        ${players.map(p => `<button class="player ${selected === p.id ? "selected" : ""}" data-player="${p.id}">${visibleName(p)}</button>`).join("")}
+      </div>
+      ${allowSkip ? `<button class="secondary" data-skip="1">跳过，不使用</button>` : ""}
+    `;
+    const action = (label, handler, kind = "") => {
+      const button = document.createElement("button");
+      button.textContent = label;
+      button.className = kind;
+      button.onclick = handler;
+      return button;
+    };
+    function speak(text) {
+      if (!game || !game.speechReady || !("speechSynthesis" in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "zh-CN";
+      utterance.rate = .92;
+      window.speechSynthesis.speak(utterance);
+    }
+    function page(title, content, speechText = title) {
+      selected = null;
+      app.style.animation = "none";
+      void app.offsetWidth;
+      app.style.animation = "";
+      app.innerHTML = `<h2>${title}</h2>${content}`;
+      if (speechText) speak(speechText);
+    }
+    function attachPlayerPick(onPick) {
+      app.querySelectorAll("[data-player]").forEach(button => {
+        button.onclick = () => onPick(byId(button.dataset.player));
+      });
+    }
+    function createGame() {
+      const names = document.querySelector("#names").value.split(/\n|,/).map(n => n.trim()).filter(Boolean);
+      if (names.length < 6 || names.length > 12) return alert("请输入 6 到 12 位玩家的名字。");
+      if (new Set(names).size !== names.length) return alert("玩家名字不能重复。");
+      const count = wolfCountFor(names.length);
+      const special = ["seer", "witch"];
+      const extras = shuffle(["hunter", "guard", "idiot", "sheriff", "scapegoat", "angel", "hybrid", "littleGirl", "cupid", "silencer", "rogue"]);
+      const goodSlots = names.length - count;
+      const extraLimit = Math.min(3, Math.max(1, goodSlots - special.length - 1));
+      special.push(...extras.slice(0, extraLimit));
+      const wolfRoles = [...Array(count).fill("wolf")];
+      if (names.length >= 9) wolfRoles[0] = "wolfKing";
+      if (names.length >= 8) wolfRoles[wolfRoles.length - 1] = "wolfBeauty";
+      if (names.length >= 10) wolfRoles[wolfRoles.length - 2] = "hiddenWolf";
+      const roles = shuffle([...wolfRoles, ...special, ...Array(names.length - count - special.length).fill("villager")]);
+      game = {
+        players: names.map((name, id) => ({ id, name, role: roles[id], alive: true, canVote: true, idiotExposed: false, revealed: false, hiddenWolfTransformed: false, delayedDeathDay: null })),
+        day: 1, revealIndex: 0, wolfTarget: null, poisonTarget: null, protectedTarget: null, lastGuardTarget: null, hybridModel: null, charmedTarget: null, lovers: [], silencedTarget: null, lastSilencedTarget: null,
+        healAvailable: true, poisonAvailable: true, speechReady: false, history: []
+      };
+      passScreen(`${game.players[0].name} 查看身份`, revealRole);
+    }
+    function setup() {
+      page("建立新游戏", `
+        <p class="status">适合 6 到 12 位玩家。每行输入一位玩家的名字，然后轮流拿着电脑查看身份。</p>
+        <textarea id="names" placeholder="每行输入一位玩家的名字"></textarea>
+        <p class="hint">每局固定有预言家和女巫，再随机抽取少量其他身份，并保留普通村民。狼美人会在 8 人局加入，狼王会在 9 人局加入，隐狼会在 10 人局加入。</p>
+        <div class="actions"><button id="start">开始游戏</button></div>
+      `);
+      document.querySelector("#start").onclick = createGame;
+    }
+    function passScreen(message, next) {
+      page("请交换电脑", `<p class="status">${message}</p><p>确认只有当前玩家能看到屏幕后，再继续。</p><div class="actions" id="actions"></div>`, message);
+      document.querySelector("#actions").append(action("我准备好了", next));
+    }
+    function revealRole() {
+      const p = game.players[game.revealIndex];
+      const friends = isActiveWolf(p) ? game.players.filter(x => isActiveWolf(x) && x.id !== p.id).map(x => x.name).join("、") : "";
+      page(`${p.name} 的身份`, `
+        <div class="role"><div class="role-icon">${ROLE[p.role].icon}</div><strong>${roleName(p.role)}</strong><span>${ROLE[p.role].text}</span></div>
+        ${friends ? `<p class="bad">你的狼人同伴：${friends}</p>` : ""}
+        <p class="hint">记住身份后点击按钮，并把电脑交给下一位玩家。</p>
+        <div class="actions" id="actions"></div>
+      `, null);
+      document.querySelector("#actions").append(action("我记住了", () => {
+        game.revealIndex++;
+        if (game.revealIndex < game.players.length) passScreen(`${game.players[game.revealIndex].name} 查看身份`, revealRole);
+        else {
+          game.speechReady = true;
+          passScreen("所有人闭眼。天黑了，混血儿准备行动。", hybridTurn);
+        }
+      }));
+    }
+    function hybridTurn() {
+      const hybrid = game.players.find(p => p.role === "hybrid");
+      if (!hybrid || game.day > 1 || game.hybridModel !== null) return passScreen("丘比特准备行动。", cupidTurn);
+      page("第一夜：混血儿行动", `<p class="status">选择一名玩家成为你的榜样。你的胜利条件将与榜样一致，但你不会看到榜样的身份。</p>${buttons(game.players.filter(p => p.id !== hybrid.id))}`);
+      attachPlayerPick(p => {
+        game.hybridModel = p.id;
+        passScreen("混血儿闭眼。丘比特准备行动。", cupidTurn);
+      });
+    }
+    function cupidTurn() {
+      const cupid = game.players.find(p => p.role === "cupid");
+      if (!cupid || game.day > 1 || game.lovers.length) return passScreen("守卫准备行动。", guardTurn);
+      const chosen = [];
+      const choose = () => {
+        page("第一夜：丘比特行动", `<p class="status">请选择${chosen.length ? "第二名" : "第一名"}情侣。两名玩家将成为情侣。</p>${buttons(game.players.filter(p => !chosen.includes(p.id)))}`);
+        attachPlayerPick(p => {
+          chosen.push(p.id);
+          if (chosen.length < 2) return choose();
+          game.lovers = chosen;
+          passScreen("丘比特闭眼。守卫准备行动。", guardTurn);
+        });
+      };
+      choose();
+    }
+    function guardTurn() {
+      const guard = game.players.find(p => p.role === "guard");
+      if (!guard || !guard.alive) return passScreen("守卫未加入或已经出局。禁言长老准备行动。", silencerTurn);
+      const candidates = alive().filter(p => p.id !== game.lastGuardTarget);
+      page(`第 ${game.day} 夜：守卫行动`, `<p class="status">守卫请选择一名玩家保护。不能连续两晚保护同一个人。</p>${buttons(candidates)}`);
+      attachPlayerPick(p => {
+        game.protectedTarget = p.id;
+        game.lastGuardTarget = p.id;
+        passScreen("守卫闭眼。禁言长老准备行动。", silencerTurn);
+      });
+    }
+    function silencerTurn() {
+      const silencer = game.players.find(p => p.role === "silencer");
+      game.silencedTarget = null;
+      if (!silencer || !silencer.alive) return passScreen("禁言长老未加入或已经出局。狼人准备行动。", wolfTurn);
+      const candidates = alive().filter(p => p.id !== game.lastSilencedTarget);
+      page(`第 ${game.day} 夜：禁言长老行动`, `<p class="status">请选择一名玩家，使其明天不能发言。不能连续两晚选择同一个人，也可以跳过。</p>${buttons(candidates, true)}`);
+      attachPlayerPick(p => {
+        game.silencedTarget = p.id;
+        game.lastSilencedTarget = p.id;
+        passScreen("禁言长老闭眼。狼人们睁眼。", wolfTurn);
+      });
+      document.querySelector("[data-skip]").onclick = () => passScreen("禁言长老闭眼。狼人们睁眼。", wolfTurn);
+    }
+    function wolfTurn() {
+      const hiddenWolf = game.players.find(p => p.alive && p.role === "hiddenWolf");
+      if (hiddenWolf && !hiddenWolf.hiddenWolfTransformed && !game.players.some(p => p.alive && isActiveWolf(p))) {
+        hiddenWolf.hiddenWolfTransformed = true;
+      }
+      const candidates = alive().filter(p => !isWolf(p));
+      page(`第 ${game.day} 夜：狼人行动`, `<p class="status">狼人们一起睁眼，选择一名玩家袭击。</p>${buttons(candidates)}<div class="actions"><button id="confirm" disabled>确认袭击</button></div>`);
+      const confirm = document.querySelector("#confirm");
+      attachPlayerPick(p => {
+        selected = p.id;
+        app.querySelectorAll(".player").forEach(b => b.classList.toggle("selected", Number(b.dataset.player) === p.id));
+        confirm.disabled = false;
+      });
+      confirm.onclick = () => {
+        game.wolfTarget = selected;
+        littleGirlTurn();
+      };
+    }
+    function littleGirlTurn() {
+      const littleGirl = game.players.find(p => p.role === "littleGirl");
+      page(`第 ${game.day} 夜：狼人确认`, `
+        <p class="status">小女孩可能在眯眼偷看。狼人是否发现了小女孩？</p>
+        <div class="actions" id="actions"></div>
+      `);
+      const actions = document.querySelector("#actions");
+      actions.append(action("发现了，小女孩立即死亡", () => {
+        if (littleGirl && littleGirl.alive) {
+          littleGirl.alive = false;
+          littleGirl.revealed = true;
+          game.history.unshift(`第 ${game.day} 夜：小女孩 ${littleGirl.name} 偷看时被狼人发现，立即出局。`);
+        }
+        wolfBeautyTurn();
+      }, "danger"));
+      actions.append(action("没有发现", wolfBeautyTurn, "secondary"));
+    }
+    function wolfBeautyTurn() {
+      const beauty = game.players.find(p => p.alive && p.role === "wolfBeauty");
+      if (!beauty) return passScreen("狼人闭眼。预言家睁眼并独自操作。", seerTurn);
+      passScreen("狼人闭眼。狼美人独自睁眼。", () => {
+        page(`第 ${game.day} 夜：狼美人行动`, `<p class="status">狼美人请选择一名玩家魅惑。本次魅惑会替换上一晚的目标。</p>${buttons(alive().filter(p => p.id !== beauty.id))}`);
+        attachPlayerPick(p => {
+          game.charmedTarget = p.id;
+          passScreen("狼美人闭眼。预言家睁眼并独自操作。", seerTurn);
+        });
+      });
+    }
+    function seerTurn() {
+      const seer = game.players.find(p => p.role === "seer");
+      if (!seer.alive) return passScreen("预言家已经出局。女巫睁眼并独自操作。", witchTurn);
+      page(`第 ${game.day} 夜：预言家行动`, `<p class="status">预言家请选择一名存活玩家查验身份。</p>${buttons(alive().filter(p => p.id !== seer.id))}<div id="result"></div>`);
+      attachPlayerPick(p => {
+        app.querySelectorAll(".player").forEach(b => b.disabled = true);
+        document.querySelector("#result").innerHTML = `
+          <div class="role"><strong>${isSeenAsWolf(p) ? "狼人" : "好人"}</strong><span>${p.name} 的查验结果</span></div>
+          <div class="actions" id="actions"></div>`;
+        document.querySelector("#actions").append(action("我记住了", () => passScreen("预言家闭眼。女巫睁眼并独自操作。", witchTurn)));
+      });
+    }
+    function witchTurn() {
+      const witch = game.players.find(p => p.role === "witch");
+      if (!witch.alive) return resolveNight();
+      const victim = byId(game.wolfTarget);
+      page(`第 ${game.day} 夜：女巫行动`, `
+        <p class="status">今晚被狼人袭击的是：<strong>${victim.name}</strong></p>
+        <p>解药：${game.healAvailable ? "还可以使用" : "已经用完"}　毒药：${game.poisonAvailable ? "还可以使用" : "已经用完"}</p>
+        <div class="actions" id="actions"></div>
+      `);
+      const actions = document.querySelector("#actions");
+      if (game.healAvailable) actions.append(action("使用解药救人", () => {
+        game.healAvailable = false;
+        game.wolfTarget = null;
+        choosePoison();
+      }));
+      actions.append(action("不用解药", choosePoison, "secondary"));
+    }
+    function choosePoison() {
+      if (!game.poisonAvailable) return resolveNight();
+      const witch = game.players.find(p => p.role === "witch");
+      page(`第 ${game.day} 夜：女巫使用毒药？`, `<p class="status">你可以选择一名其他存活玩家使用毒药，也可以跳过。</p>${buttons(alive().filter(p => p.id !== witch.id), true)}`);
+      attachPlayerPick(p => {
+        game.poisonAvailable = false;
+        game.poisonTarget = p.id;
+        resolveNight();
+      });
+      document.querySelector("[data-skip]").onclick = resolveNight;
+    }
+    function resolveNight() {
+      const wolfDeath = game.wolfTarget === game.protectedTarget ? null : game.wolfTarget;
+      const poisonDeath = game.poisonTarget;
+      const deaths = [...new Set([wolfDeath, poisonDeath].filter(id => id !== null))];
+      game.wolfTarget = null;
+      game.poisonTarget = null;
+      game.protectedTarget = null;
+      resolveDeaths(deaths, finalDeaths => {
+        angelTurn(finalDeaths, dawnDeaths => {
+          const text = dawnDeaths.length ? `昨晚出局：${dawnDeaths.map(id => visibleName(byId(id))).join("、")}` : "昨晚是平安夜，没有玩家出局。";
+          game.history.unshift(`第 ${game.day} 夜：${text}`);
+          if (showWinner()) return;
+          page(`第 ${game.day} 天：天亮了`, `
+            <p class="${dawnDeaths.length ? "bad" : "good"}">${text}</p>
+            ${dayStatus()}
+            <p>请大家讨论谁可能是狼人。讨论结束后，点击按钮进入投票。</p>
+            ${summary()}
+            <div class="actions" id="actions"></div>
+          `);
+          addDayActions();
+        });
+      }, false, poisonDeath === null ? null : { [poisonDeath]: "poison" });
+    }
+    function angelTurn(nightDeaths, done) {
+      const angel = game.players.find(p => p.role === "angel");
+      const candidates = game.players.filter(p => !p.alive);
+      if (!angel || !angel.alive || !candidates.length) return done(nightDeaths);
+      passScreen("天亮前，天使睁眼并独自操作。", () => {
+        page(`第 ${game.day} 夜：天使行动`, `<p class="status">你可以复活一名已经出局的玩家，也可以跳过。这个技能每晚都能使用。</p>${buttons(candidates, true)}`);
+        attachPlayerPick(p => {
+          p.alive = true;
+          done(nightDeaths.filter(id => id !== p.id));
+        });
+        document.querySelector("[data-skip]").onclick = () => done(nightDeaths);
+      });
+    }
+    function resolveDeaths(ids, done, allowWolfKingShot = false, causes = {}) {
+      const deaths = [...new Set(ids)];
+      const delayed = deaths.map(byId).filter(p => p.alive && p.role === "rogue" && ["poison", "shot"].includes(causes[p.id]));
+      delayed.forEach(p => p.delayedDeathDay = game.day + 1);
+      const newlyDead = deaths.map(byId).filter(p => p.alive && !delayed.includes(p));
+      const shooter = newlyDead.find(p => p.role === "hunter" || p.role === "angel" || (allowWolfKingShot && p.role === "wolfKing"));
+      newlyDead.forEach(p => {
+        p.alive = false;
+        p.revealed = true;
+      });
+      const heartbroken = newlyDead
+        .filter(p => game.lovers.includes(p.id))
+        .map(p => byId(game.lovers.find(id => id !== p.id)))
+        .find(p => p && p.alive);
+      if (heartbroken) {
+        return resolveDeaths([heartbroken.id], moreDeaths => {
+          triggerDeathSkill([...new Set([...deaths, ...moreDeaths])], shooter, done);
+        }, allowWolfKingShot);
+      }
+      const deadBeauty = newlyDead.find(p => p.role === "wolfBeauty");
+      const linked = deadBeauty && game.charmedTarget !== null ? byId(game.charmedTarget) : null;
+      if (linked && linked.alive) {
+        game.charmedTarget = null;
+        if (linked.role === "rogue") return triggerDeathSkill(deaths, shooter, done);
+        return resolveDeaths([linked.id], moreDeaths => {
+          triggerDeathSkill([...new Set([...deaths, ...moreDeaths])], shooter, done);
+        }, allowWolfKingShot);
+      }
+      triggerDeathSkill(deaths.filter(id => !delayed.some(p => p.id === id)), shooter, done);
+    }
+    function triggerDeathSkill(deaths, shooter, done) {
+      if (!shooter) return done(deaths);
+      const ability = shooter.role === "angel" ? "指定带走一人" : "开枪";
+      passScreen(`${shooter.name} 是${roleName(shooter.role)}，请独自决定是否${ability}。`, () => {
+        page(`${roleName(shooter.role)}：${ability}`, `<p class="status">你可以立即带走一名仍在游戏中的玩家，也可以跳过。</p>${buttons(alive(), true)}`);
+        attachPlayerPick(p => {
+          resolveDeaths([p.id], moreDeaths => done([...new Set([...deaths, ...moreDeaths])]), false, { [p.id]: "shot" });
+        });
+        document.querySelector("[data-skip]").onclick = () => done(deaths);
+      });
+    }
+    function addDayActions() {
+      const actions = document.querySelector("#actions");
+      actions.append(action("发言完毕，开始投票", settleDelayedDeaths));
+    }
+    function dayStatus() {
+      const silenced = game.silencedTarget === null ? null : byId(game.silencedTarget);
+      const injured = alive().filter(p => p.delayedDeathDay === game.day);
+      return `
+        ${silenced && silenced.alive ? `<p class="info">${silenced.name} 今天被禁言，不能发言。</p>` : ""}
+        ${injured.map(p => `<p class="bad">${p.name} 处于负伤或中毒状态，将在白天发言完毕后死亡。</p>`).join("")}
+      `;
+    }
+    function settleDelayedDeaths() {
+      const delayed = alive().filter(p => p.delayedDeathDay === game.day);
+      if (!delayed.length) return vote();
+      resolveDeaths(delayed.map(p => p.id), deaths => {
+        const text = `${deaths.map(id => visibleName(byId(id))).join("、")} 在发言完毕后死亡。`;
+        game.history.unshift(`第 ${game.day} 天：${text}`);
+        speak(text);
+        if (showWinner()) return;
+        vote();
+      });
+    }
+    function vote() {
+      const voters = alive().filter(p => p.canVote);
+      let index = 0;
+      const counts = new Map();
+      const next = () => {
+        if (index >= voters.length) return finishVote(counts);
+        const voter = voters[index];
+        passScreen(`${voter.name} 投票，其他玩家暂时不要看屏幕。`, () => {
+          page(`${voter.name} 的投票`, `<p class="status">选择你认为应该出局的玩家。</p>${buttons(alive().filter(p => p.id !== voter.id))}`);
+          attachPlayerPick(p => {
+            counts.set(p.id, (counts.get(p.id) || 0) + (voter.role === "sheriff" ? 2 : 1));
+            index++;
+            next();
+          });
+        });
+      };
+      next();
+    }
+    function finishVote(counts) {
+      const top = Math.max(...counts.values());
+      const tied = [...counts.entries()].filter(([, count]) => count === top).map(([id]) => byId(id));
+      let text;
+      if (tied.length > 1) {
+        const scapegoat = alive().find(p => p.role === "scapegoat");
+        if (scapegoat) return resolveDeaths([scapegoat.id], deaths => finishVoteDeaths(scapegoat, deaths, `投票出现平票，替罪羊 ${scapegoat.name} 代替平票玩家出局。`));
+        text = `票数相同：${tied.map(p => p.name).join("、")}。本轮无人出局。`;
+      } else if (tied[0].role === "idiot" && !tied[0].idiotExposed) {
+        tied[0].idiotExposed = true;
+        tied[0].canVote = false;
+        tied[0].revealed = true;
+        text = `${tied[0].name} 翻牌成为白痴，继续留在游戏中，但之后不能投票。`;
+      } else {
+        return resolveDeaths([tied[0].id], deaths => finishVoteDeaths(tied[0], deaths), true);
+      }
+      game.history.unshift(`第 ${game.day} 天：${text}`);
+      if (showWinner()) return;
+      page(`第 ${game.day} 天：投票结果`, `
+        <p class="${tied.length > 1 ? "info" : "bad"}">${text}</p>
+        ${summary()}
+        <div class="actions" id="actions"></div>
+      `);
+      document.querySelector("#actions").append(action("进入夜晚", () => {
+        game.day++;
+        passScreen("所有人闭眼。守卫准备行动。", guardTurn);
+      }));
+    }
+    function finishVoteDeaths(voted, deaths, reason = `${voted.name} 被投票出局，身份是 ${roleName(voted.role)}。`) {
+      const extraDeaths = deaths.filter(id => id !== voted.id);
+      const shot = extraDeaths.length ? ` 另外出局：${extraDeaths.map(id => byId(id).name).join("、")}。` : "";
+      const text = `${reason}${shot}`;
+      game.history.unshift(`第 ${game.day} 天：${text}`);
+      if (showWinner()) return;
+      page(`第 ${game.day} 天：投票结果`, `
+        <p class="bad">${text}</p>
+        ${summary()}
+        <div class="actions" id="actions"></div>
+      `);
+      document.querySelector("#actions").append(action("进入夜晚", () => {
+        game.day++;
+        passScreen("所有人闭眼。守卫准备行动。", guardTurn);
+      }));
+    }
+    function summary() {
+      return `
+        <h3>仍在游戏中的玩家</h3>
+        <p>${alive().map(p => `<span class="pill">${visibleName(p)}</span>`).join("")}</p>
+        <h3>游戏记录</h3>
+        <div class="log">${game.history.map(line => `<p>${line}</p>`).join("") || "<p>暂无记录</p>"}</div>
+      `;
+    }
+    function showWinner() {
+      if (mixedLovers()) {
+        const livingLovers = game.lovers.filter(id => byId(id).alive);
+        if (livingLovers.length === 2 && alive().length <= 3) {
+          const cupid = game.players.find(p => p.role === "cupid");
+          page("游戏结束", `
+            <div class="role"><strong class="celebrate">情侣阵营获胜</strong><span>跨阵营情侣坚持到了最后。</span></div>
+            <p class="good">情侣：${game.lovers.map(id => byId(id).name).join("、")}${cupid ? `　丘比特：${cupid.name}` : ""}</p>
+            ${summary()}
+            <div class="actions" id="actions"></div>
+          `);
+          document.querySelector("#actions").append(action("再玩一局", setup));
+          return true;
+        }
+      }
+      const wolfTotal = wolves().length;
+      const goodTotal = alive().length - wolfTotal;
+      if (wolfTotal > 0 && wolfTotal < goodTotal) return false;
+      const wolfWin = wolfTotal > 0;
+      const hybrid = game.players.find(p => p.role === "hybrid");
+      const hybridWin = hybrid && (wolfWin ? followsWolves(hybrid) : !followsWolves(hybrid));
+      const hybridText = hybrid ? `<p class="${hybridWin ? "good" : "bad"}">混血儿 ${hybrid.name} 的榜样是 ${byId(game.hybridModel).name}，因此${hybridWin ? "一起获胜" : "没有获胜"}。</p>` : "";
+      const cupid = game.players.find(p => p.role === "cupid");
+      const loverText = game.lovers.length ? `<p class="info">情侣：${game.lovers.map(id => byId(id).name).join("、")}${cupid ? `。丘比特：${cupid.name}` : ""}。</p>` : "";
+      page("游戏结束", `
+        <div class="role"><strong class="celebrate">${wolfWin ? "狼人获胜" : "好人获胜"}</strong><span>${wolfWin ? "狼人数已经不少于好人数。" : "所有狼人都已经出局。"}</span></div>
+        ${hybridText}
+        ${loverText}
+        <h3>全部身份</h3>
+        <div class="log">${game.players.map(p => `<p>${p.name}：${roleName(p.role)} ${p.alive ? "" : "（已出局）"}</p>`).join("")}</div>
+        ${summary()}
+        <div class="actions" id="actions"></div>
+      `);
+      document.querySelector("#actions").append(action("再玩一局", setup));
+      return true;
+    }
+    setup();
+  </script>
+</body>
+</html>
