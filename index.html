@@ -17,9 +17,7 @@
       --berry: #d94f70;
       --card: #fffdf7;
     }
-
     * { box-sizing: border-box; }
-
     body {
       margin: 0;
       min-height: 100vh;
@@ -31,14 +29,8 @@
       background-size: 28px 28px;
       font-family: ui-rounded, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
     }
-
-    header {
-      position: relative;
-      width: min(1100px, calc(100% - 32px));
-      margin: 0 auto;
-      padding: 48px 0 26px;
-    }
-
+    header, main, footer { width: min(1100px, calc(100% - 32px)); margin: 0 auto; }
+    header { padding: 48px 0 26px; }
     .label {
       display: inline-flex;
       align-items: center;
@@ -48,7 +40,6 @@
       font-size: 14px;
       font-weight: 700;
     }
-
     .dot {
       width: 10px;
       height: 10px;
@@ -56,7 +47,6 @@
       background: var(--leaf);
       box-shadow: 18px 0 0 var(--sun), 36px 0 0 var(--berry);
     }
-
     h1 {
       max-width: 720px;
       margin: 0;
@@ -64,7 +54,6 @@
       line-height: .95;
       letter-spacing: 0;
     }
-
     .intro {
       max-width: 620px;
       margin: 18px 0 0;
@@ -72,19 +61,12 @@
       font-size: clamp(16px, 2vw, 20px);
       line-height: 1.75;
     }
-
-    main {
-      width: min(1100px, calc(100% - 32px));
-      margin: 0 auto;
-      padding: 10px 0 52px;
-    }
-
+    main { padding: 10px 0 52px; }
     .shelf {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
       gap: 16px;
     }
-
     .project {
       min-height: 210px;
       padding: 18px;
@@ -96,14 +78,12 @@
       text-decoration: none;
       transition: transform .16s ease, box-shadow .16s ease;
     }
-
     .project:hover,
     .project:focus-visible {
       transform: translate(-3px, -3px);
       box-shadow: 9px 9px 0 rgba(34, 32, 28, .18);
       outline: none;
     }
-
     .num {
       display: inline-flex;
       align-items: center;
@@ -116,26 +96,20 @@
       background: var(--sky);
       font-weight: 900;
     }
-
     .project:nth-child(2n) .num { background: var(--leaf); }
     .project:nth-child(3n) .num { background: var(--sun); }
     .project:nth-child(4n) .num { background: var(--berry); }
-
     h2 {
       margin: 0;
       font-size: 24px;
       letter-spacing: 0;
     }
-
     .project p {
       margin: 10px 0 0;
       color: var(--muted);
       line-height: 1.65;
     }
-
     footer {
-      width: min(1100px, calc(100% - 32px));
-      margin: 0 auto;
       padding: 0 0 38px;
       color: var(--muted);
       font-size: 14px;
@@ -151,15 +125,15 @@
 
   <main>
     <section class="shelf" aria-label="项目列表">
-      <a class="project" href="./01-月影村狼人杀/">
-        <span class="num">01</span>
-        <h2>月影村狼人杀</h2>
-        <p>多人狼人杀网页游戏，6到12人同屏轮流操作。</p>
-      </a>
       <a class="project" href="./02-AI学习助手/">
         <span class="num">02</span>
         <h2>AI学习助手</h2>
         <p>制定学习计划、跟踪进度、收集徽章的学习工具。</p>
+      </a>
+      <a class="project" href="./01-月影村狼人杀/">
+        <span class="num">01</span>
+        <h2>月影村狼人杀</h2>
+        <p>多人狼人杀网页游戏，6到12人同屏轮流操作。</p>
       </a>
       <a class="project" href="./03-王冠棋桌/">
         <span class="num">03</span>
