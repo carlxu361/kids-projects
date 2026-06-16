@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小小开发者作品集</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f8f4ea;
+      --ink: #22201c;
+      --muted: #70695f;
+      --line: #d8cdbc;
+      --sky: #2d8cff;
+      --leaf: #43a56d;
+      --sun: #f1a93b;
+      --berry: #d94f70;
+      --card: #fffdf7;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, rgba(45, 140, 255, .08) 1px, transparent 1px),
+        linear-gradient(rgba(45, 140, 255, .08) 1px, transparent 1px),
+        var(--paper);
+      background-size: 28px 28px;
+      font-family: ui-rounded, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    }
+
+    header {
+      position: relative;
+      width: min(1100px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 48px 0 26px;
+    }
+
+    .label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--leaf);
+      box-shadow: 18px 0 0 var(--sun), 36px 0 0 var(--berry);
+    }
+
+    h1 {
+      max-width: 720px;
+      margin: 0;
+      font-size: clamp(38px, 8vw, 82px);
+      line-height: .95;
+      letter-spacing: 0;
+    }
+
+    .intro {
+      max-width: 620px;
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: clamp(16px, 2vw, 20px);
+      line-height: 1.75;
+    }
+
+    main {
+      width: min(1100px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 10px 0 52px;
+    }
+
+    .shelf {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 16px;
+    }
+
+    .project {
+      min-height: 210px;
+      padding: 18px;
+      border: 2px solid var(--ink);
+      border-radius: 8px;
+      color: inherit;
+      background: var(--card);
+      box-shadow: 6px 6px 0 rgba(34, 32, 28, .18);
+      text-decoration: none;
+      transition: transform .16s ease, box-shadow .16s ease;
+    }
+
+    .project:hover,
+    .project:focus-visible {
+      transform: translate(-3px, -3px);
+      box-shadow: 9px 9px 0 rgba(34, 32, 28, .18);
+      outline: none;
+    }
+
+    .num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      margin-bottom: 18px;
+      border-radius: 50%;
+      color: white;
+      background: var(--sky);
+      font-weight: 900;
+    }
+
+    .project:nth-child(2n) .num { background: var(--leaf); }
+    .project:nth-child(3n) .num { background: var(--sun); }
+    .project:nth-child(4n) .num { background: var(--berry); }
+
+    h2 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: 0;
+    }
+
+    .project p {
+      margin: 10px 0 0;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    footer {
+      width: min(1100px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 0 0 38px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="label"><span class="dot"></span>作品集</div>
+    <h1>小小开发者的游戏和学习工具</h1>
+    <p class="intro">这里收藏孩子用 AI 和代码做出来的小项目。每个作品都可以直接打开体验，也可以继续修改、升级、发布。</p>
+  </header>
+
+  <main>
+    <section class="shelf" aria-label="项目列表">
+      <a class="project" href="./01-月影村狼人杀/">
+        <span class="num">01</span>
+        <h2>月影村狼人杀</h2>
+        <p>多人狼人杀网页游戏，6到12人同屏轮流操作。</p>
+      </a>
+      <a class="project" href="./02-AI学习助手/">
+        <span class="num">02</span>
+        <h2>AI学习助手</h2>
+        <p>制定学习计划、跟踪进度、收集徽章的学习工具。</p>
+      </a>
+      <a class="project" href="./03-王冠棋桌/">
+        <span class="num">03</span>
+        <h2>王冠棋桌</h2>
+        <p>带谜题、棋谱和外观设置的国际象棋网页游戏。</p>
+      </a>
+      <a class="project" href="./04-王牌牌室/">
+        <span class="num">04</span>
+        <h2>王牌牌室</h2>
+        <p>扑克牌小游戏合集，包含记忆、配对、猜高低等玩法。</p>
+      </a>
+    </section>
+  </main>
+
+  <footer>更新作品后运行发布脚本，GitHub 和 Vercel 会跟着更新。</footer>
+</body>
+</html>

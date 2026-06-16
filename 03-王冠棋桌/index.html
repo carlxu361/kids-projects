@@ -1,0 +1,2144 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>王冠棋桌 - 国际象棋</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #312e2b;
+      --ink: #f7f6f2;
+      --muted: #b8b6b1;
+      --panel: #262421;
+      --panel-strong: #1f1e1b;
+      --line: rgba(255, 255, 255, .1);
+      --light: #eeeed2;
+      --dark: #769656;
+      --light-texture: linear-gradient(135deg, rgba(255, 255, 255, .08), transparent 52%);
+      --dark-texture: linear-gradient(135deg, rgba(255, 255, 255, .05), rgba(0, 0, 0, .04));
+      --rim: #1f1e1b;
+      --rim-dark: #151411;
+      --white-piece: #fffdf1;
+      --black-piece: #262421;
+      --piece-glow: rgba(129, 182, 76, .24);
+      --gold: #81b64c;
+      --red: #bc5b4f;
+      --blue: #6a9ecf;
+      --green: #81b64c;
+      --shadow: rgba(0, 0, 0, .36);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      font-family: Georgia, "Songti SC", "Noto Serif CJK SC", serif;
+      color: var(--ink);
+      background: var(--bg);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .08;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, .05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, .05) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(circle at 48% 42%, black, transparent 78%);
+    }
+
+    body[data-board-theme="midnight"] {
+      --light: #b7c7ca;
+      --dark: #263f66;
+      --rim: #111927;
+      --rim-dark: #08101b;
+      --gold: #8fd0d8;
+      --piece-glow: rgba(143, 208, 216, .26);
+    }
+
+    body[data-board-theme="slate"] {
+      --light: #9da7b8;
+      --dark: #253142;
+      --light-texture: linear-gradient(140deg, rgba(255, 255, 255, .1), transparent 55%);
+      --dark-texture: linear-gradient(145deg, rgba(255, 255, 255, .04), rgba(0, 0, 0, .18));
+      --rim: #151b25;
+      --rim-dark: #0b1118;
+      --gold: #aab8cf;
+      --piece-glow: rgba(170, 184, 207, .26);
+    }
+
+    body[data-board-theme="maple"] {
+      --light: #e1bd7b;
+      --dark: #8f4e32;
+      --light-texture: linear-gradient(90deg, rgba(116, 59, 22, .08) 0 12%, transparent 12% 26%, rgba(255, 255, 255, .1) 26% 30%, transparent 30% 100%);
+      --dark-texture: linear-gradient(90deg, rgba(255, 226, 166, .08) 0 15%, transparent 15% 34%, rgba(0, 0, 0, .08) 34% 44%, transparent 44% 100%);
+      --rim: #2c160e;
+      --rim-dark: #160b07;
+      --gold: #f0b65b;
+      --piece-glow: rgba(240, 182, 91, .28);
+    }
+
+    body[data-board-theme="walnut"] {
+      --light: #c49b70;
+      --dark: #7a4d32;
+      --light-texture: repeating-linear-gradient(90deg, rgba(255, 255, 255, .08) 0 2px, transparent 2px 16px);
+      --dark-texture: repeating-linear-gradient(90deg, rgba(0, 0, 0, .12) 0 3px, transparent 3px 18px);
+      --rim: #2a1a12;
+      --rim-dark: #160d09;
+      --gold: #d9a35f;
+      --piece-glow: rgba(217, 163, 95, .3);
+    }
+
+    body[data-board-theme="sand"] {
+      --light: #f0d6ae;
+      --dark: #bd8a63;
+      --light-texture: linear-gradient(135deg, rgba(255, 255, 255, .18), transparent 60%);
+      --dark-texture: linear-gradient(135deg, rgba(99, 56, 30, .12), transparent 55%);
+      --rim: #3b2a20;
+      --rim-dark: #211711;
+      --gold: #e3b16d;
+      --piece-glow: rgba(227, 177, 109, .28);
+    }
+
+    body[data-board-theme="linen"] {
+      --light: #dfddd2;
+      --dark: #a7a59c;
+      --light-texture: repeating-linear-gradient(45deg, rgba(40, 38, 34, .06) 0 1px, transparent 1px 5px);
+      --dark-texture: repeating-linear-gradient(45deg, rgba(255, 255, 255, .1) 0 1px, transparent 1px 5px);
+      --rim: #4d4a44;
+      --rim-dark: #2d2b27;
+      --gold: #c8c2ad;
+      --piece-glow: rgba(200, 194, 173, .28);
+    }
+
+    body[data-board-theme="rose"] {
+      --light: #f2e7ea;
+      --dark: #e58da0;
+      --light-texture: linear-gradient(135deg, rgba(255, 255, 255, .25), transparent 62%);
+      --dark-texture: linear-gradient(135deg, rgba(168, 60, 85, .12), transparent 55%);
+      --rim: #4d3038;
+      --rim-dark: #27191e;
+      --gold: #e9a4b4;
+      --piece-glow: rgba(229, 141, 160, .26);
+    }
+
+    body[data-board-theme="sky"] {
+      --light: #e6ecf2;
+      --dark: #5a94e6;
+      --light-texture: linear-gradient(135deg, rgba(255, 255, 255, .25), transparent 60%);
+      --dark-texture: linear-gradient(135deg, rgba(255, 255, 255, .16), rgba(24, 81, 153, .1));
+      --rim: #23334a;
+      --rim-dark: #111b2b;
+      --gold: #77b7f1;
+      --piece-glow: rgba(119, 183, 241, .28);
+    }
+
+    body[data-board-theme="violet"] {
+      --light: #eeeef4;
+      --dark: #8b79bf;
+      --light-texture: linear-gradient(135deg, rgba(255, 255, 255, .18), transparent 60%);
+      --dark-texture: linear-gradient(135deg, rgba(51, 35, 95, .12), transparent 55%);
+      --rim: #30283f;
+      --rim-dark: #191421;
+      --gold: #b3a3e2;
+      --piece-glow: rgba(179, 163, 226, .28);
+    }
+
+    body[data-board-theme="marble"] {
+      --light: #e8ecec;
+      --dark: #9eb7c4;
+      --light-texture: linear-gradient(120deg, rgba(85, 111, 121, .12), transparent 18% 38%, rgba(255, 255, 255, .18) 55%, transparent 80%);
+      --dark-texture: linear-gradient(120deg, rgba(31, 80, 99, .2), transparent 30% 52%, rgba(255, 255, 255, .12) 70%, transparent 92%);
+      --rim: #3c5662;
+      --rim-dark: #1d3038;
+      --gold: #a9d2dd;
+      --piece-glow: rgba(169, 210, 221, .32);
+    }
+
+    body[data-piece-style="club"] {
+      --white-piece: #f8f8f3;
+      --black-piece: #5b5954;
+    }
+
+    body[data-piece-style="bold"] {
+      --white-piece: #fff9e9;
+      --black-piece: #161616;
+    }
+
+    body[data-piece-style="wood"] {
+      --white-piece: #f3d9a6;
+      --black-piece: #4b2819;
+    }
+
+    body[data-piece-style="ice"] {
+      --white-piece: #e8fbff;
+      --black-piece: #172445;
+    }
+
+    button, select {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      min-height: 42px;
+      padding: 9px 13px;
+      color: var(--ink);
+      background: #3c3934;
+      cursor: pointer;
+      transition: transform .14s ease, border-color .14s ease, background .14s ease;
+    }
+
+    button:hover { transform: translateY(-1px); border-color: rgba(129, 182, 76, .7); }
+    button:active { transform: translateY(0); }
+    button.primary { color: #fff; background: linear-gradient(#95c763, #78a942); border-color: transparent; font-weight: 800; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .18); }
+    button.danger { background: rgba(217, 107, 92, .18); border-color: rgba(217, 107, 92, .38); }
+    button.active { background: rgba(129, 182, 76, .24); border-color: rgba(129, 182, 76, .75); }
+    button:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+    .app {
+      display: grid;
+      grid-template-columns: 150px minmax(320px, 1fr) minmax(280px, 360px);
+      gap: 16px;
+      width: min(1360px, calc(100vw - 20px));
+      margin: 0 auto;
+      padding: 18px 0 36px;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 18px;
+      display: grid;
+      align-content: start;
+      gap: 18px;
+      min-height: calc(100vh - 36px);
+      padding: 14px 10px;
+      border: 0;
+      border-radius: 8px;
+      background: #262421;
+      box-shadow: 0 18px 44px rgba(0, 0, 0, .22);
+    }
+
+    .brand {
+      display: grid;
+      gap: 3px;
+      padding: 4px 8px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, .08);
+    }
+
+    .brand strong {
+      color: #fff;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .brand span {
+      color: var(--muted);
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 12px;
+    }
+
+    .nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .nav button {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      align-items: center;
+      min-height: 48px;
+      text-align: left;
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-weight: 700;
+    }
+
+    .nav-icon {
+      display: grid;
+      place-items: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      color: #1d1710;
+      background: var(--gold);
+    }
+
+    .main-board {
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(30px, 6vw, 58px);
+      line-height: .95;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    .status-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 13px 15px;
+      background: #262421;
+      box-shadow: 0 20px 46px var(--shadow);
+    }
+
+    .status-card strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--green);
+      font-size: 20px;
+    }
+
+    .status-card span {
+      color: var(--muted);
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 14px;
+    }
+
+    .layout {
+      display: contents;
+    }
+
+    .stage {
+      position: relative;
+      overflow: hidden;
+      border: 0;
+      border-radius: 8px;
+      padding: clamp(12px, 2.2vw, 22px);
+      background: #262421;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, .3);
+    }
+
+    .board-shell {
+      display: grid;
+      grid-template-columns: 24px 1fr;
+      grid-template-rows: 1fr 24px;
+      gap: 8px;
+      align-items: stretch;
+      width: min(78vh, 100%);
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .files, .ranks {
+      display: grid;
+      color: var(--muted);
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 12px;
+      user-select: none;
+    }
+
+    .files {
+      grid-column: 2;
+      grid-row: 2;
+      grid-template-columns: repeat(8, 1fr);
+      text-align: center;
+    }
+
+    .ranks {
+      grid-column: 1;
+      grid-row: 1;
+      grid-template-rows: repeat(8, 1fr);
+      align-items: center;
+      text-align: center;
+    }
+
+    .board {
+      position: relative;
+      grid-column: 2;
+      grid-row: 1;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      aspect-ratio: 1;
+      overflow: visible;
+      border: 7px solid var(--rim);
+      border-radius: 8px;
+      background: var(--rim);
+      box-shadow:
+        0 10px 0 var(--rim-dark),
+        0 22px 42px rgba(0, 0, 0, .32);
+      transform-origin: center;
+      transition: transform .45s ease, box-shadow .45s ease;
+    }
+
+    .square {
+      position: relative;
+      display: grid;
+      place-items: center;
+      aspect-ratio: 1;
+      border: 0;
+      border-radius: 0;
+      padding: 0;
+      min-height: 0;
+      color: #151817;
+      font-size: clamp(28px, 7vw, 68px);
+      line-height: 1;
+      text-shadow: 0 3px 8px rgba(0, 0, 0, .24);
+      transition: background .15s ease, box-shadow .15s ease, transform .15s ease;
+      overflow: visible;
+    }
+
+    .square:hover { transform: none; border-color: transparent; }
+    .square.light { background: var(--light-texture), var(--light); }
+    .square.dark { background: var(--dark-texture), var(--dark); }
+    .square.white-piece { color: var(--white-piece); }
+    .square.black-piece { color: var(--black-piece); }
+    .square.selected { box-shadow: inset 0 0 0 5px rgba(213, 164, 71, .8); }
+    .square.last { box-shadow: inset 0 0 0 5px rgba(116, 164, 170, .72); }
+    .square.check { background: radial-gradient(circle, rgba(217, 107, 92, .9), rgba(217, 107, 92, .28) 46%, transparent 68%), var(--dark); }
+    .square.legal::after {
+      content: "";
+      width: 25%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: rgba(21, 24, 23, .34);
+    }
+    .square.capture::after {
+      content: "";
+      position: absolute;
+      inset: 13%;
+      border: 4px solid rgba(217, 107, 92, .62);
+      border-radius: 50%;
+    }
+
+    .piece {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      width: 86%;
+      height: 86%;
+      border-radius: 0;
+      filter: drop-shadow(0 6px 5px rgba(0, 0, 0, .24));
+      transition: transform .25s ease, filter .25s ease;
+      will-change: transform;
+    }
+
+    .piece.move-animating {
+      pointer-events: none;
+      transition: transform .28s cubic-bezier(.2, .72, .22, 1), filter .28s ease;
+      filter: drop-shadow(0 14px 8px rgba(0, 0, 0, .34));
+    }
+
+    .piece.hidden-arrival {
+      opacity: 0;
+    }
+
+    .flying-piece {
+      position: fixed;
+      z-index: 50;
+      pointer-events: none;
+      display: grid;
+      place-items: center;
+      transition: transform .32s cubic-bezier(.2, .72, .22, 1);
+      will-change: transform;
+    }
+
+    .flying-piece.white-piece { color: var(--white-piece); }
+    .flying-piece.black-piece { color: var(--black-piece); }
+
+    .piece-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      overflow: visible;
+    }
+
+    .piece-fill {
+      fill: currentColor;
+      stroke: rgba(0, 0, 0, .32);
+      stroke-width: 3.4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      paint-order: stroke fill;
+    }
+
+    .piece-line {
+      fill: none;
+      stroke: rgba(255, 255, 255, .42);
+      stroke-width: 2.4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .black-piece .piece-fill {
+      stroke: rgba(255, 255, 255, .22);
+    }
+
+    .black-piece .piece-line {
+      stroke: rgba(255, 255, 255, .22);
+    }
+
+    body[data-piece-style="club"] .piece {
+      width: 91%;
+      height: 91%;
+      filter: drop-shadow(0 5px 2px rgba(0, 0, 0, .34));
+    }
+
+    body[data-piece-style="club"] .piece-fill {
+      stroke: rgba(62, 60, 56, .8);
+      stroke-width: 4.2;
+    }
+
+    body[data-piece-style="club"] .black-piece .piece-fill {
+      stroke: rgba(32, 31, 29, .86);
+    }
+
+    body[data-piece-style="club"] .piece-line {
+      stroke: rgba(255, 255, 255, .34);
+      stroke-width: 2.8;
+    }
+
+    body[data-piece-style="club"] .black-piece .piece-line {
+      stroke: rgba(255, 255, 255, .18);
+    }
+
+    body[data-piece-style="bold"] .piece {
+      width: 90%;
+      height: 90%;
+      filter: drop-shadow(0 8px 5px rgba(0, 0, 0, .34)) contrast(1.08);
+    }
+
+    body[data-piece-style="bold"] .piece-svg {
+      transform: scale(1.04);
+      transform-origin: 50% 54%;
+    }
+
+    body[data-piece-style="bold"] .piece-fill {
+      stroke-width: 4.6;
+    }
+
+    body[data-piece-style="bold"] .piece-line {
+      stroke-width: 3;
+      opacity: .92;
+    }
+
+    body[data-piece-style="wood"] .piece {
+      filter: drop-shadow(0 7px 5px rgba(54, 25, 13, .38)) saturate(1.08);
+    }
+
+    body[data-piece-style="wood"] .piece-fill {
+      stroke: rgba(67, 37, 22, .42);
+      stroke-width: 3.8;
+    }
+
+    body[data-piece-style="wood"] .piece-line {
+      stroke: rgba(255, 243, 205, .32);
+    }
+
+    body[data-piece-style="wood"] .black-piece .piece-line {
+      stroke: rgba(240, 191, 122, .36);
+    }
+
+    body[data-piece-style="wood"] .piece-shadow {
+      fill: rgba(67, 32, 16, .22);
+    }
+
+    body[data-piece-style="ice"] .piece {
+      filter: drop-shadow(0 0 8px rgba(168, 231, 245, .32)) drop-shadow(0 7px 5px rgba(0, 0, 0, .3));
+    }
+
+    body[data-piece-style="ice"] .piece-fill {
+      stroke: rgba(149, 207, 225, .5);
+      stroke-width: 3.8;
+    }
+
+    body[data-piece-style="ice"] .piece-line {
+      stroke: rgba(235, 252, 255, .55);
+    }
+
+    body[data-piece-style="ice"] .black-piece .piece-line {
+      stroke: rgba(173, 226, 247, .36);
+    }
+
+    body[data-piece-style="ice"] .piece-shine {
+      fill: rgba(255, 255, 255, .44);
+    }
+
+    .piece-shine {
+      fill: rgba(255, 255, 255, .24);
+    }
+
+    .black-piece .piece-shine {
+      fill: rgba(255, 255, 255, .13);
+    }
+
+    .piece-shadow {
+      fill: rgba(0, 0, 0, .16);
+    }
+
+    .side {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .panel {
+      border: 0;
+      border-radius: 8px;
+      padding: 14px;
+      background: #262421;
+      box-shadow: 0 18px 44px rgba(0, 0, 0, .2);
+    }
+
+    .panel h2 {
+      margin: 0 0 12px;
+      color: var(--green);
+      font-size: 20px;
+      letter-spacing: 0;
+    }
+
+    .hidden { display: none !important; }
+
+    .panel-note {
+      margin: -2px 0 12px;
+      color: var(--muted);
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .puzzle-card {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, .1);
+      border-radius: 8px;
+      background: #302e2b;
+    }
+
+    .puzzle-card strong {
+      color: var(--ink);
+      font-size: 18px;
+    }
+
+    .puzzle-card span {
+      color: var(--muted);
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 13px;
+    }
+
+    .puzzle-result {
+      min-height: 24px;
+      color: var(--green);
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-weight: 700;
+    }
+
+    .row {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .color-field {
+      display: grid;
+      grid-template-columns: 1fr 42px;
+      gap: 8px;
+      align-items: center;
+      min-height: 42px;
+      padding: 8px 9px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .04);
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .color-field input {
+      width: 38px;
+      height: 30px;
+      padding: 0;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .appearance-note {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    label {
+      color: var(--muted);
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 13px;
+    }
+
+    select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      min-height: 42px;
+      padding: 8px 10px;
+      color: var(--ink);
+      background: #1f1e1b;
+      outline: none;
+    }
+
+    .segmented, .actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .mode-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .mode-grid button {
+      min-height: 54px;
+      padding: 7px 6px;
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 14px;
+    }
+
+    .score {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: rgba(255, 255, 255, .04);
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 12px;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 22px;
+    }
+
+    .captured {
+      display: grid;
+      gap: 8px;
+      font-size: 24px;
+      min-height: 32px;
+    }
+
+    .captured-line {
+      display: grid;
+      grid-template-columns: 52px 1fr;
+      gap: 8px;
+      align-items: start;
+      color: var(--muted);
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 13px;
+    }
+
+    .pieces {
+      color: var(--ink);
+      font-family: Georgia, serif;
+      line-height: 1.25;
+      word-break: break-all;
+    }
+
+    .moves {
+      height: 220px;
+      overflow: auto;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--muted);
+    }
+
+    .moves li {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 8px;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, .07);
+    }
+
+    .moves b { color: var(--ink); font-weight: 500; }
+
+    .promotion {
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 20px;
+      background: rgba(0, 0, 0, .55);
+      z-index: 20;
+    }
+
+    .promotion.show { display: grid; }
+
+    .promotion-box {
+      width: min(360px, 100%);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      background: var(--panel-strong);
+      box-shadow: 0 30px 70px rgba(0, 0, 0, .5);
+      text-align: center;
+    }
+
+    .promotion-box h2 { margin: 0 0 14px; color: var(--gold); }
+    .promo-pieces { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .promo-pieces button { font-size: 36px; min-height: 68px; }
+
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { position: static; min-height: 0; }
+      .nav { grid-template-columns: repeat(2, 1fr); }
+      .status-card { min-width: 0; }
+      .board-shell { width: 100%; }
+    }
+
+    @media (max-width: 520px) {
+      .mode-grid, .score { grid-template-columns: 1fr; }
+      .square { font-size: clamp(26px, 10vw, 46px); }
+      .app { width: min(100vw - 14px, 1220px); padding-top: 12px; }
+    }
+  </style>
+</head>
+<body data-board-theme="classic" data-piece-style="club">
+  <main class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <strong>王冠棋桌</strong>
+        <span>下棋与谜题</span>
+      </div>
+      <nav class="nav" id="appNav" aria-label="主导航">
+        <button class="active" data-section="play"><span class="nav-icon">♟</span><span>下棋</span></button>
+        <button data-section="puzzles"><span class="nav-icon">◆</span><span>谜题</span></button>
+      </nav>
+    </aside>
+
+    <section class="main-board">
+      <header>
+        <div>
+          <h1>王冠棋桌</h1>
+          <p class="subtitle" id="sectionSubtitle">选择对手，开始一盘快速国际象棋。</p>
+        </div>
+        <div class="status-card">
+          <strong id="statusTitle">白方先走</strong>
+          <span id="statusDetail">选择棋子后，绿色小点表示可走位置。</span>
+        </div>
+      </header>
+
+      <div class="stage">
+        <div class="board-shell">
+          <div class="ranks" id="ranks"></div>
+          <div class="board" id="board" aria-label="国际象棋棋盘"></div>
+          <div class="files" id="files"></div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="side">
+        <section class="panel" id="playPanel">
+          <h2>对战设置</h2>
+          <div class="mode-grid" id="modeButtons">
+            <button data-mode="human-ai" class="active">人机</button>
+            <button data-mode="human-human">人人</button>
+            <button data-mode="ai-ai">机机</button>
+          </div>
+          <div class="row">
+            <label for="humanColor">人机执棋</label>
+            <select id="humanColor">
+              <option value="w">我执白</option>
+              <option value="b">我执黑</option>
+              <option value="random">随机</option>
+            </select>
+          </div>
+          <div class="row">
+            <label for="aiDepth">电脑思考</label>
+            <select id="aiDepth">
+              <option value="1">快速</option>
+              <option value="2" selected>均衡</option>
+              <option value="3">更强</option>
+            </select>
+          </div>
+          <div class="actions">
+            <button class="primary" id="newGame">新棋局</button>
+            <button id="flipBoard">翻转棋盘</button>
+            <button id="undoMove">悔棋</button>
+            <button class="danger" id="pauseAi">暂停电脑</button>
+          </div>
+        </section>
+
+        <section class="panel hidden" id="puzzlePanel">
+          <h2>谜题</h2>
+          <p class="panel-note">找到局面里的最佳一步。走对后会自动进入下一题。</p>
+          <div class="puzzle-card">
+            <strong id="puzzleTitle">一步杀</strong>
+            <span id="puzzleHint">白方先走。</span>
+            <div class="puzzle-result" id="puzzleResult"></div>
+          </div>
+          <div class="actions">
+            <button class="primary" id="nextPuzzle">下一题</button>
+            <button id="resetPuzzle">重做本题</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>外观设置</h2>
+          <div class="row">
+            <label for="boardTheme">棋盘主题</label>
+            <select id="boardTheme">
+              <option value="classic" selected>经典绿格</option>
+              <option value="slate">暗夜石板</option>
+              <option value="midnight">深蓝棋盘</option>
+              <option value="maple">木纹棋盘</option>
+              <option value="walnut">胡桃木纹</option>
+              <option value="sand">沙丘棕格</option>
+              <option value="linen">亚麻灰格</option>
+              <option value="rose">玫瑰粉格</option>
+              <option value="sky">晴空蓝格</option>
+              <option value="violet">紫藤棋盘</option>
+              <option value="marble">冰纹大理石</option>
+            </select>
+          </div>
+          <div class="row">
+            <label for="pieceStyle">棋子外观</label>
+            <select id="pieceStyle">
+              <option value="club" selected>圆润轮廓</option>
+              <option value="classic">经典清晰</option>
+              <option value="bold">厚重立体</option>
+              <option value="wood">木质暖色</option>
+              <option value="ice">冷光蓝白</option>
+            </select>
+          </div>
+          <div class="color-grid">
+            <label class="color-field">浅格<input type="color" id="lightColor" value="#eeeed2"></label>
+            <label class="color-field">深格<input type="color" id="darkColor" value="#769656"></label>
+            <label class="color-field">白棋<input type="color" id="whitePieceColor" value="#f8f8f3"></label>
+            <label class="color-field">黑棋<input type="color" id="blackPieceColor" value="#5b5954"></label>
+          </div>
+          <button id="resetColors">恢复默认颜色</button>
+          <p class="appearance-note">自定义颜色会覆盖当前主题色，换主题后会自动套用该主题的默认色。</p>
+        </section>
+
+        <section class="panel">
+          <h2>棋局信息</h2>
+          <div class="score">
+            <div class="metric"><span>回合</span><strong id="turnCount">1</strong></div>
+            <div class="metric"><span>局面分</span><strong id="evalScore">0</strong></div>
+            <div class="metric"><span>合法走法</span><strong id="moveCount">20</strong></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>被吃棋子</h2>
+          <div class="captured">
+            <div class="captured-line"><span>白方</span><div class="pieces" id="capturedWhite"></div></div>
+            <div class="captured-line"><span>黑方</span><div class="pieces" id="capturedBlack"></div></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>棋谱</h2>
+          <ol class="moves" id="moveLog"></ol>
+        </section>
+    </aside>
+  </main>
+
+  <div class="promotion" id="promotion">
+    <div class="promotion-box">
+      <h2>兵升变</h2>
+      <div class="promo-pieces" id="promoPieces"></div>
+    </div>
+  </div>
+
+  <script>
+    const boardEl = document.querySelector("#board");
+    const ranksEl = document.querySelector("#ranks");
+    const filesEl = document.querySelector("#files");
+    const statusTitle = document.querySelector("#statusTitle");
+    const statusDetail = document.querySelector("#statusDetail");
+    const moveLogEl = document.querySelector("#moveLog");
+    const capturedWhiteEl = document.querySelector("#capturedWhite");
+    const capturedBlackEl = document.querySelector("#capturedBlack");
+    const turnCountEl = document.querySelector("#turnCount");
+    const evalScoreEl = document.querySelector("#evalScore");
+    const moveCountEl = document.querySelector("#moveCount");
+    const promotionEl = document.querySelector("#promotion");
+    const promoPiecesEl = document.querySelector("#promoPieces");
+    const humanColorEl = document.querySelector("#humanColor");
+    const aiDepthEl = document.querySelector("#aiDepth");
+    const boardThemeEl = document.querySelector("#boardTheme");
+    const pieceStyleEl = document.querySelector("#pieceStyle");
+    const lightColorEl = document.querySelector("#lightColor");
+    const darkColorEl = document.querySelector("#darkColor");
+    const whitePieceColorEl = document.querySelector("#whitePieceColor");
+    const blackPieceColorEl = document.querySelector("#blackPieceColor");
+    const resetColorsEl = document.querySelector("#resetColors");
+    const appNavEl = document.querySelector("#appNav");
+    const playPanelEl = document.querySelector("#playPanel");
+    const puzzlePanelEl = document.querySelector("#puzzlePanel");
+    const sectionSubtitleEl = document.querySelector("#sectionSubtitle");
+    const puzzleTitleEl = document.querySelector("#puzzleTitle");
+    const puzzleHintEl = document.querySelector("#puzzleHint");
+    const puzzleResultEl = document.querySelector("#puzzleResult");
+
+    const pieceGlyph = {
+      wK: "♔", wQ: "♕", wR: "♖", wB: "♗", wN: "♘", wP: "♙",
+      bK: "♚", bQ: "♛", bR: "♜", bB: "♝", bN: "♞", bP: "♟"
+    };
+    const value = { P: 100, N: 320, B: 330, R: 500, Q: 900, K: 0 };
+    const names = { K: "王", Q: "后", R: "车", B: "象", N: "马", P: "兵" };
+    const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
+    const puzzles = buildPuzzleSet();
+    window.__puzzles = puzzles;
+
+    let state;
+    let activeSection = "play";
+    let savedPlayState = null;
+    let selected = null;
+    let legalForSelected = [];
+    let flipped = false;
+    let mode = "human-ai";
+    let paused = false;
+    let pendingPromotion = null;
+    let aiTimer = null;
+    let puzzleIndex = 0;
+    let puzzleSolved = 0;
+    let pendingMoveAnimation = null;
+    let customColorsActive = false;
+    let humanColorResolved = "w";
+    let audioCtx = null;
+
+    function playSound(type) {
+      try {
+        audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
+        const now = audioCtx.currentTime;
+        const gain = audioCtx.createGain();
+        const osc = audioCtx.createOscillator();
+        const settings = {
+          move: [420, 0.045, "sine", 0.045],
+          capture: [220, 0.075, "triangle", 0.065],
+          error: [120, 0.12, "sawtooth", 0.045],
+          success: [660, 0.14, "sine", 0.055]
+        }[type] || [380, 0.05, "sine", 0.04];
+        osc.type = settings[2];
+        osc.frequency.setValueAtTime(settings[0], now);
+        if (type === "success") osc.frequency.exponentialRampToValueAtTime(880, now + settings[1]);
+        gain.gain.setValueAtTime(settings[3], now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + settings[1]);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + settings[1]);
+      } catch (error) {
+        // Sound is optional; browsers may block it until the first user gesture.
+      }
+    }
+
+    function newState() {
+      return {
+        board: [
+          ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
+          ["bP", "bP", "bP", "bP", "bP", "bP", "bP", "bP"],
+          [null, null, null, null, null, null, null, null],
+          [null, null, null, null, null, null, null, null],
+          [null, null, null, null, null, null, null, null],
+          [null, null, null, null, null, null, null, null],
+          ["wP", "wP", "wP", "wP", "wP", "wP", "wP", "wP"],
+          ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
+        ],
+        turn: "w",
+        castling: { wK: true, wQ: true, bK: true, bQ: true },
+        enPassant: null,
+        halfmove: 0,
+        fullmove: 1,
+        history: [],
+        log: [],
+        captured: { w: [], b: [] },
+        lastMove: null,
+        gameOver: false
+      };
+    }
+
+    function buildPuzzleSet() {
+      const pieceOrder = ["Q", "R", "B", "N", "K"];
+      const targetOrder = ["q", "r", "b", "n", "p"];
+      const targetNames = { q: "后", r: "车", b: "象", n: "马", p: "兵" };
+      const kingPairs = [
+        ["h1", "e8"], ["a1", "h8"], ["h1", "a8"], ["a2", "g8"],
+        ["g1", "b8"], ["b1", "h7"], ["h2", "d8"], ["a7", "h1"]
+      ];
+      const squares = [];
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) squares.push({ r, c, name: squareName(r, c) });
+      }
+
+      function pos(name) {
+        return { r: 8 - Number(name[1]), c: files.indexOf(name[0]) };
+      }
+
+      function sameSquare(a, b) {
+        return a.r === b.r && a.c === b.c;
+      }
+
+      function legalShape(piece, from, to) {
+        const dr = Math.abs(from.r - to.r);
+        const dc = Math.abs(from.c - to.c);
+        if (!dr && !dc) return false;
+        if (piece === "Q") return from.r === to.r || from.c === to.c || dr === dc;
+        if (piece === "R") return from.r === to.r || from.c === to.c;
+        if (piece === "B") return dr === dc;
+        if (piece === "N") return (dr === 2 && dc === 1) || (dr === 1 && dc === 2);
+        if (piece === "K") return Math.max(dr, dc) === 1;
+        return false;
+      }
+
+      function puzzleHash(text) {
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) hash = (hash * 31 + text.charCodeAt(i)) % 9973;
+        return hash;
+      }
+
+      function emptyBoard() {
+        return Array.from({ length: 8 }, () => Array(8).fill(null));
+      }
+
+      function boardToFen(board) {
+        const ranks = board.map(row => {
+          let fen = "";
+          let empty = 0;
+          row.forEach(piece => {
+            if (!piece) {
+              empty += 1;
+              return;
+            }
+            if (empty) {
+              fen += empty;
+              empty = 0;
+            }
+            const type = typeOf(piece);
+            fen += colorOf(piece) === "w" ? type : type.toLowerCase();
+          });
+          return fen + (empty ? empty : "");
+        });
+        return `${ranks.join("/")} w - - 0 1`;
+      }
+
+      function candidateFen(piece, captured, from, to) {
+        for (const [whiteKingName, blackKingName] of kingPairs) {
+          const whiteKing = pos(whiteKingName);
+          const blackKing = pos(blackKingName);
+          if ([from, to].some(square => sameSquare(square, whiteKing) || sameSquare(square, blackKing))) continue;
+          const board = emptyBoard();
+          board[whiteKing.r][whiteKing.c] = "wK";
+          board[blackKing.r][blackKing.c] = "bK";
+          board[from.r][from.c] = `w${piece}`;
+          board[to.r][to.c] = `b${captured.toUpperCase()}`;
+          const fen = boardToFen(board);
+          const state = stateFromFen(fen);
+          if (inCheck(state, "w") || inCheck(state, "b")) continue;
+          return fen;
+        }
+        return null;
+      }
+
+      const raw = [];
+      pieceOrder.forEach(piece => {
+        targetOrder.forEach(captured => {
+          squares.forEach(from => {
+            squares.forEach(to => {
+              if (!legalShape(piece, from, to)) return;
+              raw.push({ piece, captured, from, to, hash: puzzleHash(`${piece}${captured}${from.name}${to.name}`) });
+            });
+          });
+        });
+      });
+      raw.sort((a, b) => a.hash - b.hash);
+
+      const accepted = [];
+      const seen = new Set();
+      for (const item of raw) {
+        if (accepted.length >= 160) break;
+        const fen = candidateFen(item.piece, item.captured, item.from, item.to);
+        if (!fen) continue;
+        const state = stateFromFen(fen);
+        const solution = `${item.from.name}${item.to.name}`;
+        const move = getLegalMoves(state, "w").find(candidate => moveKey(candidate) === solution);
+        if (!move || !move.capture || move.promotion) continue;
+        const key = `${fen}|${solution}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const distance = Math.max(Math.abs(item.from.r - item.to.r), Math.abs(item.from.c - item.to.c));
+        const pieceWeight = { Q: 0, R: 1, B: 2, N: 3, K: 4 }[item.piece];
+        const targetWeight = { q: -2, r: -1, b: 0, n: 1, p: 2 }[item.captured];
+        accepted.push({
+          fen,
+          solution,
+          piece: item.piece,
+          captured: item.captured,
+          difficulty: distance + pieceWeight + targetWeight * .15
+        });
+      }
+
+      accepted.sort((a, b) => a.difficulty - b.difficulty || a.solution.localeCompare(b.solution));
+
+      const buckets = [
+        accepted.slice(0, Math.ceil(accepted.length / 3)),
+        accepted.slice(Math.ceil(accepted.length / 3), Math.ceil(accepted.length * 2 / 3)),
+        accepted.slice(Math.ceil(accepted.length * 2 / 3))
+      ];
+      const picked = [];
+      const usedPattern = new Set();
+
+      buckets.forEach((bucket, bucketIndex) => {
+        let cursor = bucketIndex;
+        while (picked.length < (bucketIndex + 1) * 10 && bucket.length) {
+          const puzzle = bucket[cursor % bucket.length];
+          const pattern = `${puzzle.piece}${puzzle.captured}`;
+          cursor += 7;
+          if (usedPattern.has(`${bucketIndex}-${pattern}`) && cursor < bucket.length * 3) continue;
+          usedPattern.add(`${bucketIndex}-${pattern}`);
+          if (!picked.some(item => item.fen === puzzle.fen && item.solution === puzzle.solution)) picked.push(puzzle);
+          if (cursor > bucket.length * 5) break;
+        }
+      });
+
+      for (const puzzle of accepted) {
+        if (picked.length >= 30) break;
+        if (!picked.some(item => item.fen === puzzle.fen && item.solution === puzzle.solution)) picked.push(puzzle);
+      }
+
+      return picked.slice(0, 30).map((puzzle, index) => {
+        const number = String(index + 1).padStart(2, "0");
+        const level = index < 10 ? "易" : index < 20 ? "中" : "难";
+        const hint = index < 10
+          ? "先确认目标格，直接吃子。"
+          : index < 20
+            ? "看清路线和落点，找到最干净的一步。"
+            : "注意几何关系，别让王处在危险里。";
+        return {
+          title: `${number} ${level}：${names[puzzle.piece]}吃${targetNames[puzzle.captured]}`,
+          hint,
+          fen: puzzle.fen,
+          solution: puzzle.solution
+        };
+      });
+    }
+
+    function stateFromFen(fen) {
+      const [placement, turn = "w", castling = "-", enPassant = "-", halfmove = "0", fullmove = "1"] = fen.split(" ");
+      const board = placement.split("/").map(rank => {
+        const row = [];
+        for (const ch of rank) {
+          if (/\d/.test(ch)) {
+            for (let i = 0; i < Number(ch); i++) row.push(null);
+          } else {
+            const color = ch === ch.toUpperCase() ? "w" : "b";
+            row.push(color + ch.toUpperCase());
+          }
+        }
+        return row;
+      });
+      return {
+        board,
+        turn,
+        castling: {
+          wK: castling.includes("K"),
+          wQ: castling.includes("Q"),
+          bK: castling.includes("k"),
+          bQ: castling.includes("q")
+        },
+        enPassant: enPassant === "-" ? null : { r: 8 - Number(enPassant[1]), c: files.indexOf(enPassant[0]) },
+        halfmove: Number(halfmove),
+        fullmove: Number(fullmove),
+        history: [],
+        log: [],
+        captured: { w: [], b: [] },
+        lastMove: null,
+        gameOver: false
+      };
+    }
+
+    function clone(obj) {
+      return JSON.parse(JSON.stringify(obj));
+    }
+
+    function colorOf(piece) {
+      return piece ? piece[0] : null;
+    }
+
+    function typeOf(piece) {
+      return piece ? piece[1] : null;
+    }
+
+    function other(color) {
+      return color === "w" ? "b" : "w";
+    }
+
+    function inBounds(r, c) {
+      return r >= 0 && r < 8 && c >= 0 && c < 8;
+    }
+
+    function squareName(r, c) {
+      return files[c] + (8 - r);
+    }
+
+    function pieceSvg(type) {
+      const parts = {
+        K: `
+          <path class="piece-fill" d="M30 88c8-5 52-5 60 0l-7 10H37z"/>
+          <path class="piece-fill" d="M38 77c6-7 38-7 44 0l7 11H31z"/>
+          <path class="piece-fill" d="M45 63c3-13 27-13 30 0l6 14H39z"/>
+          <path class="piece-fill" d="M49 49c0-8 5-14 11-14s11 6 11 14v17H49z"/>
+          <path class="piece-fill" d="M56 16h8v22h-8zM47 24h26v8H47z"/>
+          <path class="piece-line" d="M44 88h32M46 77h28M53 64h14M60 16v22M49 28h22"/>
+        `,
+        Q: `
+          <path class="piece-fill" d="M31 88c9-5 49-5 58 0l-7 10H38z"/>
+          <path class="piece-fill" d="M38 76c6-7 38-7 44 0l7 12H31z"/>
+          <path class="piece-fill" d="M35 66h50l-5-31-13 20-7-27-7 27-13-20z"/>
+          <circle class="piece-fill" cx="37" cy="31" r="5.5"/><circle class="piece-fill" cx="51" cy="25" r="5.5"/><circle class="piece-fill" cx="69" cy="25" r="5.5"/><circle class="piece-fill" cx="83" cy="31" r="5.5"/>
+          <path class="piece-line" d="M43 76h34M42 66h36M52 56h16M45 38l8 17M75 38l-8 17"/>
+        `,
+        R: `
+          <path class="piece-fill" d="M30 88c8-5 52-5 60 0l-7 10H37z"/>
+          <path class="piece-fill" d="M38 75h44l8 13H30z"/>
+          <path class="piece-fill" d="M44 44h32v31H44z"/>
+          <path class="piece-fill" d="M36 25h14v10h7V25h8v10h7V25h14v22H36z"/>
+          <path class="piece-line" d="M46 53h28M46 66h28M45 88h30M41 44h38"/>
+        `,
+        B: `
+          <path class="piece-fill" d="M31 88c9-5 49-5 58 0l-7 10H38z"/>
+          <path class="piece-fill" d="M39 76c7-7 35-7 42 0l8 12H31z"/>
+          <path class="piece-fill" d="M48 63c3-8 21-8 24 0v13H48z"/>
+          <path class="piece-fill" d="M42 42c0-14 8-24 18-24s18 10 18 24c0 11-8 20-18 20s-18-9-18-20z"/>
+          <path class="piece-line" d="M69 25L52 56M48 88h24M55 35c4-2 8-2 12 0"/>
+        `,
+        N: `
+          <path class="piece-fill" d="M31 88c9-5 49-5 58 0l-7 10H38z"/>
+          <path class="piece-fill" d="M39 76c8-8 34-8 42 0l8 12H31z"/>
+          <path class="piece-fill" d="M47 76c1-21 9-37 24-48l-5-11 16 7c9 4 16 13 18 24l-15 4 8 12-13 11H62z"/>
+          <path class="piece-line" d="M66 31c-9 8-14 20-15 35M60 76h20M79 47h9M70 29l-8 10"/>
+          <circle class="piece-shine" cx="79" cy="40" r="2.8"/>
+        `,
+        P: `
+          <path class="piece-fill" d="M37 88c7-5 39-5 46 0l-6 10H43z"/>
+          <path class="piece-fill" d="M45 76c5-7 25-7 30 0l8 12H37z"/>
+          <path class="piece-fill" d="M50 63c2-8 18-8 20 0v13H50z"/>
+          <circle class="piece-fill" cx="60" cy="43" r="13"/>
+          <path class="piece-line" d="M49 88h22M51 76h18M54 53c4 3 8 3 12 0"/>
+        `
+      };
+      return `
+        <svg class="piece-svg" viewBox="0 0 120 120" aria-hidden="true">
+          <ellipse class="piece-shadow" cx="60" cy="101" rx="34" ry="7"/>
+          ${parts[type]}
+        </svg>
+      `;
+    }
+
+    function pieceMarkup(piece) {
+      const type = typeOf(piece);
+      return `
+        <span class="piece type-${type}" data-piece="${type}">
+          ${pieceSvg(type)}
+        </span>
+      `;
+    }
+
+    function displaySquares() {
+      const rows = [...Array(8).keys()];
+      const cols = [...Array(8).keys()];
+      return {
+        rows: flipped ? rows.reverse() : rows,
+        cols: flipped ? cols.reverse() : cols
+      };
+    }
+
+    function renderCoordinates() {
+      const { rows, cols } = displaySquares();
+      ranksEl.innerHTML = rows.map(r => `<span>${8 - r}</span>`).join("");
+      filesEl.innerHTML = cols.map(c => `<span>${files[c]}</span>`).join("");
+    }
+
+    function renderBoard() {
+      renderCoordinates();
+      boardEl.innerHTML = "";
+      const { rows, cols } = displaySquares();
+      const legalKeys = new Map(legalForSelected.map(m => [`${m.to.r},${m.to.c}`, m]));
+      const checkedKing = inCheck(state, state.turn) ? findKing(state.board, state.turn) : null;
+
+      for (const r of rows) {
+        for (const c of cols) {
+          const piece = state.board[r][c];
+          const btn = document.createElement("button");
+          btn.className = `square ${(r + c) % 2 ? "dark" : "light"}`;
+          btn.dataset.r = r;
+          btn.dataset.c = c;
+          btn.setAttribute("aria-label", `${squareName(r, c)} ${piece ? pieceGlyph[piece] : "空格"}`);
+          if (piece) btn.classList.add(colorOf(piece) === "w" ? "white-piece" : "black-piece");
+          if (selected && selected.r === r && selected.c === c) btn.classList.add("selected");
+          if (state.lastMove && state.lastMove.from.r === r && state.lastMove.from.c === c) btn.classList.add("last", "last-from");
+          if (state.lastMove && state.lastMove.to.r === r && state.lastMove.to.c === c) btn.classList.add("last", "last-to");
+          if (checkedKing && checkedKing.r === r && checkedKing.c === c) btn.classList.add("check");
+          const legal = legalKeys.get(`${r},${c}`);
+          if (legal) btn.classList.add(legal.capture ? "capture" : "legal");
+          btn.innerHTML = piece ? pieceMarkup(piece) : "";
+          btn.addEventListener("click", () => onSquareClick(r, c));
+          boardEl.appendChild(btn);
+        }
+      }
+      runPendingMoveAnimation();
+    }
+
+    function squareEl(pos) {
+      return boardEl.querySelector(`.square[data-r="${pos.r}"][data-c="${pos.c}"]`);
+    }
+
+    function queueMoveAnimation(move) {
+      if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const fromEl = squareEl(move.from);
+      const movingPiece = fromEl?.querySelector(".piece");
+      pendingMoveAnimation = {
+        piece: { from: clone(move.from), to: clone(move.to) },
+        html: movingPiece ? movingPiece.outerHTML : "",
+        className: fromEl ? (fromEl.classList.contains("black-piece") ? "black-piece" : "white-piece") : "",
+        rook: null
+      };
+      if (move.castle === "K") {
+        pendingMoveAnimation.rook = { from: { r: move.to.r, c: 7 }, to: { r: move.to.r, c: 5 } };
+      }
+      if (move.castle === "Q") {
+        pendingMoveAnimation.rook = { from: { r: move.to.r, c: 0 }, to: { r: move.to.r, c: 3 } };
+      }
+    }
+
+    function animatePieceTravel(from, to, html = "", className = "") {
+      const fromEl = squareEl(from);
+      const toEl = squareEl(to);
+      const pieceEl = toEl?.querySelector(".piece");
+      if (!fromEl || !toEl || !pieceEl) return;
+
+      const fromRect = fromEl.getBoundingClientRect();
+      const toRect = toEl.getBoundingClientRect();
+      const startX = fromRect.left + fromRect.width / 2;
+      const startY = fromRect.top + fromRect.height / 2;
+      const endX = toRect.left + toRect.width / 2;
+      const endY = toRect.top + toRect.height / 2;
+
+      pieceEl.classList.add("hidden-arrival");
+      const flyer = document.createElement("div");
+      flyer.className = `flying-piece ${className}`;
+      flyer.style.width = `${fromRect.width}px`;
+      flyer.style.height = `${fromRect.height}px`;
+      flyer.style.left = `${startX - fromRect.width / 2}px`;
+      flyer.style.top = `${startY - fromRect.height / 2}px`;
+      flyer.innerHTML = html || pieceEl.outerHTML;
+      document.body.appendChild(flyer);
+      flyer.getBoundingClientRect();
+
+      requestAnimationFrame(() => {
+        flyer.style.transform = `translate(${endX - startX}px, ${endY - startY}px)`;
+      });
+
+      const cleanup = () => {
+        flyer.remove();
+        pieceEl.classList.remove("hidden-arrival");
+      };
+      flyer.addEventListener("transitionend", cleanup, { once: true });
+      setTimeout(cleanup, 520);
+    }
+
+    function runPendingMoveAnimation() {
+      if (!pendingMoveAnimation) return;
+      const animation = pendingMoveAnimation;
+      pendingMoveAnimation = null;
+      requestAnimationFrame(() => {
+        animatePieceTravel(animation.piece.from, animation.piece.to, animation.html, animation.className);
+        if (animation.rook) animatePieceTravel(animation.rook.from, animation.rook.to);
+      });
+    }
+
+    function renderInfo() {
+      if (activeSection === "puzzles") {
+        const puzzle = puzzles[puzzleIndex];
+        const legalMoves = getLegalMoves(state, state.turn);
+        statusTitle.textContent = puzzle.title;
+        statusDetail.textContent = puzzleResultEl.textContent || puzzle.hint;
+        moveLogEl.innerHTML = state.log.map((entry, index) => `<li><span>${index + 1}.</span><b>${entry}</b></li>`).join("");
+        capturedWhiteEl.textContent = state.captured.w.map(p => pieceGlyph[p]).join(" ");
+        capturedBlackEl.textContent = state.captured.b.map(p => pieceGlyph[p]).join(" ");
+        turnCountEl.textContent = `${puzzleIndex + 1}/${puzzles.length}`;
+        evalScoreEl.textContent = puzzleSolved;
+        moveCountEl.textContent = legalMoves.length;
+        renderPuzzlePanel();
+        return;
+      }
+
+      const colorName = state.turn === "w" ? "白方" : "黑方";
+      const legalMoves = getLegalMoves(state, state.turn);
+      const check = inCheck(state, state.turn);
+      let title = `${colorName}走棋`;
+      let detail = isAiTurn() ? "电脑正在思考。" : "点击棋子，再点击目标格。";
+
+      if (state.gameOver) {
+        if (legalMoves.length === 0 && check) {
+          title = `${state.turn === "w" ? "黑方" : "白方"}将死获胜`;
+          detail = "点击“新棋局”可以重新开始。";
+        } else {
+          title = "和棋";
+          detail = "当前一方无合法走法。";
+        }
+      } else if (check) {
+        title = `${colorName}被将军`;
+        detail = isAiTurn() ? "电脑需要应将。" : "必须先解除将军。";
+      }
+
+      statusTitle.textContent = title;
+      statusDetail.textContent = paused && isAiTurn() && !state.gameOver ? "电脑已暂停，点击“暂停电脑”继续。" : detail;
+      moveLogEl.innerHTML = state.log.map((entry, index) => `<li><span>${index + 1}.</span><b>${entry}</b></li>`).join("");
+      moveLogEl.scrollTop = moveLogEl.scrollHeight;
+      capturedWhiteEl.textContent = state.captured.w.map(p => pieceGlyph[p]).join(" ");
+      capturedBlackEl.textContent = state.captured.b.map(p => pieceGlyph[p]).join(" ");
+      turnCountEl.textContent = state.fullmove;
+      evalScoreEl.textContent = evaluate(state) > 0 ? `+${Math.round(evaluate(state) / 10)}` : `${Math.round(evaluate(state) / 10)}`;
+      moveCountEl.textContent = legalMoves.length;
+    }
+
+    function renderAll() {
+      renderBoard();
+      renderInfo();
+      scheduleAi();
+    }
+
+    function renderPuzzlePanel() {
+      const puzzle = puzzles[puzzleIndex];
+      puzzleTitleEl.textContent = puzzle.title;
+      puzzleHintEl.textContent = puzzle.hint;
+    }
+
+    function moveKey(move) {
+      return `${squareName(move.from.r, move.from.c)}${squareName(move.to.r, move.to.c)}${move.promotion || ""}`;
+    }
+
+    function loadPuzzle(index = puzzleIndex) {
+      clearTimeout(aiTimer);
+      puzzleIndex = (index + puzzles.length) % puzzles.length;
+      state = stateFromFen(puzzles[puzzleIndex].fen);
+      selected = null;
+      legalForSelected = [];
+      pendingPromotion = null;
+      puzzleResultEl.textContent = "";
+      renderAll();
+    }
+
+    function handlePuzzleMove(move) {
+      const expected = puzzles[puzzleIndex].solution;
+      if (moveKey(move) !== expected) {
+        playSound("error");
+        selected = null;
+        legalForSelected = [];
+        puzzleResultEl.textContent = "再想一步。";
+        renderAll();
+        return;
+      }
+      const notation = moveNotation(state, move);
+      playSound(move.capture ? "capture" : "move");
+      queueMoveAnimation(move);
+      state = makeMove(state, move);
+      state.log.push(notation);
+      state.lastMove = { from: move.from, to: move.to };
+      selected = null;
+      legalForSelected = [];
+      puzzleSolved += 1;
+      puzzleResultEl.textContent = "正确。";
+      renderAll();
+      playSound("success");
+      setTimeout(() => loadPuzzle(puzzleIndex + 1), 900);
+    }
+
+    function onSquareClick(r, c) {
+      if (state.gameOver || pendingPromotion || isAiTurn()) return;
+      const piece = state.board[r][c];
+      if (selected) {
+        if (selected.r === r && selected.c === c) {
+          selected = null;
+          legalForSelected = [];
+          renderAll();
+          return;
+        }
+        const move = legalForSelected.find(m => m.to.r === r && m.to.c === c);
+        if (move) {
+          if (move.promotion) return askPromotion(move);
+          if (activeSection === "puzzles") return handlePuzzleMove(move);
+          playMove(move);
+          return;
+        }
+      }
+      if (piece && colorOf(piece) === state.turn) {
+        selected = { r, c };
+        legalForSelected = getLegalMoves(state, state.turn).filter(m => m.from.r === r && m.from.c === c);
+      } else {
+        selected = null;
+        legalForSelected = [];
+      }
+      renderAll();
+    }
+
+    function askPromotion(move) {
+      pendingPromotion = move;
+      const color = state.turn;
+      promoPiecesEl.innerHTML = ["Q", "R", "B", "N"].map(t => `<button data-piece="${t}">${pieceMarkup(color + t)}</button>`).join("");
+      promotionEl.classList.add("show");
+    }
+
+    promoPiecesEl.addEventListener("click", event => {
+      const btn = event.target.closest("button");
+      if (!btn || !pendingPromotion) return;
+      pendingPromotion.promotion = btn.dataset.piece;
+      promotionEl.classList.remove("show");
+      playMove(pendingPromotion);
+      pendingPromotion = null;
+    });
+
+    function playMove(move) {
+      const before = clone(state);
+      const notation = moveNotation(state, move);
+      playSound(move.capture ? "capture" : "move");
+      queueMoveAnimation(move);
+      state = makeMove(state, move);
+      state.history.push(before);
+      state.log.push(notation);
+      selected = null;
+      legalForSelected = [];
+      updateGameOver();
+      renderAll();
+    }
+
+    function updateGameOver() {
+      const moves = getLegalMoves(state, state.turn);
+      state.gameOver = moves.length === 0;
+    }
+
+    function isAiTurn() {
+      if (activeSection === "puzzles") return false;
+      if (mode === "human-human") return false;
+      if (mode === "ai-ai") return true;
+      return state.turn !== currentHumanColor();
+    }
+
+    function scheduleAi() {
+      clearTimeout(aiTimer);
+      if (state.gameOver || paused || pendingPromotion || !isAiTurn()) return;
+      aiTimer = setTimeout(() => {
+        const depth = mode === "ai-ai" ? Math.min(Number(aiDepthEl.value), 2) : Number(aiDepthEl.value);
+        const move = chooseAiMove(state, depth, mode === "ai-ai" ? 360 : 760);
+        if (move) {
+          if (move.promotion) move.promotion = "Q";
+          playMove(move);
+        }
+      }, mode === "ai-ai" ? 420 : 680);
+    }
+
+    function getLegalMoves(pos, color) {
+      const moves = getPseudoMoves(pos, color);
+      return moves.filter(move => !inCheck(makeMove(pos, move, true), color));
+    }
+
+    function getPseudoMoves(pos, color) {
+      const moves = [];
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const piece = pos.board[r][c];
+          if (!piece || colorOf(piece) !== color) continue;
+          const type = typeOf(piece);
+          if (type === "P") pawnMoves(pos, r, c, moves);
+          if (type === "N") jumpMoves(pos, r, c, moves, [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]]);
+          if (type === "B") slideMoves(pos, r, c, moves, [[-1, -1], [-1, 1], [1, -1], [1, 1]]);
+          if (type === "R") slideMoves(pos, r, c, moves, [[-1, 0], [1, 0], [0, -1], [0, 1]]);
+          if (type === "Q") slideMoves(pos, r, c, moves, [[-1, -1], [-1, 1], [1, -1], [1, 1], [-1, 0], [1, 0], [0, -1], [0, 1]]);
+          if (type === "K") kingMoves(pos, r, c, moves);
+        }
+      }
+      return moves;
+    }
+
+    function addMove(pos, moves, from, to, extras = {}) {
+      if (!inBounds(to.r, to.c)) return;
+      const target = pos.board[to.r][to.c];
+      const moving = pos.board[from.r][from.c];
+      if (target && colorOf(target) === colorOf(moving)) return;
+      moves.push({ from, to, piece: moving, capture: target, ...extras });
+    }
+
+    function pawnMoves(pos, r, c, moves) {
+      const piece = pos.board[r][c];
+      const color = colorOf(piece);
+      const dir = color === "w" ? -1 : 1;
+      const start = color === "w" ? 6 : 1;
+      const promoRow = color === "w" ? 0 : 7;
+      const one = r + dir;
+      if (inBounds(one, c) && !pos.board[one][c]) {
+        addMove(pos, moves, { r, c }, { r: one, c }, one === promoRow ? { promotion: "Q" } : {});
+        const two = r + dir * 2;
+        if (r === start && !pos.board[two][c]) addMove(pos, moves, { r, c }, { r: two, c }, { doublePawn: true });
+      }
+      for (const dc of [-1, 1]) {
+        const tr = r + dir;
+        const tc = c + dc;
+        if (!inBounds(tr, tc)) continue;
+        const target = pos.board[tr][tc];
+        if (target && colorOf(target) !== color) {
+          addMove(pos, moves, { r, c }, { r: tr, c: tc }, tr === promoRow ? { promotion: "Q" } : {});
+        }
+        if (pos.enPassant && pos.enPassant.r === tr && pos.enPassant.c === tc) {
+          addMove(pos, moves, { r, c }, { r: tr, c: tc }, { enPassant: true, capture: pos.board[r][tc] });
+        }
+      }
+    }
+
+    function jumpMoves(pos, r, c, moves, deltas) {
+      for (const [dr, dc] of deltas) addMove(pos, moves, { r, c }, { r: r + dr, c: c + dc });
+    }
+
+    function slideMoves(pos, r, c, moves, dirs) {
+      for (const [dr, dc] of dirs) {
+        let tr = r + dr;
+        let tc = c + dc;
+        while (inBounds(tr, tc)) {
+          const target = pos.board[tr][tc];
+          if (!target) addMove(pos, moves, { r, c }, { r: tr, c: tc });
+          else {
+            if (colorOf(target) !== colorOf(pos.board[r][c])) addMove(pos, moves, { r, c }, { r: tr, c: tc });
+            break;
+          }
+          tr += dr;
+          tc += dc;
+        }
+      }
+    }
+
+    function kingMoves(pos, r, c, moves) {
+      jumpMoves(pos, r, c, moves, [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]);
+      const color = colorOf(pos.board[r][c]);
+      const home = color === "w" ? 7 : 0;
+      if (r !== home || c !== 4 || inCheck(pos, color)) return;
+      if (pos.castling[color + "K"] && !pos.board[home][5] && !pos.board[home][6] && !isAttacked(pos, home, 5, other(color)) && !isAttacked(pos, home, 6, other(color))) {
+        moves.push({ from: { r, c }, to: { r: home, c: 6 }, piece: pos.board[r][c], castle: "K" });
+      }
+      if (pos.castling[color + "Q"] && !pos.board[home][3] && !pos.board[home][2] && !pos.board[home][1] && !isAttacked(pos, home, 3, other(color)) && !isAttacked(pos, home, 2, other(color))) {
+        moves.push({ from: { r, c }, to: { r: home, c: 2 }, piece: pos.board[r][c], castle: "Q" });
+      }
+    }
+
+    function makeMove(pos, move, simulation = false) {
+      const next = clone(pos);
+      const piece = next.board[move.from.r][move.from.c];
+      const color = colorOf(piece);
+      const target = next.board[move.to.r][move.to.c];
+      next.board[move.from.r][move.from.c] = null;
+      next.board[move.to.r][move.to.c] = move.promotion ? color + move.promotion : piece;
+      next.enPassant = null;
+      next.lastMove = { from: move.from, to: move.to };
+
+      if (move.enPassant) {
+        const capturedR = color === "w" ? move.to.r + 1 : move.to.r - 1;
+        const captured = next.board[capturedR][move.to.c];
+        next.board[capturedR][move.to.c] = null;
+        if (!simulation && captured) next.captured[color].push(captured);
+      } else if (!simulation && target) {
+        next.captured[color].push(target);
+      }
+
+      if (move.doublePawn) {
+        next.enPassant = { r: (move.from.r + move.to.r) / 2, c: move.from.c };
+      }
+
+      if (move.castle === "K") {
+        next.board[move.to.r][5] = next.board[move.to.r][7];
+        next.board[move.to.r][7] = null;
+      }
+      if (move.castle === "Q") {
+        next.board[move.to.r][3] = next.board[move.to.r][0];
+        next.board[move.to.r][0] = null;
+      }
+
+      updateCastling(next, piece, move, target);
+      next.turn = other(pos.turn);
+      if (next.turn === "w") next.fullmove += 1;
+      next.halfmove = typeOf(piece) === "P" || target || move.enPassant ? 0 : next.halfmove + 1;
+      return next;
+    }
+
+    function updateCastling(pos, piece, move, target) {
+      const color = colorOf(piece);
+      const type = typeOf(piece);
+      if (type === "K") {
+        pos.castling[color + "K"] = false;
+        pos.castling[color + "Q"] = false;
+      }
+      if (type === "R") {
+        if (move.from.r === 7 && move.from.c === 0) pos.castling.wQ = false;
+        if (move.from.r === 7 && move.from.c === 7) pos.castling.wK = false;
+        if (move.from.r === 0 && move.from.c === 0) pos.castling.bQ = false;
+        if (move.from.r === 0 && move.from.c === 7) pos.castling.bK = false;
+      }
+      if (target && typeOf(target) === "R") {
+        if (move.to.r === 7 && move.to.c === 0) pos.castling.wQ = false;
+        if (move.to.r === 7 && move.to.c === 7) pos.castling.wK = false;
+        if (move.to.r === 0 && move.to.c === 0) pos.castling.bQ = false;
+        if (move.to.r === 0 && move.to.c === 7) pos.castling.bK = false;
+      }
+    }
+
+    function findKing(board, color) {
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          if (board[r][c] === color + "K") return { r, c };
+        }
+      }
+      return null;
+    }
+
+    function inCheck(pos, color) {
+      const king = findKing(pos.board, color);
+      return king ? isAttacked(pos, king.r, king.c, other(color)) : false;
+    }
+
+    function isAttacked(pos, r, c, byColor) {
+      const pawnDir = byColor === "w" ? -1 : 1;
+      for (const dc of [-1, 1]) {
+        const pr = r - pawnDir;
+        const pc = c - dc;
+        if (inBounds(pr, pc) && pos.board[pr][pc] === byColor + "P") return true;
+      }
+      for (const [dr, dc] of [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]]) {
+        if (inBounds(r + dr, c + dc) && pos.board[r + dr][c + dc] === byColor + "N") return true;
+      }
+      if (rayAttacked(pos, r, c, byColor, [[-1, -1], [-1, 1], [1, -1], [1, 1]], ["B", "Q"])) return true;
+      if (rayAttacked(pos, r, c, byColor, [[-1, 0], [1, 0], [0, -1], [0, 1]], ["R", "Q"])) return true;
+      for (const [dr, dc] of [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]) {
+        if (inBounds(r + dr, c + dc) && pos.board[r + dr][c + dc] === byColor + "K") return true;
+      }
+      return false;
+    }
+
+    function rayAttacked(pos, r, c, byColor, dirs, attackers) {
+      for (const [dr, dc] of dirs) {
+        let tr = r + dr;
+        let tc = c + dc;
+        while (inBounds(tr, tc)) {
+          const piece = pos.board[tr][tc];
+          if (piece) return colorOf(piece) === byColor && attackers.includes(typeOf(piece));
+          tr += dr;
+          tc += dc;
+        }
+      }
+      return false;
+    }
+
+    function moveNotation(pos, move) {
+      if (move.castle === "K") return "O-O";
+      if (move.castle === "Q") return "O-O-O";
+      const piece = pos.board[move.from.r][move.from.c];
+      const type = typeOf(piece);
+      const prefix = type === "P" ? "" : names[type];
+      const capture = move.capture || move.enPassant ? "x" : "-";
+      const promo = move.promotion ? `=${names[move.promotion]}` : "";
+      const next = makeMove(pos, move, true);
+      const suffix = inCheck(next, next.turn) ? (getLegalMoves(next, next.turn).length ? "+" : "#") : "";
+      return `${prefix}${squareName(move.from.r, move.from.c)}${capture}${squareName(move.to.r, move.to.c)}${promo}${suffix}`;
+    }
+
+    function evaluate(pos) {
+      let score = 0;
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const piece = pos.board[r][c];
+          if (!piece) continue;
+          const sign = colorOf(piece) === "w" ? 1 : -1;
+          const center = 14 - (Math.abs(3.5 - r) + Math.abs(3.5 - c)) * 4;
+          score += sign * (value[typeOf(piece)] + center);
+        }
+      }
+      return score;
+    }
+
+    function chooseAiMove(pos, depth, maxMs = 700) {
+      const moves = getLegalMoves(pos, pos.turn);
+      if (!moves.length) return null;
+      let best = null;
+      let bestScore = pos.turn === "w" ? -Infinity : Infinity;
+      const deadline = Date.now() + maxMs;
+      const topLimit = depth >= 3 ? 12 : 18;
+      const ordered = moves.sort((a, b) => moveScore(pos, b) - moveScore(pos, a)).slice(0, topLimit);
+      for (const move of ordered) {
+        if (Date.now() > deadline) break;
+        const score = minimax(makeMove(pos, move, true), depth - 1, -Infinity, Infinity, deadline);
+        if ((pos.turn === "w" && score > bestScore) || (pos.turn === "b" && score < bestScore)) {
+          bestScore = score;
+          best = move;
+        }
+      }
+      return best || ordered[0] || moves[0];
+    }
+
+    function minimax(pos, depth, alpha, beta, deadline) {
+      if (Date.now() > deadline) return evaluate(pos);
+      const moves = getLegalMoves(pos, pos.turn);
+      if (depth === 0 || moves.length === 0) {
+        if (!moves.length && inCheck(pos, pos.turn)) return pos.turn === "w" ? -99999 : 99999;
+        return evaluate(pos);
+      }
+      const ordered = moves.sort((a, b) => moveScore(pos, b) - moveScore(pos, a)).slice(0, depth >= 2 ? 14 : 18);
+      if (pos.turn === "w") {
+        let best = -Infinity;
+        for (const move of ordered) {
+          if (Date.now() > deadline) break;
+          best = Math.max(best, minimax(makeMove(pos, move, true), depth - 1, alpha, beta, deadline));
+          alpha = Math.max(alpha, best);
+          if (beta <= alpha) break;
+        }
+        return best === -Infinity ? evaluate(pos) : best;
+      }
+      let best = Infinity;
+      for (const move of ordered) {
+        if (Date.now() > deadline) break;
+        best = Math.min(best, minimax(makeMove(pos, move, true), depth - 1, alpha, beta, deadline));
+        beta = Math.min(beta, best);
+        if (beta <= alpha) break;
+      }
+      return best === Infinity ? evaluate(pos) : best;
+    }
+
+    function moveScore(pos, move) {
+      let score = 0;
+      if (move.capture) score += value[typeOf(move.capture)] - value[typeOf(move.piece)] / 10;
+      if (move.promotion) score += value[move.promotion];
+      const next = makeMove(pos, move, true);
+      if (inCheck(next, next.turn)) score += 45;
+      return score + Math.random() * 8;
+    }
+
+    document.querySelector("#modeButtons").addEventListener("click", event => {
+      const btn = event.target.closest("button[data-mode]");
+      if (!btn) return;
+      mode = btn.dataset.mode;
+      document.querySelectorAll("#modeButtons button").forEach(b => b.classList.toggle("active", b === btn));
+      paused = false;
+      document.querySelector("#pauseAi").textContent = "暂停电脑";
+      prepareHumanColor();
+      state = newState();
+      selected = null;
+      legalForSelected = [];
+      savedPlayState = null;
+      updateControls();
+      renderAll();
+    });
+
+    appNavEl.addEventListener("click", event => {
+      const btn = event.target.closest("button[data-section]");
+      if (!btn) return;
+      const nextSection = btn.dataset.section;
+      if (nextSection === activeSection) return;
+
+      if (activeSection === "play") savedPlayState = clone(state);
+      activeSection = nextSection;
+      appNavEl.querySelectorAll("button").forEach(item => item.classList.toggle("active", item === btn));
+      playPanelEl.classList.toggle("hidden", activeSection !== "play");
+      puzzlePanelEl.classList.toggle("hidden", activeSection !== "puzzles");
+      sectionSubtitleEl.textContent = activeSection === "play"
+        ? "选择对手，开始一盘快速国际象棋。"
+        : "解决一步战术题，训练将杀和赢子直觉。";
+
+      if (activeSection === "play") {
+        state = savedPlayState || newState();
+        puzzleResultEl.textContent = "";
+      } else {
+        loadPuzzle(puzzleIndex);
+      }
+      selected = null;
+      legalForSelected = [];
+      updateControls();
+      renderAll();
+    });
+
+    document.querySelector("#newGame").addEventListener("click", () => {
+      prepareHumanColor();
+      state = newState();
+      savedPlayState = null;
+      selected = null;
+      legalForSelected = [];
+      pendingPromotion = null;
+      paused = false;
+      promotionEl.classList.remove("show");
+      document.querySelector("#pauseAi").textContent = "暂停电脑";
+      renderAll();
+    });
+
+    document.querySelector("#flipBoard").addEventListener("click", () => {
+      flipped = !flipped;
+      renderAll();
+    });
+
+    document.querySelector("#undoMove").addEventListener("click", () => {
+      if (!state.history.length) return;
+      state = state.history.pop();
+      if (mode === "human-ai" && state.history.length && isAiTurn()) state = state.history.pop();
+      selected = null;
+      legalForSelected = [];
+      renderAll();
+    });
+
+    document.querySelector("#pauseAi").addEventListener("click", event => {
+      paused = !paused;
+      event.currentTarget.textContent = paused ? "继续电脑" : "暂停电脑";
+      renderAll();
+    });
+
+    function updateControls() {
+      const hasComputer = activeSection === "play" && mode !== "human-human";
+      humanColorEl.disabled = mode !== "human-ai";
+      aiDepthEl.disabled = !hasComputer;
+      document.querySelector("#pauseAi").disabled = !hasComputer;
+    }
+
+    function prepareHumanColor() {
+      if (mode !== "human-ai") {
+        humanColorResolved = "w";
+        flipped = false;
+        return;
+      }
+      humanColorResolved = humanColorEl.value === "random"
+        ? (Math.random() < .5 ? "w" : "b")
+        : humanColorEl.value;
+      flipped = humanColorResolved === "b";
+    }
+
+    function currentHumanColor() {
+      return humanColorEl.value === "random" ? humanColorResolved : humanColorEl.value;
+    }
+
+    function rgbToHex(value) {
+      if (!value) return "#000000";
+      if (value.startsWith("#")) return value;
+      const match = value.match(/\d+(\.\d+)?/g);
+      if (!match || match.length < 3) return "#000000";
+      return "#" + match.slice(0, 3).map(n => Number(n).toString(16).padStart(2, "0")).join("");
+    }
+
+    function hexToRgbParts(hex) {
+      const normalized = hex.replace("#", "");
+      return [
+        parseInt(normalized.slice(0, 2), 16),
+        parseInt(normalized.slice(2, 4), 16),
+        parseInt(normalized.slice(4, 6), 16)
+      ];
+    }
+
+    function syncColorInputsFromComputed() {
+      const style = getComputedStyle(document.body);
+      lightColorEl.value = rgbToHex(style.getPropertyValue("--light").trim());
+      darkColorEl.value = rgbToHex(style.getPropertyValue("--dark").trim());
+      whitePieceColorEl.value = rgbToHex(style.getPropertyValue("--white-piece").trim());
+      blackPieceColorEl.value = rgbToHex(style.getPropertyValue("--black-piece").trim());
+    }
+
+    function applyCustomColors() {
+      customColorsActive = true;
+      const [r, g, b] = hexToRgbParts(darkColorEl.value);
+      document.body.style.setProperty("--light", lightColorEl.value);
+      document.body.style.setProperty("--dark", darkColorEl.value);
+      document.body.style.setProperty("--light-texture", "linear-gradient(135deg, rgba(255, 255, 255, .08), transparent 52%)");
+      document.body.style.setProperty("--dark-texture", "linear-gradient(135deg, rgba(255, 255, 255, .05), rgba(0, 0, 0, .04))");
+      document.body.style.setProperty("--white-piece", whitePieceColorEl.value);
+      document.body.style.setProperty("--black-piece", blackPieceColorEl.value);
+      document.body.style.setProperty("--gold", darkColorEl.value);
+      document.body.style.setProperty("--green", darkColorEl.value);
+      document.body.style.setProperty("--piece-glow", `rgba(${r}, ${g}, ${b}, .28)`);
+    }
+
+    function resetCustomColors() {
+      customColorsActive = false;
+      ["--light", "--dark", "--light-texture", "--dark-texture", "--white-piece", "--black-piece", "--gold", "--green", "--piece-glow"].forEach(name => {
+        document.body.style.removeProperty(name);
+      });
+      requestAnimationFrame(syncColorInputsFromComputed);
+    }
+
+    humanColorEl.addEventListener("change", () => {
+      prepareHumanColor();
+      state = newState();
+      savedPlayState = null;
+      selected = null;
+      legalForSelected = [];
+      renderAll();
+    });
+    aiDepthEl.addEventListener("change", renderAll);
+    boardThemeEl.addEventListener("change", () => {
+      document.body.dataset.boardTheme = boardThemeEl.value;
+      resetCustomColors();
+    });
+    pieceStyleEl.addEventListener("change", () => {
+      document.body.dataset.pieceStyle = pieceStyleEl.value;
+      if (!customColorsActive) requestAnimationFrame(syncColorInputsFromComputed);
+    });
+    [lightColorEl, darkColorEl, whitePieceColorEl, blackPieceColorEl].forEach(input => {
+      input.addEventListener("input", applyCustomColors);
+    });
+    resetColorsEl.addEventListener("click", resetCustomColors);
+
+    document.querySelector("#nextPuzzle").addEventListener("click", () => {
+      loadPuzzle(puzzleIndex + 1);
+    });
+
+    document.querySelector("#resetPuzzle").addEventListener("click", () => {
+      loadPuzzle(puzzleIndex);
+    });
+
+    syncColorInputsFromComputed();
+    prepareHumanColor();
+    state = newState();
+    updateControls();
+    renderAll();
+  </script>
+</body>
+</html>

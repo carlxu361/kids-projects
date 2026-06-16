@@ -1,0 +1,1097 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>王牌牌室 - 扑克牌游戏大全</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg-a: #0d5a43;
+      --bg-b: #062a22;
+      --ink: #fff7df;
+      --muted: #c5d7cd;
+      --gold: #efc35f;
+      --red: #c93632;
+      --black: #20252c;
+      --panel: rgba(8, 28, 24, .86);
+      --line: rgba(255, 255, 255, .16);
+      --card: #fff9ee;
+      --card-line: #dfd2bd;
+      --back-a: #b8273d;
+      --back-b: #681927;
+      --radius: 8px;
+      --shadow: rgba(0, 0, 0, .32);
+    }
+
+    * { box-sizing: border-box; }
+    html { background: #062a22; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      font-family: "Avenir Next", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background:
+        radial-gradient(circle at 18% 4%, rgba(239, 195, 95, .18), transparent 25rem),
+        radial-gradient(circle at 88% 16%, rgba(90, 188, 151, .2), transparent 23rem),
+        linear-gradient(140deg, var(--bg-a), var(--bg-b) 65%, #041813);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .16;
+      background-image:
+        repeating-linear-gradient(38deg, transparent 0 16px, rgba(255,255,255,.16) 17px, transparent 18px 35px),
+        repeating-linear-gradient(128deg, transparent 0 18px, rgba(0,0,0,.2) 19px, transparent 20px 38px);
+      mix-blend-mode: soft-light;
+    }
+
+    body[data-theme="night"] {
+      --bg-a: #19233d;
+      --bg-b: #080d18;
+      --panel: rgba(12, 18, 32, .88);
+      --gold: #9ed0ff;
+      --muted: #c5d0df;
+    }
+
+    body[data-theme="wood"] {
+      --bg-a: #794726;
+      --bg-b: #28140b;
+      --panel: rgba(44, 22, 12, .88);
+      --gold: #ffd07a;
+      --muted: #ead2b5;
+    }
+
+    body[data-theme="violet"] {
+      --bg-a: #3d315c;
+      --bg-b: #171126;
+      --panel: rgba(28, 20, 45, .88);
+      --gold: #f5c7ff;
+      --muted: #dbcce6;
+    }
+
+    body[data-back="blue"] { --back-a: #2469c9; --back-b: #102d63; }
+    body[data-back="green"] { --back-a: #1f8b5d; --back-b: #0e422e; }
+    body[data-back="gold"] { --back-a: #d8a43d; --back-b: #6d4116; }
+
+    main {
+      position: relative;
+      width: min(1240px, calc(100% - 24px));
+      margin: 0 auto;
+      padding: 22px 0 40px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: 1fr minmax(280px, 390px);
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--gold);
+      font-family: Georgia, "Songti SC", serif;
+      font-size: clamp(34px, 7vw, 76px);
+      line-height: .92;
+      text-shadow: 0 5px 0 rgba(0,0,0,.22);
+    }
+
+    header p, p {
+      margin: 10px 0 0;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .customizer {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      background: rgba(0,0,0,.22);
+      box-shadow: 0 18px 46px var(--shadow);
+    }
+
+    .customizer h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+      color: var(--ink);
+    }
+
+    .control-row {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 8px;
+      align-items: center;
+      margin-top: 9px;
+    }
+
+    .control-row span {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .seg {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 5px;
+    }
+
+    .seg[data-options="3"] { grid-template-columns: repeat(3, 1fr); }
+
+    .choice, .tab, button {
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--ink);
+      background: rgba(255,255,255,.08);
+      font: inherit;
+      font-weight: 850;
+      cursor: pointer;
+      transition: transform .15s ease, background-color .15s ease, border-color .15s ease, filter .15s ease;
+    }
+
+    .choice:hover, .tab:hover, button:hover { transform: translateY(-2px); }
+    .choice.active, .tab.active, button.primary {
+      color: #21190b;
+      background: var(--gold);
+      border-color: var(--gold);
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(112px, 1fr));
+      gap: 8px;
+      margin: 18px 0;
+    }
+
+    .table {
+      display: none;
+      min-height: 640px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.06), transparent 22%),
+        var(--panel);
+      box-shadow: 0 24px 70px var(--shadow), inset 0 0 0 10px rgba(255,255,255,.035);
+      overflow: hidden;
+    }
+
+    .table.active { display: grid; grid-template-columns: 310px 1fr; }
+
+    aside {
+      padding: 22px;
+      border-right: 1px solid var(--line);
+      background: rgba(0,0,0,.18);
+    }
+
+    .play-area { padding: 22px; }
+
+    h2 {
+      margin: 0 0 10px;
+      color: var(--gold);
+      font-family: Georgia, "Songti SC", serif;
+      font-size: 31px;
+    }
+
+    h3 { margin: 18px 0 10px; color: var(--ink); }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin: 18px 0;
+    }
+
+    .stat {
+      min-height: 70px;
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.07);
+    }
+
+    .stat b {
+      display: block;
+      color: var(--gold);
+      font-size: 23px;
+      line-height: 1.2;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    button {
+      padding: 8px 13px;
+      color: #21190b;
+      background: var(--gold);
+      border-color: transparent;
+    }
+
+    button.secondary {
+      color: var(--ink);
+      background: rgba(255,255,255,.09);
+      border-color: var(--line);
+    }
+
+    button.danger {
+      color: #fff;
+      background: var(--red);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: .45;
+      transform: none;
+    }
+
+    .message {
+      min-height: 48px;
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-left: 4px solid var(--gold);
+      border-radius: var(--radius);
+      color: var(--ink);
+      background: rgba(0,0,0,.22);
+      line-height: 1.55;
+    }
+
+    .hand, .board {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .card {
+      width: 76px;
+      height: 108px;
+      position: relative;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--card-line);
+      border-radius: 10px;
+      color: var(--black);
+      background:
+        linear-gradient(140deg, rgba(255,255,255,.96), rgba(255,245,226,.94)),
+        var(--card);
+      box-shadow: 0 11px 18px rgba(0,0,0,.22);
+      user-select: none;
+    }
+
+    .card.red { color: var(--red); }
+    .card.clickable { cursor: pointer; }
+    .card.clickable:hover { transform: translateY(-5px); }
+    .card.selected { outline: 3px solid var(--gold); transform: translateY(-7px); }
+    .card.removed { visibility: hidden; pointer-events: none; }
+    .card.locked { opacity: .42; filter: grayscale(.7); }
+    .card.good { outline: 3px solid #78e0a1; }
+    .card.bad { outline: 3px solid var(--red); }
+
+    .card.back {
+      color: transparent;
+      border-color: rgba(255,255,255,.42);
+      background:
+        radial-gradient(circle at center, rgba(255,255,255,.22), transparent 31%),
+        repeating-linear-gradient(45deg, var(--back-a) 0 8px, var(--back-b) 8px 16px);
+    }
+
+    body[data-face="jumbo"] .card.back {
+      background:
+        radial-gradient(circle at center, rgba(255,255,255,.22), transparent 31%),
+        repeating-linear-gradient(45deg, var(--back-a) 0 8px, var(--back-b) 8px 16px);
+    }
+
+    body[data-back="fan"] .card.back {
+      background:
+        conic-gradient(from 22deg, rgba(255,255,255,.2), transparent 18%, rgba(255,255,255,.18) 20%, transparent 38%),
+        linear-gradient(135deg, var(--back-a), var(--back-b));
+    }
+
+    .corner {
+      position: absolute;
+      top: 7px;
+      left: 8px;
+      display: grid;
+      line-height: 1;
+      font-size: 16px;
+      font-weight: 950;
+    }
+
+    .pip {
+      font-family: Georgia, serif;
+      font-size: 37px;
+    }
+
+    body[data-face="jumbo"] .card {
+      border-width: 2px;
+      background: #fffdf7;
+    }
+
+    body[data-face="jumbo"] .card.back,
+    body[data-face="minimal"] .card.back {
+      background:
+        radial-gradient(circle at center, rgba(255,255,255,.22), transparent 31%),
+        repeating-linear-gradient(45deg, var(--back-a) 0 8px, var(--back-b) 8px 16px);
+    }
+
+    body[data-face="jumbo"] .pip { font-size: 49px; }
+    body[data-face="minimal"] .pip { display: none; }
+    body[data-face="minimal"] .card.back .corner { display: none; }
+    body[data-face="minimal"] .corner {
+      inset: 50% auto auto 50%;
+      transform: translate(-50%, -50%);
+      font-size: 28px;
+      text-align: center;
+    }
+
+    .small-card {
+      width: 58px;
+      height: 82px;
+      border-radius: 8px;
+    }
+
+    .small-card .corner { font-size: 12px; }
+    .small-card .pip { font-size: 25px; }
+
+    .memory-board, .ten-board, .target-board {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(58px, 90px));
+      gap: 10px;
+      align-content: start;
+    }
+
+    .memory-board .card, .ten-board .card, .target-board .card {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 76 / 108;
+    }
+
+    .target-board { grid-template-columns: repeat(4, minmax(60px, 100px)); }
+
+    #targetCard .card {
+      width: 118px;
+      height: 168px;
+    }
+
+    #targetCard .corner { font-size: 22px; }
+    #targetCard .pip { font-size: 58px; }
+
+    .pair-board {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(62px, 96px));
+      gap: 10px;
+      align-content: start;
+    }
+
+    .pair-board .card {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 76 / 108;
+    }
+
+    .pyramid {
+      display: grid;
+      gap: 8px;
+      justify-items: center;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+
+    .pyramid-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      min-width: max-content;
+    }
+
+    .run-area {
+      display: grid;
+      gap: 18px;
+    }
+
+    .highlow-stage {
+      display: grid;
+      grid-template-columns: minmax(120px, 180px) 1fr;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .highlow-stage .card {
+      width: min(180px, 44vw);
+      height: auto;
+      aspect-ratio: 76 / 108;
+    }
+
+    .highlow-stage .pip { font-size: clamp(54px, 10vw, 82px); }
+    .highlow-stage .corner { font-size: clamp(22px, 4vw, 32px); }
+
+    .run-track {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(54px, 76px));
+      gap: 9px;
+      align-items: center;
+    }
+
+    .slot {
+      width: 100%;
+      aspect-ratio: 76 / 108;
+      display: grid;
+      place-items: center;
+      border: 1px dashed rgba(255,255,255,.28);
+      border-radius: 10px;
+      color: var(--muted);
+      background: rgba(0,0,0,.15);
+      font-weight: 900;
+    }
+
+    .slot .card {
+      width: 100%;
+      height: 100%;
+    }
+
+    .target-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .badge {
+      display: inline-grid;
+      place-items: center;
+      min-height: 36px;
+      padding: 0 12px;
+      border-radius: 999px;
+      color: #21190b;
+      background: var(--gold);
+      font-weight: 950;
+    }
+
+    footer {
+      margin-top: 14px;
+      color: rgba(255,255,255,.62);
+      text-align: center;
+      font-size: 13px;
+    }
+
+    @media (max-width: 880px) {
+      header { grid-template-columns: 1fr; }
+      .tabs { grid-template-columns: repeat(2, 1fr); }
+      .table.active { grid-template-columns: 1fr; }
+      aside { border-right: 0; border-bottom: 1px solid var(--line); }
+    }
+
+    @media (max-width: 540px) {
+      main { width: min(100% - 16px, 1240px); }
+      .tabs { grid-template-columns: 1fr; }
+      aside, .play-area { padding: 16px; }
+      .control-row { grid-template-columns: 1fr; }
+      .seg { grid-template-columns: repeat(2, 1fr); }
+      .seg[data-options="3"] { grid-template-columns: 1fr; }
+      button { width: 100%; }
+      .memory-board, .ten-board, .target-board, .pair-board { grid-template-columns: repeat(4, 1fr); gap: 7px; }
+      .run-track { grid-template-columns: repeat(4, 1fr); }
+      .highlow-stage { grid-template-columns: 1fr; }
+      .card { width: 58px; height: 82px; border-radius: 8px; }
+      .corner { font-size: 12px; }
+      .pip { font-size: 25px; }
+    }
+  </style>
+</head>
+<body data-theme="felt" data-back="red" data-face="classic">
+  <script>
+    (() => {
+      try {
+        const saved = JSON.parse(localStorage.getItem("pokerRoomStyle") || "{}");
+        ["theme", "back", "face"].forEach((kind) => {
+          if (saved[kind]) document.body.dataset[kind] = saved[kind];
+        });
+      } catch (error) {
+        localStorage.removeItem("pokerRoomStyle");
+      }
+    })();
+  </script>
+  <main>
+    <header>
+      <div>
+        <h1>王牌牌室</h1>
+        <p>保留好玩的记忆翻牌，换上更简单直接的找对子、找目标、凑十和猜高低。牌背、牌面、背景都能即时切换。</p>
+      </div>
+      <section class="customizer" aria-label="个性化设置">
+        <h2>个性化牌桌</h2>
+        <div class="control-row">
+          <span>背景</span>
+          <div class="seg">
+            <button class="choice active" data-kind="theme" data-value="felt">绿毡</button>
+            <button class="choice" data-kind="theme" data-value="night">夜场</button>
+            <button class="choice" data-kind="theme" data-value="wood">木桌</button>
+            <button class="choice" data-kind="theme" data-value="violet">紫雾</button>
+          </div>
+        </div>
+        <div class="control-row">
+          <span>牌背</span>
+          <div class="seg">
+            <button class="choice active" data-kind="back" data-value="red">酒红</button>
+            <button class="choice" data-kind="back" data-value="blue">蓝纹</button>
+            <button class="choice" data-kind="back" data-value="green">松绿</button>
+            <button class="choice" data-kind="back" data-value="gold">金棕</button>
+          </div>
+        </div>
+        <div class="control-row">
+          <span>牌面</span>
+          <div class="seg" data-options="3">
+            <button class="choice active" data-kind="face" data-value="classic">经典</button>
+            <button class="choice" data-kind="face" data-value="jumbo">大字</button>
+            <button class="choice" data-kind="face" data-value="minimal">极简</button>
+          </div>
+        </div>
+      </section>
+    </header>
+
+    <nav class="tabs" aria-label="游戏选择">
+      <button class="tab active" data-game="memory">记忆翻牌</button>
+      <button class="tab" data-game="pyramid">找对子</button>
+      <button class="tab" data-game="target">速找目标</button>
+      <button class="tab" data-game="ten">十点消消乐</button>
+      <button class="tab" data-game="run">猜高低</button>
+    </nav>
+
+    <section class="table active" id="memory">
+      <aside>
+        <h2>记忆翻牌</h2>
+        <p>翻开两张相同点数的牌即可配对。越少步完成越漂亮。</p>
+        <div class="stat-grid">
+          <div class="stat"><b id="memMoves">0</b><span>步数</span></div>
+          <div class="stat"><b id="memPairs">0/8</b><span>配对</span></div>
+        </div>
+        <div class="actions"><button id="memReset">重新洗牌</button></div>
+        <div class="message" id="memMsg">先翻两张，记住位置。</div>
+      </aside>
+      <div class="play-area"><div class="memory-board" id="memoryBoard"></div></div>
+    </section>
+
+    <section class="table" id="pyramid">
+      <aside>
+        <h2>找对子</h2>
+        <p>所有牌都翻开。点两张同点数的牌就能消除，点错不会惩罚。</p>
+        <div class="stat-grid">
+          <div class="stat"><b id="pyrLeft">12</b><span>剩余</span></div>
+          <div class="stat"><b id="pyrStock">0</b><span>步数</span></div>
+        </div>
+        <div class="actions">
+          <button id="pyrDraw">提示</button>
+          <button id="pyrReset" class="secondary">重开</button>
+        </div>
+        <div class="message" id="pyrMsg">找出所有对子。</div>
+      </aside>
+      <div class="play-area">
+        <div class="pair-board" id="pyramidBoard"></div>
+        <h3>已消除</h3>
+        <div class="hand" id="pyramidWaste"></div>
+      </div>
+    </section>
+
+    <section class="table" id="target">
+      <aside>
+        <h2>速找目标</h2>
+        <p>看清目标牌，在 30 秒内从牌阵里点出来。点错会扣时间。</p>
+        <div class="stat-grid">
+          <div class="stat"><b id="targetScore">0</b><span>得分</span></div>
+          <div class="stat"><b id="targetTime">30</b><span>秒</span></div>
+        </div>
+        <div class="actions">
+          <button id="targetStart">开始</button>
+          <button id="targetReset" class="secondary">重置</button>
+        </div>
+        <div class="message" id="targetMsg">开始后会出现目标牌。</div>
+      </aside>
+      <div class="play-area">
+        <div class="target-strip"><span class="badge">目标</span><div id="targetCard"></div></div>
+        <div class="target-board" id="targetBoard"></div>
+      </div>
+    </section>
+
+    <section class="table" id="ten">
+      <aside>
+        <h2>十点消消乐</h2>
+        <p>只发 A 到 9。每局都按可解的配对生成，选两张合计 10 的牌消掉。</p>
+        <div class="stat-grid">
+          <div class="stat"><b id="tenCleared">0</b><span>已消除</span></div>
+          <div class="stat"><b id="tenLeft">20</b><span>剩余</span></div>
+        </div>
+        <div class="actions"><button id="tenReset">重新发牌</button></div>
+        <div class="message" id="tenMsg">找一对合计 10 的牌。</div>
+      </aside>
+      <div class="play-area"><div class="ten-board" id="tenBoard"></div></div>
+    </section>
+
+    <section class="table" id="run">
+      <aside>
+        <h2>猜高低</h2>
+        <p>看当前牌，猜下一张更大还是更小。A 最小，K 最大，相同算猜错。</p>
+        <div class="stat-grid">
+          <div class="stat"><b id="runNeed">0</b><span>连胜</span></div>
+          <div class="stat"><b id="runStock">51</b><span>剩余</span></div>
+        </div>
+        <div class="actions">
+          <button id="runDraw">猜更大</button>
+          <button id="runLower" class="danger">猜更小</button>
+          <button id="runReset" class="secondary">重开</button>
+        </div>
+        <div class="message" id="runMsg">先看当前牌，再猜下一张。</div>
+      </aside>
+      <div class="play-area run-area">
+        <div class="highlow-stage">
+          <div id="runTrack"></div>
+          <div>
+            <span class="badge" id="runSuit">当前牌</span>
+            <p>猜对继续，猜错本轮结束。玩法很直白，适合随手点两把。</p>
+          </div>
+        </div>
+        <h3>最近翻出的牌</h3>
+        <div class="hand" id="runMarket"></div>
+      </div>
+    </section>
+
+    <footer>本地单文件游戏，可离线打开。</footer>
+  </main>
+
+  <script>
+    const suits = [
+      { symbol: "♠", color: "black" },
+      { symbol: "♥", color: "red" },
+      { symbol: "♦", color: "red" },
+      { symbol: "♣", color: "black" }
+    ];
+    const ranks = [
+      { label: "A", value: 1 },
+      { label: "2", value: 2 },
+      { label: "3", value: 3 },
+      { label: "4", value: 4 },
+      { label: "5", value: 5 },
+      { label: "6", value: 6 },
+      { label: "7", value: 7 },
+      { label: "8", value: 8 },
+      { label: "9", value: 9 },
+      { label: "10", value: 10 },
+      { label: "J", value: 11 },
+      { label: "Q", value: 12 },
+      { label: "K", value: 13 }
+    ];
+    const $ = (selector) => document.querySelector(selector);
+
+    function shuffle(cards) {
+      const deck = [...cards];
+      for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+      return deck;
+    }
+
+    function makeDeck() {
+      return shuffle(suits.flatMap((suit) => ranks.map((rank) => ({
+        ...rank,
+        suit: suit.symbol,
+        color: suit.color,
+        id: `${rank.label}${suit.symbol}`
+      }))));
+    }
+
+    function cardEl(card, options = {}) {
+      const div = document.createElement("div");
+      div.className = `card ${card.color === "red" ? "red" : ""} ${options.small ? "small-card" : ""}`;
+      if (options.clickable) div.classList.add("clickable");
+      div.innerHTML = `<span class="corner"><span>${card.label}</span><span>${card.suit}</span></span><span class="pip">${card.suit}</span>`;
+      return div;
+    }
+
+    function backCard(options = {}) {
+      const div = document.createElement("div");
+      div.className = `card back ${options.small ? "small-card" : ""}`;
+      return div;
+    }
+
+    function tenValue(card) {
+      return Math.min(card.value, 10);
+    }
+
+    document.querySelectorAll(".tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach((button) => button.classList.remove("active"));
+        document.querySelectorAll(".table").forEach((section) => section.classList.remove("active"));
+        tab.classList.add("active");
+        $(`#${tab.dataset.game}`).classList.add("active");
+      });
+    });
+
+    document.querySelectorAll(".choice").forEach((button) => {
+      button.addEventListener("click", () => {
+        const kind = button.dataset.kind;
+        document.body.dataset[kind] = button.dataset.value;
+        localStorage.setItem("pokerRoomStyle", JSON.stringify({
+          theme: document.body.dataset.theme,
+          back: document.body.dataset.back,
+          face: document.body.dataset.face
+        }));
+        document.querySelectorAll(`.choice[data-kind="${kind}"]`).forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+      });
+    });
+
+    document.querySelectorAll(".choice").forEach((button) => {
+      button.classList.toggle("active", document.body.dataset[button.dataset.kind] === button.dataset.value);
+    });
+
+    const memory = { cards: [], open: [], matched: 0, moves: 0, locked: false };
+
+    function memoryReset() {
+      const pairRanks = shuffle(ranks).slice(0, 8);
+      memory.cards = shuffle(pairRanks.flatMap((rank, index) => {
+        const a = suits[index % suits.length];
+        const b = suits[(index + 1) % suits.length];
+        return [
+          { ...rank, suit: a.symbol, color: a.color, pair: rank.label, open: false, matched: false },
+          { ...rank, suit: b.symbol, color: b.color, pair: rank.label, open: false, matched: false }
+        ];
+      }));
+      memory.open = [];
+      memory.matched = 0;
+      memory.moves = 0;
+      memory.locked = false;
+      $("#memMsg").textContent = "先翻两张，记住位置。";
+      memoryRender();
+    }
+
+    function memoryRender() {
+      $("#memMoves").textContent = memory.moves;
+      $("#memPairs").textContent = `${memory.matched}/8`;
+      const board = $("#memoryBoard");
+      board.innerHTML = "";
+      memory.cards.forEach((card, index) => {
+        const el = card.open || card.matched ? cardEl(card) : backCard();
+        if (card.matched) el.classList.add("good");
+        el.addEventListener("click", () => memoryFlip(index));
+        board.appendChild(el);
+      });
+    }
+
+    function memoryFlip(index) {
+      const card = memory.cards[index];
+      if (memory.locked || card.open || card.matched) return;
+      card.open = true;
+      memory.open.push(index);
+      if (memory.open.length === 2) {
+        memory.moves++;
+        const [a, b] = memory.open;
+        if (memory.cards[a].pair === memory.cards[b].pair) {
+          memory.cards[a].matched = true;
+          memory.cards[b].matched = true;
+          memory.open = [];
+          memory.matched++;
+          $("#memMsg").textContent = memory.matched === 8 ? `全部完成，共 ${memory.moves} 步。` : "配对成功，继续。";
+        } else {
+          memory.locked = true;
+          $("#memMsg").textContent = "不是一对，记住它们。";
+          setTimeout(() => {
+            memory.cards[a].open = false;
+            memory.cards[b].open = false;
+            memory.open = [];
+            memory.locked = false;
+            memoryRender();
+          }, 650);
+        }
+      }
+      memoryRender();
+    }
+
+    $("#memReset").addEventListener("click", memoryReset);
+
+    const pyramid = { cards: [], selected: [], moves: 0, removed: [] };
+
+    function pyramidReset() {
+      const chosenRanks = shuffle(ranks).slice(0, 6);
+      pyramid.cards = shuffle(chosenRanks.flatMap((rank, index) => {
+        const first = suits[index % suits.length];
+        const second = suits[(index + 2) % suits.length];
+        return [
+          { ...rank, suit: first.symbol, color: first.color, pair: rank.label, removed: false },
+          { ...rank, suit: second.symbol, color: second.color, pair: rank.label, removed: false }
+        ];
+      }));
+      pyramid.selected = [];
+      pyramid.moves = 0;
+      pyramid.removed = [];
+      $("#pyrMsg").textContent = "找出所有对子。";
+      pyramidRender();
+    }
+
+    function pyramidPick(index) {
+      const item = pyramid.cards[index];
+      if (item.removed) return;
+      if (pyramid.selected.includes(index)) {
+        pyramid.selected = pyramid.selected.filter((i) => i !== index);
+      } else {
+        pyramid.selected.push(index);
+      }
+      if (pyramid.selected.length === 2) {
+        pyramid.moves++;
+        const [a, b] = pyramid.selected;
+        if (pyramid.cards[a].pair === pyramid.cards[b].pair) {
+          pyramid.cards[a].removed = true;
+          pyramid.cards[b].removed = true;
+          pyramid.removed.push(pyramid.cards[a], pyramid.cards[b]);
+          $("#pyrMsg").textContent = "找到一对。";
+        } else {
+          $("#pyrMsg").textContent = "不是一对，换两张试试。";
+        }
+        pyramid.selected = [];
+      }
+      pyramidRender();
+    }
+
+    function pyramidHint() {
+      const seen = {};
+      const pair = pyramid.cards
+        .map((item, index) => ({ item, index }))
+        .filter(({ item }) => !item.removed)
+        .find(({ item }) => {
+          if (seen[item.pair] !== undefined) return true;
+          seen[item.pair] = item;
+          return false;
+        });
+      if (!pair) return;
+      $("#pyrMsg").textContent = `提示：找另一张 ${pair.item.label}。`;
+    }
+
+    function pyramidRender() {
+      const board = $("#pyramidBoard");
+      board.innerHTML = "";
+      let left = 0;
+      pyramid.cards.forEach((item, index) => {
+        if (!item.removed) left++;
+        const el = cardEl(item, { clickable: !item.removed });
+        if (item.removed) el.classList.add("removed");
+        if (pyramid.selected.includes(index)) el.classList.add("selected");
+        el.addEventListener("click", () => pyramidPick(index));
+        board.appendChild(el);
+      });
+      $("#pyrLeft").textContent = left;
+      $("#pyrStock").textContent = pyramid.moves;
+      const waste = $("#pyramidWaste");
+      waste.innerHTML = "";
+      pyramid.removed.slice(-6).forEach((item) => waste.appendChild(cardEl(item, { small: true })));
+      if (left === 0) $("#pyrMsg").textContent = `全部找完，共 ${pyramid.moves} 步。`;
+    }
+
+    $("#pyrReset").addEventListener("click", pyramidReset);
+    $("#pyrDraw").addEventListener("click", pyramidHint);
+
+    const target = { deck: [], cards: [], goal: null, score: 0, time: 30, timer: null, active: false };
+
+    function targetReset() {
+      clearInterval(target.timer);
+      Object.assign(target, { deck: makeDeck(), cards: [], goal: null, score: 0, time: 30, timer: null, active: false });
+      $("#targetMsg").textContent = "开始后会出现目标牌。";
+      $("#targetCard").innerHTML = "";
+      $("#targetCard").appendChild(backCard({ small: true }));
+      targetRender();
+    }
+
+    function targetRound() {
+      if (target.deck.length < 17) target.deck = makeDeck();
+      target.cards = target.deck.splice(0, 16);
+      target.goal = target.cards[Math.floor(Math.random() * target.cards.length)];
+      targetRender();
+    }
+
+    function targetStart() {
+      targetReset();
+      target.active = true;
+      targetRound();
+      $("#targetMsg").textContent = "找到目标牌。";
+      target.timer = setInterval(() => {
+        target.time--;
+        if (target.time <= 0) {
+          clearInterval(target.timer);
+          target.active = false;
+          $("#targetMsg").textContent = `时间到，最终得分 ${target.score}。`;
+        }
+        targetRender();
+      }, 1000);
+      targetRender();
+    }
+
+    function targetPick(card) {
+      if (!target.active) return;
+      if (card.id === target.goal.id) {
+        target.score++;
+        $("#targetMsg").textContent = "点中了，下一张。";
+        targetRound();
+      } else {
+        target.time = Math.max(0, target.time - 3);
+        $("#targetMsg").textContent = "点错了，扣 3 秒。";
+        targetRender();
+      }
+    }
+
+    function targetRender() {
+      $("#targetScore").textContent = target.score;
+      $("#targetTime").textContent = target.time;
+      $("#targetStart").disabled = target.active;
+      const goal = $("#targetCard");
+      goal.innerHTML = "";
+      goal.appendChild(target.goal ? cardEl(target.goal, { small: true }) : backCard({ small: true }));
+      const board = $("#targetBoard");
+      board.innerHTML = "";
+      const cards = target.cards.length ? target.cards : Array.from({ length: 16 }, () => null);
+      cards.forEach((card) => {
+        const el = card ? cardEl(card, { clickable: target.active }) : backCard();
+        if (card) el.addEventListener("click", () => targetPick(card));
+        board.appendChild(el);
+      });
+    }
+
+    $("#targetStart").addEventListener("click", targetStart);
+    $("#targetReset").addEventListener("click", targetReset);
+
+    const ten = { cards: [], selected: [] };
+
+    function tenReset() {
+      const pairs = [];
+      for (let i = 0; i < 10; i++) {
+        const aValue = 1 + Math.floor(Math.random() * 9);
+        const bValue = 10 - aValue;
+        pairs.push(makeNumberCard(aValue, i), makeNumberCard(bValue, i + 10));
+      }
+      ten.cards = shuffle(pairs).map((card) => ({ card, removed: false }));
+      ten.selected = [];
+      $("#tenMsg").textContent = "找一对合计 10 的牌。";
+      tenRender();
+    }
+
+    function makeNumberCard(value, offset) {
+      const rank = ranks[value - 1];
+      const suit = suits[offset % suits.length];
+      return {
+        ...rank,
+        suit: suit.symbol,
+        color: suit.color,
+        id: `${rank.label}${suit.symbol}${offset}`
+      };
+    }
+
+    function tenPick(index) {
+      const item = ten.cards[index];
+      if (item.removed) return;
+      if (ten.selected.includes(index)) {
+        ten.selected = ten.selected.filter((i) => i !== index);
+      } else {
+        ten.selected.push(index);
+      }
+      if (ten.selected.length === 2) {
+        const [a, b] = ten.selected;
+        if (tenValue(ten.cards[a].card) + tenValue(ten.cards[b].card) === 10) {
+          ten.cards[a].removed = true;
+          ten.cards[b].removed = true;
+          $("#tenMsg").textContent = "消掉一对。";
+        } else {
+          $("#tenMsg").textContent = "这对不是 10。";
+        }
+        ten.selected = [];
+      }
+      tenRender();
+    }
+
+    function tenRender() {
+      const board = $("#tenBoard");
+      board.innerHTML = "";
+      let left = 0;
+      ten.cards.forEach((item, index) => {
+        if (!item.removed) left++;
+        const el = cardEl(item.card, { clickable: !item.removed });
+        if (item.removed) el.classList.add("removed");
+        if (ten.selected.includes(index)) el.classList.add("selected");
+        el.addEventListener("click", () => tenPick(index));
+        board.appendChild(el);
+      });
+      $("#tenCleared").textContent = (20 - left) / 2;
+      $("#tenLeft").textContent = left;
+      if (left === 0) $("#tenMsg").textContent = "全部清空。";
+    }
+
+    $("#tenReset").addEventListener("click", tenReset);
+
+    const run = { deck: [], current: null, history: [], streak: 0, over: false };
+
+    function runReset() {
+      run.deck = makeDeck();
+      run.current = run.deck.pop();
+      run.history = [run.current];
+      run.streak = 0;
+      run.over = false;
+      $("#runMsg").textContent = "猜下一张更大还是更小。";
+      runRender();
+    }
+
+    function runGuess(direction) {
+      if (run.over || !run.deck.length) return;
+      const previous = run.current;
+      const next = run.deck.pop();
+      run.current = next;
+      run.history.push(next);
+      const right = direction === "higher" ? next.value > previous.value : next.value < previous.value;
+      if (right) {
+        run.streak++;
+        $("#runMsg").textContent = `猜对了，${next.label} ${direction === "higher" ? "更大" : "更小"}。`;
+      } else {
+        run.over = true;
+        $("#runMsg").textContent = `猜错了，翻出的是 ${next.label}。本轮连胜 ${run.streak}。`;
+      }
+      runRender();
+    }
+
+    function runRender() {
+      $("#runSuit").textContent = "当前牌";
+      $("#runSuit").style.color = "#21190b";
+      $("#runNeed").textContent = run.streak;
+      $("#runStock").textContent = run.deck.length;
+      $("#runDraw").disabled = run.over || run.deck.length === 0;
+      $("#runLower").disabled = run.over || run.deck.length === 0;
+      const track = $("#runTrack");
+      track.innerHTML = "";
+      if (run.current) track.appendChild(cardEl(run.current));
+      const market = $("#runMarket");
+      market.innerHTML = "";
+      run.history.slice(-8).reverse().forEach((card) => market.appendChild(cardEl(card, { small: true })));
+    }
+
+    $("#runDraw").addEventListener("click", () => runGuess("higher"));
+    $("#runLower").addEventListener("click", () => runGuess("lower"));
+    $("#runReset").addEventListener("click", runReset);
+
+    memoryReset();
+    pyramidReset();
+    targetReset();
+    tenReset();
+    runReset();
+  </script>
+</body>
+</html>
