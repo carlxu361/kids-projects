@@ -62,11 +62,15 @@ git add .gitignore README.md index.html scripts/publish-games.sh \
   "01-月影村狼人杀" "03-王冠棋桌" "04-王牌牌室"
 
 if git diff --cached --quiet; then
-  echo "没有新的变化需要提交。"
-  exit 0
+  echo "没有新的变化需要提交，继续检查是否有未推送内容。"
+else
+  commit_message="publish: 同步孩子的游戏作品 $(date '+%Y-%m-%d %H:%M')"
+  git commit -m "$commit_message"
 fi
 
-commit_message="publish: 同步孩子的游戏作品 $(date '+%Y-%m-%d %H:%M')"
-git commit -m "$commit_message"
-git push origin main
-echo "已推送到 GitHub。Vercel 如果已连接这个仓库，会自动开始部署。"
+if git push origin main; then
+  echo "已推送到 GitHub。Vercel 如果已连接这个仓库，会自动开始部署。"
+else
+  echo "GitHub 现在连接不上。本地提交已保留，网络恢复后再运行本脚本即可继续推送。"
+  exit 1
+fi
