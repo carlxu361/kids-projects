@@ -236,6 +236,18 @@ write_index() {
     <section class="shelf" aria-label="项目列表">
 EOF_INDEX
 
+  while IFS=$'\t' read -r _source_file folder title description; do
+    number="${folder%%-*}"
+    [[ "$number" == "01" ]] || continue
+    cat >> "$TARGET_REPO/index.html" <<EOF_CARD
+      <a class="project" href="./${folder}/">
+        <span class="num">${number}</span>
+        <h2>${title}</h2>
+        <p>${description}。</p>
+      </a>
+EOF_CARD
+  done < "$MAP_FILE"
+
   cat >> "$TARGET_REPO/index.html" <<'EOF_INDEX'
       <a class="project" href="./02-AI学习助手/">
         <span class="num">02</span>
@@ -246,6 +258,7 @@ EOF_INDEX
 
   while IFS=$'\t' read -r _source_file folder title description; do
     number="${folder%%-*}"
+    [[ "$number" == "01" ]] && continue
     cat >> "$TARGET_REPO/index.html" <<EOF_CARD
       <a class="project" href="./${folder}/">
         <span class="num">${number}</span>
