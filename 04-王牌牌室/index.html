@@ -79,6 +79,10 @@
     body[data-back="green"] { --back-a: #1f8b5d; --back-b: #0e422e; }
     body[data-back="gold"] { --back-a: #d8a43d; --back-b: #6d4116; }
 
+    body[data-effects="on"] .card {
+      animation: deal .22s cubic-bezier(.2,.8,.2,1);
+    }
+
     main {
       position: relative;
       width: min(1240px, calc(100% - 24px));
@@ -144,6 +148,7 @@
     }
 
     .seg[data-options="3"] { grid-template-columns: repeat(3, 1fr); }
+    .seg[data-options="2"] { grid-template-columns: repeat(2, 1fr); }
 
     .choice, .tab, button {
       min-height: 40px;
@@ -158,7 +163,7 @@
     }
 
     .choice:hover, .tab:hover, button:hover { transform: translateY(-2px); }
-    .choice.active, .tab.active, button.primary {
+    .choice.active, .tab.active, .bj-count.active, button.primary {
       color: #21190b;
       background: var(--gold);
       border-color: var(--gold);
@@ -166,7 +171,7 @@
 
     .tabs {
       display: grid;
-      grid-template-columns: repeat(5, minmax(112px, 1fr));
+      grid-template-columns: repeat(6, minmax(104px, 1fr));
       gap: 8px;
       margin: 18px 0;
     }
@@ -338,6 +343,48 @@
       font-size: 37px;
     }
 
+    .pip-grid {
+      width: 62%;
+      height: 70%;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px 6px;
+      place-items: center;
+      font-family: Georgia, serif;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .pip-grid.one {
+      grid-template-columns: 1fr;
+      font-size: 42px;
+    }
+
+    .pip-grid.face {
+      grid-template-columns: 1fr;
+      font-size: 30px;
+      font-weight: 950;
+      letter-spacing: 0;
+    }
+
+    .pip-grid.ten { font-size: 15px; }
+
+    .joker-mark {
+      display: grid;
+      gap: 4px;
+      place-items: center;
+      font-size: 18px;
+      font-weight: 950;
+      writing-mode: vertical-rl;
+      letter-spacing: .08em;
+    }
+
+    .joker-mark strong {
+      writing-mode: horizontal-tb;
+      font-size: 34px;
+      line-height: 1;
+    }
+
     body[data-face="jumbo"] .card {
       border-width: 2px;
       background: #fffdf7;
@@ -351,7 +398,11 @@
     }
 
     body[data-face="jumbo"] .pip { font-size: 49px; }
+    body[data-face="jumbo"] .pip-grid { font-size: 22px; }
+    body[data-face="jumbo"] .pip-grid.one { font-size: 54px; }
+    body[data-face="jumbo"] .pip-grid.face { font-size: 42px; }
     body[data-face="minimal"] .pip { display: none; }
+    body[data-face="minimal"] .pip-grid { display: none; }
     body[data-face="minimal"] .card.back .corner { display: none; }
     body[data-face="minimal"] .corner {
       inset: 50% auto auto 50%;
@@ -440,6 +491,8 @@
 
     .highlow-stage .pip { font-size: clamp(54px, 10vw, 82px); }
     .highlow-stage .corner { font-size: clamp(22px, 4vw, 32px); }
+    .highlow-stage .pip-grid { font-size: clamp(22px, 4vw, 34px); }
+    .highlow-stage .pip-grid.one { font-size: clamp(58px, 10vw, 86px); }
 
     .run-track {
       display: grid;
@@ -484,6 +537,74 @@
       font-weight: 950;
     }
 
+    .player-count {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .blackjack-table {
+      display: grid;
+      gap: 14px;
+    }
+
+    .seat {
+      min-height: 144px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.06);
+    }
+
+    .seat-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-weight: 850;
+      margin-bottom: 10px;
+    }
+
+    .seat.active-seat {
+      border-color: var(--gold);
+      box-shadow: inset 0 0 0 1px var(--gold), 0 12px 28px rgba(0,0,0,.18);
+    }
+
+    .seat.done { opacity: .74; }
+
+    .result-pill {
+      min-width: 58px;
+      text-align: center;
+      border-radius: 999px;
+      padding: 2px 9px;
+      color: #21190b;
+      background: var(--gold);
+      font-size: 12px;
+    }
+
+    .spark {
+      position: fixed;
+      z-index: 20;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      pointer-events: none;
+      background: var(--gold);
+      box-shadow: 0 0 18px var(--gold);
+      animation: spark .68s ease-out forwards;
+    }
+
+    @keyframes deal {
+      from { opacity: .2; transform: translateY(-12px) rotate(-3deg) scale(.96); }
+      to { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+    }
+
+    @keyframes spark {
+      from { opacity: 1; transform: translate(0, 0) scale(1); }
+      to { opacity: 0; transform: translate(var(--x), var(--y)) scale(.25); }
+    }
+
     footer {
       margin-top: 14px;
       color: rgba(255,255,255,.62);
@@ -504,7 +625,7 @@
       aside, .play-area { padding: 16px; }
       .control-row { grid-template-columns: 1fr; }
       .seg { grid-template-columns: repeat(2, 1fr); }
-      .seg[data-options="3"] { grid-template-columns: 1fr; }
+      .seg[data-options="3"], .seg[data-options="2"] { grid-template-columns: 1fr; }
       button { width: 100%; }
       .memory-board, .ten-board, .target-board, .pair-board { grid-template-columns: repeat(4, 1fr); gap: 7px; }
       .run-track { grid-template-columns: repeat(4, 1fr); }
@@ -515,12 +636,12 @@
     }
   </style>
 </head>
-<body data-theme="felt" data-back="red" data-face="classic">
+<body data-theme="felt" data-back="red" data-face="classic" data-sound="off" data-effects="on">
   <script>
     (() => {
       try {
         const saved = JSON.parse(localStorage.getItem("pokerRoomStyle") || "{}");
-        ["theme", "back", "face"].forEach((kind) => {
+        ["theme", "back", "face", "sound", "effects"].forEach((kind) => {
           if (saved[kind]) document.body.dataset[kind] = saved[kind];
         });
       } catch (error) {
@@ -532,7 +653,7 @@
     <header>
       <div>
         <h1>王牌牌室</h1>
-        <p>保留好玩的记忆翻牌，换上更简单直接的找对子、找目标、凑十和猜高低。牌背、牌面、背景都能即时切换。</p>
+        <p>牌面会按点数铺满图标，牌堆加入大小王；还能开声音和发牌特效。小游戏保留轻松玩法，并新增多人 21 点。</p>
       </div>
       <section class="customizer" aria-label="个性化设置">
         <h2>个性化牌桌</h2>
@@ -562,6 +683,20 @@
             <button class="choice" data-kind="face" data-value="minimal">极简</button>
           </div>
         </div>
+        <div class="control-row">
+          <span>声音</span>
+          <div class="seg" data-options="2">
+            <button class="choice active" data-kind="sound" data-value="off">关闭</button>
+            <button class="choice" data-kind="sound" data-value="on">开启</button>
+          </div>
+        </div>
+        <div class="control-row">
+          <span>特效</span>
+          <div class="seg" data-options="2">
+            <button class="choice active" data-kind="effects" data-value="on">开启</button>
+            <button class="choice" data-kind="effects" data-value="off">关闭</button>
+          </div>
+        </div>
       </section>
     </header>
 
@@ -571,6 +706,7 @@
       <button class="tab" data-game="target">速找目标</button>
       <button class="tab" data-game="ten">十点消消乐</button>
       <button class="tab" data-game="run">猜高低</button>
+      <button class="tab" data-game="blackjack">21点</button>
     </nav>
 
     <section class="table active" id="memory">
@@ -585,6 +721,33 @@
         <div class="message" id="memMsg">先翻两张，记住位置。</div>
       </aside>
       <div class="play-area"><div class="memory-board" id="memoryBoard"></div></div>
+    </section>
+
+    <section class="table" id="blackjack">
+      <aside>
+        <h2>多人21点</h2>
+        <p>最多 4 名玩家轮流挑战庄家。A 可算 1 或 11，大小王算 11 点。</p>
+        <div class="stat-grid">
+          <div class="stat"><b id="bjRound">未开始</b><span>当前轮到</span></div>
+          <div class="stat"><b id="bjDeck">54</b><span>牌堆</span></div>
+        </div>
+        <h3>玩家人数</h3>
+        <div class="player-count">
+          <button class="bj-count active" data-count="1">1</button>
+          <button class="bj-count secondary" data-count="2">2</button>
+          <button class="bj-count secondary" data-count="3">3</button>
+          <button class="bj-count secondary" data-count="4">4</button>
+        </div>
+        <div class="actions">
+          <button id="bjStart">新一局</button>
+          <button id="bjHit" class="secondary">要牌</button>
+          <button id="bjStand" class="secondary">停牌</button>
+        </div>
+        <div class="message" id="bjMsg">选择人数后开始。</div>
+      </aside>
+      <div class="play-area">
+        <div class="blackjack-table" id="blackjackTable"></div>
+      </div>
     </section>
 
     <section class="table" id="pyramid">
@@ -645,7 +808,7 @@
     <section class="table" id="run">
       <aside>
         <h2>猜高低</h2>
-        <p>看当前牌，猜下一张更大还是更小。A 最小，K 最大，相同算猜错。</p>
+        <p>看当前牌，猜下一张更大还是更小。A 最小，大小王最大，相同算猜错。</p>
         <div class="stat-grid">
           <div class="stat"><b id="runNeed">0</b><span>连胜</span></div>
           <div class="stat"><b id="runStock">51</b><span>剩余</span></div>
@@ -695,7 +858,12 @@
       { label: "Q", value: 12 },
       { label: "K", value: 13 }
     ];
+    const jokers = [
+      { label: "小王", value: 14, suit: "☆", color: "black", joker: "small", id: "小王" },
+      { label: "大王", value: 15, suit: "★", color: "red", joker: "big", id: "大王" }
+    ];
     const $ = (selector) => document.querySelector(selector);
+    let audioContext = null;
 
     function shuffle(cards) {
       const deck = [...cards];
@@ -707,20 +875,31 @@
     }
 
     function makeDeck() {
-      return shuffle(suits.flatMap((suit) => ranks.map((rank) => ({
+      const normalCards = suits.flatMap((suit) => ranks.map((rank) => ({
         ...rank,
         suit: suit.symbol,
         color: suit.color,
         id: `${rank.label}${suit.symbol}`
-      }))));
+      })));
+      return shuffle([...normalCards, ...jokers]);
     }
 
     function cardEl(card, options = {}) {
       const div = document.createElement("div");
-      div.className = `card ${card.color === "red" ? "red" : ""} ${options.small ? "small-card" : ""}`;
+      div.className = `card ${card.color === "red" ? "red" : ""} ${card.joker ? "joker" : ""} ${options.small ? "small-card" : ""}`;
       if (options.clickable) div.classList.add("clickable");
-      div.innerHTML = `<span class="corner"><span>${card.label}</span><span>${card.suit}</span></span><span class="pip">${card.suit}</span>`;
+      if (card.joker) {
+        div.innerHTML = `<span class="corner"><span>${card.joker === "big" ? "大" : "小"}</span><span>${card.suit}</span></span><span class="joker-mark"><strong>${card.suit}</strong>${card.label}</span>`;
+      } else {
+        div.innerHTML = `<span class="corner"><span>${card.label}</span><span>${card.suit}</span></span>${pipMarkup(card)}`;
+      }
       return div;
+    }
+
+    function pipMarkup(card) {
+      if (card.value === 1) return `<span class="pip-grid one"><span>${card.suit}</span></span>`;
+      if (card.value > 10) return `<span class="pip-grid face"><span>${card.label}</span><span>${card.suit}</span><span>${card.suit}</span></span>`;
+      return `<span class="pip-grid ${card.value === 10 ? "ten" : ""}">${Array.from({ length: card.value }, () => `<span>${card.suit}</span>`).join("")}</span>`;
     }
 
     function backCard(options = {}) {
@@ -731,6 +910,46 @@
 
     function tenValue(card) {
       return Math.min(card.value, 10);
+    }
+
+    function playTone(type = "tap") {
+      if (document.body.dataset.sound !== "on") return;
+      audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      const now = audioContext.currentTime;
+      const tones = {
+        tap: [520, .045],
+        deal: [360, .06],
+        win: [720, .11],
+        lose: [180, .13]
+      };
+      const [frequency, duration] = tones[type] || tones.tap;
+      oscillator.type = type === "lose" ? "sawtooth" : "triangle";
+      oscillator.frequency.setValueAtTime(frequency, now);
+      gain.gain.setValueAtTime(.001, now);
+      gain.gain.exponentialRampToValueAtTime(.12, now + .012);
+      gain.gain.exponentialRampToValueAtTime(.001, now + duration);
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+      oscillator.start(now);
+      oscillator.stop(now + duration + .02);
+    }
+
+    function burst(x = window.innerWidth / 2, y = window.innerHeight / 2) {
+      if (document.body.dataset.effects !== "on") return;
+      for (let i = 0; i < 14; i++) {
+        const spark = document.createElement("i");
+        const angle = (Math.PI * 2 * i) / 14;
+        const distance = 45 + Math.random() * 38;
+        spark.className = "spark";
+        spark.style.left = `${x}px`;
+        spark.style.top = `${y}px`;
+        spark.style.setProperty("--x", `${Math.cos(angle) * distance}px`);
+        spark.style.setProperty("--y", `${Math.sin(angle) * distance}px`);
+        document.body.appendChild(spark);
+        setTimeout(() => spark.remove(), 760);
+      }
     }
 
     document.querySelectorAll(".tab").forEach((tab) => {
@@ -749,16 +968,177 @@
         localStorage.setItem("pokerRoomStyle", JSON.stringify({
           theme: document.body.dataset.theme,
           back: document.body.dataset.back,
-          face: document.body.dataset.face
+          face: document.body.dataset.face,
+          sound: document.body.dataset.sound,
+          effects: document.body.dataset.effects
         }));
         document.querySelectorAll(`.choice[data-kind="${kind}"]`).forEach((item) => item.classList.remove("active"));
         button.classList.add("active");
+        playTone("tap");
       });
     });
 
     document.querySelectorAll(".choice").forEach((button) => {
       button.classList.toggle("active", document.body.dataset[button.dataset.kind] === button.dataset.value);
     });
+
+    const blackjack = {
+      playerCount: 1,
+      deck: [],
+      players: [],
+      dealer: [],
+      current: 0,
+      phase: "idle",
+      revealDealer: false
+    };
+
+    document.querySelectorAll(".bj-count").forEach((button) => {
+      button.addEventListener("click", () => {
+        blackjack.playerCount = Number(button.dataset.count);
+        document.querySelectorAll(".bj-count").forEach((item) => {
+          item.classList.toggle("active", item === button);
+          item.classList.toggle("secondary", item !== button);
+        });
+        playTone("tap");
+        $("#bjMsg").textContent = `已选择 ${blackjack.playerCount} 名玩家。`;
+      });
+    });
+
+    function blackjackValue(card) {
+      if (card.joker) return 11;
+      if (card.value > 10) return 10;
+      if (card.value === 1) return 11;
+      return card.value;
+    }
+
+    function blackjackScore(hand) {
+      let total = hand.reduce((sum, card) => sum + blackjackValue(card), 0);
+      let soft = hand.filter((card) => card.value === 1).length;
+      while (total > 21 && soft > 0) {
+        total -= 10;
+        soft--;
+      }
+      return total;
+    }
+
+    function bjStart() {
+      blackjack.deck = makeDeck();
+      blackjack.players = Array.from({ length: blackjack.playerCount }, (_, index) => ({
+        name: `玩家${index + 1}`,
+        hand: [],
+        status: "playing",
+        result: ""
+      }));
+      blackjack.dealer = [];
+      blackjack.current = 0;
+      blackjack.phase = "players";
+      blackjack.revealDealer = false;
+      for (let i = 0; i < 2; i++) {
+        blackjack.players.forEach((player) => player.hand.push(blackjack.deck.pop()));
+        blackjack.dealer.push(blackjack.deck.pop());
+      }
+      $("#bjMsg").textContent = "玩家1行动：要牌或停牌。";
+      playTone("deal");
+      bjRender();
+    }
+
+    function bjHit() {
+      if (blackjack.phase !== "players") return;
+      const player = blackjack.players[blackjack.current];
+      player.hand.push(blackjack.deck.pop());
+      playTone("deal");
+      if (blackjackScore(player.hand) > 21) {
+        player.status = "bust";
+        player.result = "爆牌";
+        playTone("lose");
+        nextBjPlayer();
+      } else {
+        $("#bjMsg").textContent = `${player.name} 当前 ${blackjackScore(player.hand)} 点。`;
+      }
+      bjRender();
+    }
+
+    function bjStand() {
+      if (blackjack.phase !== "players") return;
+      const player = blackjack.players[blackjack.current];
+      player.status = "stand";
+      player.result = "停牌";
+      nextBjPlayer();
+      bjRender();
+    }
+
+    function nextBjPlayer() {
+      blackjack.current++;
+      while (blackjack.players[blackjack.current] && blackjack.players[blackjack.current].status !== "playing") {
+        blackjack.current++;
+      }
+      if (blackjack.current >= blackjack.players.length) {
+        finishDealer();
+      } else {
+        $("#bjMsg").textContent = `${blackjack.players[blackjack.current].name} 行动。`;
+      }
+    }
+
+    function finishDealer() {
+      blackjack.phase = "dealer";
+      blackjack.revealDealer = true;
+      while (blackjackScore(blackjack.dealer) < 17) blackjack.dealer.push(blackjack.deck.pop());
+      const dealerScore = blackjackScore(blackjack.dealer);
+      blackjack.players.forEach((player) => {
+        const score = blackjackScore(player.hand);
+        if (score > 21) player.result = "输";
+        else if (dealerScore > 21 || score > dealerScore) player.result = "赢";
+        else if (score === dealerScore) player.result = "平";
+        else player.result = "输";
+      });
+      blackjack.phase = "done";
+      $("#bjMsg").textContent = dealerScore > 21 ? "庄家爆牌，未爆牌玩家获胜。" : `庄家 ${dealerScore} 点，已结算。`;
+      if (blackjack.players.some((player) => player.result === "赢")) {
+        playTone("win");
+        burst();
+      } else {
+        playTone("lose");
+      }
+      bjRender();
+    }
+
+    function bjSeat(name, hand, options = {}) {
+      const seat = document.createElement("div");
+      seat.className = `seat ${options.active ? "active-seat" : ""} ${options.done ? "done" : ""}`;
+      const score = options.hidden ? "?" : blackjackScore(hand);
+      seat.innerHTML = `<div class="seat-header"><span>${name}</span><span>${score} 点</span>${options.result ? `<span class="result-pill">${options.result}</span>` : ""}</div><div class="hand"></div>`;
+      const handNode = seat.querySelector(".hand");
+      hand.forEach((card, index) => {
+        handNode.appendChild(options.hidden && index === 1 ? backCard() : cardEl(card));
+      });
+      return seat;
+    }
+
+    function bjRender() {
+      $("#bjDeck").textContent = blackjack.deck.length || 54;
+      const activePlayer = blackjack.players[blackjack.current];
+      $("#bjRound").textContent = blackjack.phase === "players" && activePlayer ? activePlayer.name : blackjack.phase === "done" ? "结束" : "未开始";
+      $("#bjHit").disabled = blackjack.phase !== "players";
+      $("#bjStand").disabled = blackjack.phase !== "players";
+      const table = $("#blackjackTable");
+      table.innerHTML = "";
+      if (!blackjack.players.length) {
+        table.appendChild(bjSeat("庄家", [], { result: "" }));
+        return;
+      }
+      table.appendChild(bjSeat("庄家", blackjack.dealer, { hidden: !blackjack.revealDealer, result: blackjack.phase === "done" ? "庄家" : "" }));
+      blackjack.players.forEach((player, index) => {
+        table.appendChild(bjSeat(player.name, player.hand, {
+          active: blackjack.phase === "players" && index === blackjack.current,
+          done: player.status !== "playing" || blackjack.phase === "done",
+          result: player.result
+        }));
+      });
+    }
+
+    $("#bjStart").addEventListener("click", bjStart);
+    $("#bjHit").addEventListener("click", bjHit);
+    $("#bjStand").addEventListener("click", bjStand);
 
     const memory = { cards: [], open: [], matched: 0, moves: 0, locked: false };
 
@@ -806,9 +1186,12 @@
           memory.cards[b].matched = true;
           memory.open = [];
           memory.matched++;
+          playTone("win");
+          burst();
           $("#memMsg").textContent = memory.matched === 8 ? `全部完成，共 ${memory.moves} 步。` : "配对成功，继续。";
         } else {
           memory.locked = true;
+          playTone("lose");
           $("#memMsg").textContent = "不是一对，记住它们。";
           setTimeout(() => {
             memory.cards[a].open = false;
@@ -858,8 +1241,11 @@
           pyramid.cards[a].removed = true;
           pyramid.cards[b].removed = true;
           pyramid.removed.push(pyramid.cards[a], pyramid.cards[b]);
+          playTone("win");
+          burst();
           $("#pyrMsg").textContent = "找到一对。";
         } else {
+          playTone("lose");
           $("#pyrMsg").textContent = "不是一对，换两张试试。";
         }
         pyramid.selected = [];
@@ -943,10 +1329,13 @@
       if (!target.active) return;
       if (card.id === target.goal.id) {
         target.score++;
+        playTone("win");
+        burst();
         $("#targetMsg").textContent = "点中了，下一张。";
         targetRound();
       } else {
         target.time = Math.max(0, target.time - 3);
+        playTone("lose");
         $("#targetMsg").textContent = "点错了，扣 3 秒。";
         targetRender();
       }
@@ -1011,8 +1400,11 @@
         if (tenValue(ten.cards[a].card) + tenValue(ten.cards[b].card) === 10) {
           ten.cards[a].removed = true;
           ten.cards[b].removed = true;
+          playTone("win");
+          burst();
           $("#tenMsg").textContent = "消掉一对。";
         } else {
+          playTone("lose");
           $("#tenMsg").textContent = "这对不是 10。";
         }
         ten.selected = [];
@@ -1060,9 +1452,12 @@
       const right = direction === "higher" ? next.value > previous.value : next.value < previous.value;
       if (right) {
         run.streak++;
+        playTone("win");
+        burst();
         $("#runMsg").textContent = `猜对了，${next.label} ${direction === "higher" ? "更大" : "更小"}。`;
       } else {
         run.over = true;
+        playTone("lose");
         $("#runMsg").textContent = `猜错了，翻出的是 ${next.label}。本轮连胜 ${run.streak}。`;
       }
       runRender();
@@ -1092,6 +1487,7 @@
     targetReset();
     tenReset();
     runReset();
+    bjRender();
   </script>
 </body>
 </html>
