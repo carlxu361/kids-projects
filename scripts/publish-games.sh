@@ -28,14 +28,19 @@ next_number() {
 }
 
 append_new_projects_to_map() {
-  find "$SOURCE_DIR" -maxdepth 1 -type f -name '*.html' -print | sort | while read -r source_path; do
+  find "$SOURCE_DIR" -mindepth 1 -maxdepth 1 \( -type f -name '*.html' -o -type d \) -print | sort | while read -r source_path; do
     source_file="$(basename "$source_path")"
 
     if grep -Fq "$source_file	" "$MAP_FILE"; then
       continue
     fi
 
-    title="$(title_from_html "$source_path")"
+    if [[ -d "$source_path" ]]; then
+      [[ -f "$source_path/index.html" ]] || continue
+      title="$(title_from_html "$source_path/index.html")"
+    else
+      title="$(title_from_html "$source_path")"
+    fi
     if [[ -z "$title" ]]; then
       title="${source_file%.html}"
     fi
@@ -55,13 +60,17 @@ sync_projects() {
     source_path="$SOURCE_DIR/$source_file"
     target_dir="$TARGET_REPO/$folder"
 
-    if [[ ! -f "$source_path" ]]; then
+    if [[ ! -e "$source_path" ]]; then
       echo "跳过：找不到 $source_path"
       continue
     fi
 
     mkdir -p "$target_dir"
-    cp "$source_path" "$target_dir/index.html"
+    if [[ -d "$source_path" ]]; then
+      cp -R "$source_path/." "$target_dir/"
+    else
+      cp "$source_path" "$target_dir/index.html"
+    fi
     cat > "$target_dir/README.md" <<EOF_INNER
 # ${title}
 

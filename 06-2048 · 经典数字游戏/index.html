@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#faf8ef" />
+    <title>2048 · 经典数字游戏</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="masthead">
+        <div>
+          <h1>2048</h1>
+          <p class="tagline">合并数字，抵达 2048。</p>
+        </div>
+
+        <div class="scoreboard" aria-label="分数">
+          <div class="score-card">
+            <span>分数</span>
+            <strong id="score">0</strong>
+            <i id="score-add" aria-hidden="true"></i>
+          </div>
+          <div class="score-card">
+            <span>最佳</span>
+            <strong id="best-score">0</strong>
+          </div>
+        </div>
+      </header>
+
+      <section class="toolbar" aria-label="游戏操作">
+        <p><strong>玩法：</strong>用方向键或滑动移动方块。</p>
+        <div class="actions">
+          <button id="undo-btn" class="icon-btn" type="button" title="撤销上一步" aria-label="撤销上一步">↶</button>
+          <button id="sound-btn" class="icon-btn" type="button" title="关闭音效" aria-label="关闭音效">♪</button>
+          <button id="theme-btn" class="icon-btn" type="button" title="切换深色模式" aria-label="切换深色模式">◐</button>
+          <button id="effects-btn" class="customize-btn" type="button" title="个性化设置" aria-label="打开个性化设置" aria-expanded="false"><span aria-hidden="true">🎨</span> 个性化</button>
+          <button id="new-game-btn" class="primary-btn" type="button">新游戏</button>
+        </div>
+      </section>
+
+      <section id="effects-panel" class="effects-panel" aria-label="特效设置" hidden>
+        <div class="setting-group">
+          <span>滑动手感</span>
+          <div class="segmented" data-setting="effects">
+            <button type="button" data-value="calm">轻柔</button>
+            <button type="button" data-value="classic">经典</button>
+            <button type="button" data-value="vivid">鲜明</button>
+          </div>
+        </div>
+        <div class="setting-group palette-setting">
+          <span>主题等级</span>
+          <div class="swatches" data-setting="palette">
+            <div class="palette-tier" data-tier="basic">
+              <span class="tier-label">基础</span>
+              <div class="palette-options">
+                <button type="button" data-value="classic" aria-label="经典配色"><i></i>经典</button>
+                <button type="button" data-value="mint" aria-label="薄荷配色"><i></i>薄荷</button>
+                <button type="button" data-value="berry" aria-label="莓果配色"><i></i>莓果</button>
+                <button type="button" data-value="ocean" aria-label="海洋配色"><i></i>海洋</button>
+                <button type="button" data-value="sunset" aria-label="落日配色"><i></i>落日</button>
+                <button type="button" data-value="neon" aria-label="霓虹配色"><i></i>霓虹</button>
+                <button type="button" data-value="mono" aria-label="水墨配色"><i></i>水墨</button>
+              </div>
+            </div>
+            <div class="palette-tier" data-tier="advanced">
+              <span class="tier-label">进阶</span>
+              <div class="palette-options">
+                <button type="button" data-value="sakura" aria-label="樱花主题"><i></i>樱花</button>
+                <button type="button" data-value="forest" aria-label="森林主题"><i></i>森林</button>
+                <button type="button" data-value="glacier" aria-label="冰川主题"><i></i>冰川</button>
+                <button type="button" data-value="gold" aria-label="金耀主题"><i></i>金耀</button>
+              </div>
+            </div>
+            <div class="palette-tier" data-tier="immersive">
+              <span class="tier-label">沉浸</span>
+              <div class="palette-options">
+                <button type="button" data-value="starlight" aria-label="星空主题"><i></i>星空</button>
+                <button type="button" data-value="lava" aria-label="熔岩主题"><i></i>熔岩</button>
+                <button type="button" data-value="aurora" aria-label="极光主题"><i></i>极光</button>
+                <button type="button" data-value="abyss" aria-label="深海主题"><i></i>深海</button>
+                <button type="button" data-value="desert" aria-label="沙漠主题"><i></i>沙漠</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="game-layout">
+        <div class="board-wrap">
+          <div id="game-board" class="game-board" role="application" aria-label="2048 游戏棋盘" tabindex="0">
+            <div class="grid-background" aria-hidden="true">
+              <i></i><i></i><i></i><i></i>
+              <i></i><i></i><i></i><i></i>
+              <i></i><i></i><i></i><i></i>
+              <i></i><i></i><i></i><i></i>
+            </div>
+            <div id="tile-layer" class="tile-layer" aria-live="polite"></div>
+          </div>
+          <p class="mobile-hint">在棋盘上滑动来移动方块</p>
+        </div>
+
+        <aside class="leaderboard" aria-labelledby="leaderboard-title">
+          <div class="aside-heading">
+            <div>
+              <span class="eyebrow">本机记录</span>
+              <h2 id="leaderboard-title">排行榜</h2>
+            </div>
+            <span class="trophy" aria-hidden="true">◆</span>
+          </div>
+          <ol id="leaderboard-list"></ol>
+          <p class="leaderboard-note">每局结束后自动记录前五名。</p>
+        </aside>
+      </section>
+
+      <footer>
+        <p><strong>小提示：</strong>尽量让最大数字待在角落。</p>
+        <p>数据仅保存在你的浏览器中。</p>
+      </footer>
+    </main>
+
+    <div id="game-modal" class="modal" hidden>
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <span class="modal-mark" aria-hidden="true">2048</span>
+        <h2 id="modal-title">游戏结束</h2>
+        <p id="modal-copy">这局拿到了 0 分。</p>
+        <div class="modal-actions">
+          <button id="continue-btn" class="secondary-btn" type="button">继续挑战</button>
+          <button id="modal-new-btn" class="primary-btn" type="button">再来一局</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="celebration-layer" class="celebration-layer" aria-hidden="true"></div>
+    <div id="record-toast" class="record-toast" role="status" aria-live="polite">新最高纪录！</div>
+
+    <button id="admin-trigger" class="admin-trigger" type="button" aria-label="秘密入口"></button>
+    <div id="admin-modal" class="admin-modal" hidden>
+      <section class="admin-card" role="dialog" aria-modal="true" aria-labelledby="admin-title">
+        <button id="admin-close" class="admin-close" type="button" aria-label="关闭管理员面板">×</button>
+        <div id="admin-login">
+          <span class="admin-mark">ADMIN</span>
+          <h2 id="admin-title">管理员入口</h2>
+          <p>输入访问密码以启用秘密工具。</p>
+          <form id="admin-form">
+            <label for="admin-password">访问密码</label>
+            <input id="admin-password" type="password" autocomplete="off" required />
+            <span id="admin-error" class="admin-error" role="alert"></span>
+            <button class="primary-btn" type="submit">进入面板</button>
+          </form>
+        </div>
+        <div id="admin-tools" hidden>
+          <span class="admin-mark">CHEAT MODE</span>
+          <h2>开挂选项</h2>
+          <p>只影响当前本地游戏。</p>
+          <div class="cheat-grid">
+            <button type="button" data-cheat="next-512"><strong>下一块 512</strong><span>下次移动后生成</span></button>
+            <button type="button" data-cheat="place-2048"><strong>放置 2048</strong><span>直接生成终极方块</span></button>
+            <button type="button" data-cheat="double-score"><strong>分数翻倍</strong><span>立即增加当前分数</span></button>
+            <button type="button" data-cheat="clear-small"><strong>清除小方块</strong><span>移除所有 2 和 4</span></button>
+            <button type="button" data-cheat="revive"><strong>解除死局</strong><span>清出四个最低方块</span></button>
+            <button type="button" data-cheat="celebrate"><strong>最高纪录特效</strong><span>立即播放庆祝动画</span></button>
+          </div>
+          <section class="admin-theme-zone" aria-labelledby="admin-theme-title">
+            <div class="debug-heading">
+              <div>
+                <span class="admin-mark">EXCLUSIVE</span>
+                <h3 id="admin-theme-title">管理员专属主题</h3>
+              </div>
+              <button class="admin-theme-reset" type="button" data-admin-theme="classic">恢复经典</button>
+            </div>
+            <div class="admin-theme-grid">
+              <button type="button" data-admin-theme="royal"><i></i><span>皇室</span></button>
+              <button type="button" data-admin-theme="matrix"><i></i><span>矩阵</span></button>
+              <button type="button" data-admin-theme="void"><i></i><span>虚空</span></button>
+              <button type="button" data-admin-theme="prism"><i></i><span>棱镜</span></button>
+              <button type="button" data-admin-theme="dragon"><i></i><span>龙焰</span></button>
+              <button type="button" data-admin-theme="emerald"><i></i><span>翡翠</span></button>
+              <button type="button" data-admin-theme="blueprint"><i></i><span>蓝图</span></button>
+              <button type="button" data-admin-theme="rosegold"><i></i><span>玫瑰金</span></button>
+              <button type="button" data-admin-theme="midnight"><i></i><span>午夜</span></button>
+              <button type="button" data-admin-theme="hologram"><i></i><span>全息</span></button>
+            </div>
+          </section>
+          <section class="debug-zone" aria-labelledby="debug-title">
+            <div class="debug-heading">
+              <div>
+                <span class="admin-mark">DEBUG</span>
+                <h3 id="debug-title">调试工具</h3>
+              </div>
+              <button id="debug-labels-btn" class="debug-toggle" type="button">显示坐标</button>
+            </div>
+            <dl id="debug-stats" class="debug-stats">
+              <div><dt>方块</dt><dd data-stat="tiles">0 / 16</dd></div>
+              <div><dt>最大值</dt><dd data-stat="max">0</dd></div>
+              <div><dt>可移动</dt><dd data-stat="movable">是</dd></div>
+              <div><dt>下一块</dt><dd data-stat="next">随机</dd></div>
+            </dl>
+            <div class="debug-controls">
+              <form id="debug-tile-form">
+                <label for="debug-tile-value">生成指定方块</label>
+                <div><input id="debug-tile-value" type="number" min="2" max="131072" step="2" value="4096" required /><button type="submit">生成</button></div>
+              </form>
+              <form id="debug-score-form">
+                <label for="debug-score-value">设置当前分数</label>
+                <div><input id="debug-score-value" type="number" min="0" max="999999999" step="1" value="100000" required /><button type="submit">设置</button></div>
+              </form>
+            </div>
+            <div class="debug-actions">
+              <button type="button" data-debug="merge-board">合并测试盘</button>
+              <button type="button" data-debug="clear-board">清空棋盘</button>
+              <button type="button" data-debug="random-board">随机填充</button>
+              <button type="button" data-debug="clear-scores">清空排行榜</button>
+              <button type="button" data-debug="reset-save">重置本局存档</button>
+            </div>
+          </section>
+          <div id="admin-status" class="admin-status" role="status" aria-live="polite"></div>
+        </div>
+      </section>
+    </div>
+
+    <script src="game.js"></script>
+  </body>
+</html>
