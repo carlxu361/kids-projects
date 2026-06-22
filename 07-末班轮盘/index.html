@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#11100d">
+  <title>末班轮盘</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+  <main class="cabinet" id="cabinet">
+    <header class="topbar">
+      <div>
+        <p class="kicker">TERMINAL 09 · 最后一班</p>
+        <h1>末班轮盘</h1>
+      </div>
+      <div class="top-actions">
+        <button class="text-button" id="soundButton" type="button" aria-pressed="true">音效：开</button>
+        <button class="text-button" id="rulesButton" type="button">规则</button>
+      </div>
+    </header>
+
+    <section class="stage" aria-label="轮盘对局">
+      <article class="fighter dealer-card">
+        <div class="portrait dealer" aria-hidden="true">
+          <svg class="portrait-art" viewBox="0 0 64 64"><path d="M8 8h14v8h20V8h14v15H46v8h6v25H12V31h6v-8H8z"/><path class="portrait-light" d="M20 34h8v7h-8zm16 0h8v7h-8zm-8 14h8v5h-8z"/></svg>
+        </div>
+        <div class="fighter-copy">
+          <p class="fighter-label">恶魔检票员</p>
+          <div class="hearts" id="dealerHearts" aria-label="检票员生命值"></div>
+        </div>
+        <div class="dealer-inventory" id="dealerItems" aria-label="恶魔的道具"></div>
+      </article>
+
+      <section class="machine" id="machine">
+        <div class="round-readout">
+          <span id="roundLabel">第 1 夜</span>
+          <span id="turnLabel">等待入座</span>
+        </div>
+        <div class="chamber-wrap">
+          <div class="chamber" id="chamber" aria-label="当前弹仓">
+            <div id="chamberSlots" aria-hidden="true"></div>
+            <span class="chamber-core">09</span>
+          </div>
+          <div class="chamber-pointer" aria-hidden="true">▼</div>
+          <div class="spark" id="spark" aria-hidden="true"></div>
+        </div>
+        <div class="ammo-ledger" aria-live="polite">
+          <span><i class="live-dot"></i>高压 <b id="liveCount">—</b></span>
+          <span><i class="blank-dot"></i>空响 <b id="blankCount">—</b></span>
+        </div>
+        <div class="machine-status" id="machineStatus" aria-live="polite">机器未通电</div>
+        <p class="message" id="message" aria-live="assertive">末班车不载活人。你确定要上车吗？</p>
+      </section>
+
+      <article class="fighter player-card">
+        <div class="portrait player" aria-hidden="true">
+          <svg class="portrait-art" viewBox="0 0 64 64"><path d="M21 9h22v6h7v24h-7v7h-7v10H14V42h7V28h-6V15h6z"/><path class="portrait-light" d="M27 22h7v7h-7zm-6 18h22v6H21z"/></svg>
+        </div>
+        <div class="fighter-copy">
+          <p class="fighter-label">无票乘客</p>
+          <div class="hearts" id="playerHearts" aria-label="玩家生命值"></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="console">
+      <div class="injury-strip">
+        <span>永久伤势</span>
+        <strong id="injuryText">无</strong>
+      </div>
+      <div class="items" id="items" aria-label="道具栏"></div>
+      <div class="actions" id="actions">
+        <button class="action primary" id="startButton" type="button">投入车票</button>
+        <button class="action target" id="shootDealer" type="button" hidden>对准检票员</button>
+        <button class="action target self" id="shootSelf" type="button" hidden>对准自己</button>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="rulesDialog">
+    <div class="dialog-inner">
+      <p class="kicker">乘车须知</p>
+      <h2>听响，下注，活到终点。</h2>
+      <ol>
+        <li>每轮会公开高压与空响的数量，但顺序未知。</li>
+        <li>高压命中造成 1 点伤害；空响对准自己可继续行动。</li>
+        <li>使用道具窥探或操控下一格。三夜后击败检票员即获胜。</li>
+        <li>失败会新增一项永久伤势；完整通关只能治愈其中一项。</li>
+        <li>恶魔也拥有公开道具，并会根据局势使用。</li>
+      </ol>
+      <button class="action primary" id="closeRules" type="button">我已知晓</button>
+    </div>
+  </dialog>
+
+  <dialog id="endingDialog">
+    <div class="dialog-inner ending">
+      <p class="kicker" id="endingKicker">终点</p>
+      <h2 id="endingTitle">车门打开了。</h2>
+      <p id="endingCopy"></p>
+      <div class="ending-actions">
+        <button class="action primary" id="againButton" type="button">再次乘车</button>
+      </div>
+    </div>
+  </dialog>
+  <script src="game.js"></script>
+</body>
+</html>
