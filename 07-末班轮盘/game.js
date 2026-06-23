@@ -7,7 +7,7 @@ const ui = {
   playerHpNumber: $('playerHpNumber'), dealerHpNumber: $('dealerHpNumber'), itemCount: $('itemCount'), dealerItemCount: $('dealerItemCount'),
   start: $('startButton'), shootDealer: $('shootDealer'), shootSelf: $('shootSelf'), actionHint: $('actionHint'),
   rules: $('rulesDialog'), ending: $('endingDialog'), steal: $('stealDialog'), stealOptions: $('stealOptions'), admin: $('adminDialog'),
-  bloodFx: $('bloodFx'), horrorRange: $('horrorRange'), horrorValue: $('horrorValue'), difficultyRange: $('difficultyRange'), difficultyValue: $('difficultyValue'),
+  bloodFx: $('bloodFx'), horrorRange: $('horrorRange'), horrorValue: $('horrorValue'), horrorName: $('horrorName'), difficultyRange: $('difficultyRange'), difficultyValue: $('difficultyValue'),
   breaker: $('breakerDialog'), musicButton: $('musicButton'), viewButton: $('viewButton'), langButton: $('langButton')
 };
 
@@ -22,7 +22,8 @@ const itemInfo = {
   vial: ['命运药剂', '随机恢复2血或扣除1血'],
   breaker: ['断路钳', '触发时选择是否抵消停站铃'],
   seal: ['封锁条', '封住对方一次道具阶段'],
-  charm: ['旧护符', '抵消下一次1点伤害']
+  charm: ['旧护符', '抵消下一次1点伤害'],
+  unsealer: ['解封钩', '自动抵消一次封锁条']
 };
 
 const itemIcons = {
@@ -36,19 +37,20 @@ const itemIcons = {
   vial: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M11 3h10v4h-2v5l7 11v6H6v-6l7-11V7h-2zm2 18h6l-3-5z"/></svg>',
   breaker: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 4h7v9h8V4h7v12h-7v5h7v7h-9v-7h-4v7H5v-7h7v-5H5z"/></svg>',
   seal: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 7h24v6H4zm3 9h18v9H7zm5 2v5h3v-5zm6 0v5h3v-5z"/></svg>',
-  charm: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2l4 7 8 2-5 6 1 9-8-4-8 4 1-9-5-6 8-2zm0 8l-3 5 3 5 3-5z"/></svg>'
+  charm: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2l4 7 8 2-5 6 1 9-8-4-8 4 1-9-5-6 8-2zm0 8l-3 5 3 5 3-5z"/></svg>',
+  unsealer: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 4h20v7h-5V8H11v16h10v-4h5v8H6zm10 8h13v6H16l4 4-4 4-10-11 10-10 4 4z"/></svg>'
 };
 
 const itemInfoEn = {
   lamp: ['Inspection Lamp', 'Reveal the next chamber'], wrench: ['Pressure Wrench', 'Next live hit deals +1 damage'], ticket: ['Void Ticket', 'Discard the next chamber'],
   bell: ['Stop Bell', 'Skip the opponent turn'], tea: ['Hot Tea', 'Restore 1 health'], glove: ['Pickpocket Glove', 'Choose and steal an enemy item'],
   inverter: ['Inverter', 'Reverse the next chamber'], vial: ['Fate Vial', 'Restore 2 health or lose 1'], breaker: ['Circuit Cutter', 'Optionally cancel an enemy Stop Bell'],
-  seal: ['Lock Strip', 'Block one enemy item phase'], charm: ['Old Charm', 'Reduce the next damage by 1']
+  seal: ['Lock Strip', 'Block one enemy item phase'], charm: ['Old Charm', 'Reduce the next damage by 1'], unsealer: ['Seal Hook', 'Automatically cancel one Lock Strip']
 };
 
 const UI_TEXT = {
   kicker: ['TERMINAL 09 · 最后一班', 'TERMINAL 09 · LAST TRAIN'], title: ['末班轮盘', 'LAST TRAIN ROULETTE'], horror: ['恐怖指数', 'HORROR'], difficulty: ['难度', 'DIFFICULTY'],
-  dealer: ['恶魔检票员', 'DEMON CONDUCTOR'], dealerItems: ['恶魔道具', 'DEMON ITEMS'], player: ['无票乘客', 'TICKETLESS PASSENGER'], injuries: ['永久伤势', 'PERMANENT INJURIES'],
+  dealer: ['？？？', '???'], dealerItems: ['对方道具', 'OPPONENT ITEMS'], player: ['无票乘客', 'TICKETLESS PASSENGER'], injuries: ['永久伤势', 'PERMANENT INJURIES'],
   start: ['投入车票', 'INSERT TICKET'], fireDealer: ['开火：恶魔', 'FIRE: DEMON'], fireDealerHelp: ['命中则造成伤害', 'A live chamber deals damage'],
   fireSelf: ['试探：自己', 'TEST: YOURSELF'], fireSelfHelp: ['空响可继续行动', 'A blank keeps your turn'], yourItems: ['你的道具', 'YOUR ITEMS'],
   live: ['高压','LIVE'], blank: ['空响','BLANK'], gate: ['弹格闸机','CHAMBER GATE'], current: ['当前格','CURRENT'],
@@ -56,7 +58,7 @@ const UI_TEXT = {
   use: ['使用', 'USE'], keep: ['保留', 'KEEP']
 };
 
-const PACE = { aim: 3000, result: 3000, reload: 3000, dealer: 3000, item: 3000, round: 3000 };
+const PACE = { aim: 1000, result: 1000, reload: 1000, dealer: 1000, item: 1000, round: 1000 };
 
 const injuries = [
   { name: '耳鸣', text: '每局开始时，第一格无法被检修灯查看。', key: 'tinnitus' },
@@ -87,7 +89,7 @@ let maintenancePeek = false;
 let music = null;
 let supplyMode = false;
 let horrorLevel = Math.max(1, Math.min(10, Number(localStorage.getItem('lastTrainHorror') || 3)));
-let difficulty = Math.max(1, Math.min(5, Number(localStorage.getItem('lastTrainDifficulty') || 3)));
+let difficulty = Math.max(1, Math.min(4, Number(localStorage.getItem('lastTrainDifficulty') || 2)));
 let language = localStorage.getItem('lastTrainLanguage') === 'en' ? 'en' : 'zh';
 let musicOn = true;
 let firstPerson = localStorage.getItem('lastTrainView') === 'first';
@@ -100,6 +102,7 @@ function freshGame() {
     dealerHp: dealerMax, dealerMax, shells: [], turn: 'player', busy: false,
     items: [], dealerItems: [], powered: false, dealerPowered: false, bell: false, dealerBell: false, dealerKnown: null,
     playerItemsSealed: false, dealerItemsSealed: false, playerShield: false, dealerShield: false,
+    playerSealUsedThisTurn: false, dealerSealUsedThisTurn: false,
     itemsLocked: savedInjuries.includes('stiff'), selfLocked: savedInjuries.includes('frostbite'), chamberTotal: 0, chamberStep: 0,
     countsVisible: false, publicCounts: { live: 0, blank: 0 },
     firstLampBlocked: savedInjuries.includes('tinnitus'), started: false };
@@ -126,28 +129,34 @@ function beep(type = 'click') {
 function startMusic() {
   if (!musicOn || music) return;
   audio ||= new (window.AudioContext || window.webkitAudioContext)();
-  if (audio.state === 'suspended') audio.resume();
+  if (audio.state === 'suspended') audio.resume().catch(() => {});
   const master = audio.createGain(), filter = audio.createBiquadFilter();
-  master.gain.setValueAtTime(.042, audio.currentTime); filter.type = 'lowpass'; filter.frequency.value = 150 + horrorLevel * 8;
+  master.gain.setValueAtTime(.11, audio.currentTime); filter.type = 'lowpass'; filter.frequency.value = 520 + horrorLevel * 24;
   filter.connect(master).connect(audio.destination);
-  const root = horrorLevel >= 8 ? 32.7 : horrorLevel >= 5 ? 36.71 : 43.65;
-  const oscillators = [root, root * 1.5, root * 2].map((frequency, index) => {
+  const root = horrorLevel >= 8 ? 55 : horrorLevel >= 5 ? 61.74 : 73.42;
+  const oscillators = [root / 2, root, root * 1.5].map((frequency, index) => {
     const osc = audio.createOscillator(), gain = audio.createGain(); osc.type = index === 1 ? 'sawtooth' : 'triangle'; osc.frequency.value = frequency;
-    gain.gain.value = index === 1 ? .16 : .3; osc.connect(gain).connect(filter); osc.start(); return osc;
+    gain.gain.value = index === 0 ? .08 : index === 1 ? .12 : .06; osc.connect(gain).connect(filter); osc.start(); return osc;
   });
-  const lfo = audio.createOscillator(), lfoGain = audio.createGain(); lfo.frequency.value = .11; lfoGain.gain.value = .008;
+  const lfo = audio.createOscillator(), lfoGain = audio.createGain(); lfo.frequency.value = .16; lfoGain.gain.value = .012;
   lfo.connect(lfoGain).connect(master.gain); lfo.start();
+  let step = 0;
+  const notes = horrorLevel >= 8 ? [1, 1.059, 1.5, .943] : horrorLevel >= 5 ? [1, 1.2, 1.5, 1.125] : [1, 1.25, 1.5, 1.333];
+  const playNote = () => {
+    if (!music && step > 0) return;
+    const note = audio.createOscillator(), noteGain = audio.createGain(); note.type = horrorLevel >= 8 ? 'square' : 'triangle'; note.frequency.value = root * 2 * notes[step % notes.length];
+    noteGain.gain.setValueAtTime(.16, audio.currentTime); noteGain.gain.exponentialRampToValueAtTime(.001, audio.currentTime + .9); note.connect(noteGain).connect(filter); note.start(); note.stop(audio.currentTime + .9); step++;
+  };
+  playNote();
   const timer = setInterval(() => {
-    if (!music) return;
-    const bell = audio.createOscillator(), bellGain = audio.createGain(); bell.type = 'sine'; bell.frequency.value = root * (horrorLevel >= 8 ? 2.05 : 2.5);
-    bellGain.gain.setValueAtTime(.035, audio.currentTime); bellGain.gain.exponentialRampToValueAtTime(.001, audio.currentTime + 2.2); bell.connect(bellGain).connect(master); bell.start(); bell.stop(audio.currentTime + 2.2);
-  }, Math.max(3600, 6500 - horrorLevel * 250));
-  music = { oscillators, lfo, master, timer };
+    if (music) playNote();
+  }, 1400);
+  music = { oscillators, lfo, master, timer }; ui.musicButton.classList.add('playing');
 }
 
 function stopMusic() {
   if (!music) return;
-  clearInterval(music.timer); [...music.oscillators, music.lfo].forEach(node => { try { node.stop(); } catch {} }); music.master.disconnect(); music = null;
+  clearInterval(music.timer); [...music.oscillators, music.lfo].forEach(node => { try { node.stop(); } catch {} }); music.master.disconnect(); music = null; ui.musicButton.classList.remove('playing');
 }
 
 function shuffle(list) {
@@ -176,8 +185,8 @@ function applyLanguage(nextLanguage = language) {
   document.body.style.setProperty('--sealed-label', language === 'en' ? '"TOTALS SEALED"' : '"数量已封存"');
   document.body.style.setProperty('--hud-label', language === 'en' ? '"PLAYER HUD"' : '"乘客状态"');
   document.querySelectorAll('[data-i18n]').forEach(element => { const pair = UI_TEXT[element.dataset.i18n]; if (pair) element.textContent = language === 'en' ? pair[1] : pair[0]; });
-  const rulesZh = ['每次装填会公开高压与空响数量，打出第一发后封存为问号。','高压命中造成 1 点伤害；空响对准自己可继续行动。','使用道具窥探或操控下一格。三夜后击败检票员即获胜。','失败会新增一项永久伤势；完整通关只能治愈其中一项。','普通道具上限为 8；无限全套会无视上限并补齐所有道具。','双方生命上限为 6；难度会改变恶魔生命、道具与进攻倾向。','恐怖指数 5 以上启用轻微像素溅射，音效与音乐也会变化。','断路钳触发时可选择是否抵消停站铃。'];
-  const rulesEn = ['Live and blank totals are shown after loading, then hidden after the first trigger.','A live chamber deals 1 damage. A blank aimed at yourself keeps your turn.','Use items to inspect or alter the next chamber. Defeat the demon across three nights.','A loss adds a permanent injury. A full victory heals only one.','The normal limit is 8. Endless Full Set ignores it and restores every item.','Maximum health is 6. Difficulty changes demon health, items, and aggression.','Horror level 5+ enables mild pixel splatter and changes music and effects.','When a Circuit Cutter triggers, you choose whether to cancel the Stop Bell.'];
+  const rulesZh = ['每次装填会公开高压与空响数量，打出第一发后封存为问号。','高压命中造成 1 点伤害；空响对准自己可继续行动。','使用道具窥探或操控下一格。三夜后击败对方即获胜。','失败会新增一项永久伤势；完整通关只能治愈其中一项。','普通道具上限为 8；无限全套会无视上限并补齐所有道具。','双方生命上限为 6；四档列车难度会改变对方生命、道具与进攻倾向。','恐怖指数 5 以上启用轻微像素溅射，音效与音乐也会变化。','封锁条每个行动回合限用一次；解封钩会自动抵消一次封锁。'];
+  const rulesEn = ['Live and blank totals are shown after loading, then hidden after the first trigger.','A live chamber deals 1 damage. A blank aimed at yourself keeps your turn.','Use items to inspect or alter the next chamber. Defeat the opponent across three nights.','A loss adds a permanent injury. A full victory heals only one.','The normal limit is 8. Endless Full Set ignores it and restores every item.','Maximum health is 6. Four train difficulties change enemy health, items, and aggression.','Horror level 5+ enables mild pixel splatter and changes music and effects.','A Lock Strip is limited to once per action turn; a Seal Hook automatically cancels one lock.'];
   const ruleNodes = document.querySelectorAll('#rulesDialog li'); (language === 'en' ? rulesEn : rulesZh).forEach((text, index) => { if (ruleNodes[index]) ruleNodes[index].textContent = text; });
   document.querySelector('#rulesDialog .kicker').textContent = tr('乘车须知','PASSENGER NOTICE'); document.querySelector('#rulesDialog h2').textContent = tr('听响，下注，活到终点。','LISTEN. WAGER. REACH THE END.');
   $('closeRules').textContent = tr('我已知晓','UNDERSTOOD'); $('rulesButton').textContent = tr('规则','RULES'); $('adminButton').textContent = tr('维修口','SERVICE');
@@ -190,15 +199,18 @@ function applyLanguage(nextLanguage = language) {
   const cheatLabels = {
     heal: tr('生命全满','FULL HEALTH'), invincible: tr(`防护屏障：${invincible ? '开' : '关'}`,`ABSOLUTE BARRIER: ${invincible ? 'ON' : 'OFF'}`),
     peek: tr(`弹格监视：${maintenancePeek ? '开' : '关'}`,`CHAMBER MONITOR: ${maintenancePeek ? 'ON' : 'OFF'}`), items: tr(`无限全套：${supplyMode ? '开' : '关'}`,`ENDLESS FULL SET: ${supplyMode ? 'ON' : 'OFF'}`),
-    weaken: tr('恶魔剩1血','DEMON TO 1 HEALTH'), cure: tr('治愈所有伤势','CURE ALL INJURIES')
+    weaken: tr('对方剩1血','OPPONENT TO 1 HEALTH'), cure: tr('治愈所有伤势','CURE ALL INJURIES'),
+    nextLive: tr('下一格：高压','NEXT: LIVE'), nextBlank: tr('下一格：空响','NEXT: BLANK'), reload: tr('立即重装','RELOAD NOW'), nextNight: tr('跳至下一夜','SKIP TO NEXT NIGHT'),
+    clearPlayerItems: tr('清空玩家道具','CLEAR PLAYER ITEMS'), clearDealerItems: tr('清空对方道具','CLEAR OPPONENT ITEMS')
   };
   document.querySelectorAll('[data-cheat]').forEach(button => { button.textContent = cheatLabels[button.dataset.cheat]; });
-  applyDifficulty(difficulty); render();
+  applyHorrorLevel(horrorLevel); applyDifficulty(difficulty); render();
 }
 
 function applyDifficulty(value) {
-  difficulty = Math.max(1, Math.min(5, Number(value))); localStorage.setItem('lastTrainDifficulty', difficulty);
-  ui.difficultyRange.value = difficulty; ui.difficultyValue.textContent = difficulty;
+  difficulty = Math.max(1, Math.min(4, Number(value))); localStorage.setItem('lastTrainDifficulty', difficulty);
+  const names = language === 'en' ? ['LOCAL TRAIN','NIGHT EXPRESS','GHOST LIMITED','TERMINUS LINE'] : ['慢车','夜行快车','幽灵专列','终点号'];
+  ui.difficultyRange.value = difficulty; ui.difficultyValue.textContent = names[difficulty - 1]; document.body.dataset.difficulty = difficulty;
 }
 
 function applyView() {
@@ -213,6 +225,9 @@ function askBreaker() {
 function applyHorrorLevel(value) {
   horrorLevel = Math.max(1, Math.min(10, Number(value))); localStorage.setItem('lastTrainHorror', horrorLevel);
   ui.horrorRange.value = horrorLevel; ui.horrorValue.textContent = horrorLevel;
+  const names = language === 'en' ? ['SILENCE','NOISE','CRIMSON','NIGHTMARE','TERMINUS'] : ['静默','异响','血色','噩梦','终点'];
+  const band = horrorLevel === 10 ? 4 : horrorLevel >= 8 ? 3 : horrorLevel >= 5 ? 2 : horrorLevel >= 3 ? 1 : 0;
+  ui.horrorName.textContent = names[band]; document.body.dataset.horrorBand = band;
   document.body.classList.toggle('horror-mid', horrorLevel >= 5);
   document.body.classList.toggle('horror-high', horrorLevel >= 8);
   document.body.classList.toggle('horror-max', horrorLevel === 10);
@@ -256,8 +271,8 @@ function render() {
     return `<span class="chamber-hole ${used ? 'used' : ''} ${i === game.chamberStep ? 'next' : ''}"><i>${i + 1}</i></span>`;
   }).join(''));
   updateHTML(ui.items, game.items.length ? game.items.map((key, i) => {
-    const blocked = !canAct || game.itemsLocked || game.playerItemsSealed || key === 'breaker' || (key === 'wrench' && game.powered) || (key === 'tea' && game.playerHp >= game.playerMax) || (key === 'bell' && game.bell) || (key === 'glove' && !game.dealerItems.length) || (key === 'charm' && game.playerShield);
-    const reason = game.playerItemsSealed ? tr('本回合道具已被封锁','ITEMS LOCKED THIS TURN') : key === 'breaker' ? tr('触发时由你选择是否使用','CHOOSE WHEN IT TRIGGERS') : game.itemsLocked ? tr('首次扣动后解锁','UNLOCKS AFTER FIRST TRIGGER') : key === 'wrench' && game.powered ? tr('增压已经启用','PRESSURE ALREADY ACTIVE') : key === 'tea' && game.playerHp >= game.playerMax ? tr('生命值已满','HEALTH IS FULL') : key === 'bell' && game.bell ? tr('停站铃已经启用','STOP BELL ACTIVE') : key === 'glove' && !game.dealerItems.length ? tr('对方没有道具','ENEMY HAS NO ITEMS') : key === 'charm' && game.playerShield ? tr('护符已经生效','CHARM ALREADY ACTIVE') : itemDescription(key);
+    const blocked = !canAct || game.itemsLocked || game.playerItemsSealed || key === 'breaker' || key === 'unsealer' || (key === 'seal' && game.playerSealUsedThisTurn) || (key === 'wrench' && game.powered) || (key === 'tea' && game.playerHp >= game.playerMax) || (key === 'bell' && game.bell) || (key === 'glove' && !game.dealerItems.length) || (key === 'charm' && game.playerShield);
+    const reason = game.playerItemsSealed ? tr('本回合道具已被封锁','ITEMS LOCKED THIS TURN') : key === 'breaker' ? tr('触发时由你选择是否使用','CHOOSE WHEN IT TRIGGERS') : key === 'unsealer' ? tr('被动：自动抵消封锁条','PASSIVE: CANCELS A LOCK STRIP') : key === 'seal' && game.playerSealUsedThisTurn ? tr('本行动回合已经使用过','ALREADY USED THIS ACTION TURN') : game.itemsLocked ? tr('首次扣动后解锁','UNLOCKS AFTER FIRST TRIGGER') : key === 'wrench' && game.powered ? tr('增压已经启用','PRESSURE ALREADY ACTIVE') : key === 'tea' && game.playerHp >= game.playerMax ? tr('生命值已满','HEALTH IS FULL') : key === 'bell' && game.bell ? tr('停站铃已经启用','STOP BELL ACTIVE') : key === 'glove' && !game.dealerItems.length ? tr('对方没有道具','ENEMY HAS NO ITEMS') : key === 'charm' && game.playerShield ? tr('护符已经生效','CHARM ALREADY ACTIVE') : itemDescription(key);
     return `<button class="item" data-index="${i}" ${blocked ? 'disabled' : ''} aria-label="${itemName(key)}: ${reason}"><span class="item-image">${itemIcons[key]}</span><span class="item-copy"><b>${itemName(key)}</b><small>${reason}</small></span></button>`;
   }).join('') : `<span class="kicker">${tr('道具栏为空','ITEM TRAY EMPTY')}</span>`);
   updateHTML(ui.dealerItems, game.dealerItems.length ? game.dealerItems.map(key => `<span class="dealer-item" title="${itemName(key)}">${itemIcons[key]}</span>`).join('') : `<small>${tr('无道具','NO ITEMS')}</small>`);
@@ -341,9 +356,11 @@ async function fire(target, actor = 'player') {
   if (!game.shells.length) await loadChamber();
   if (!live && target === 'self') game.turn = actor;
   else game.turn = actor === 'player' ? 'dealer' : 'player';
+  if (game.turn === 'dealer' && actor === 'player') game.dealerSealUsedThisTurn = false;
+  if (game.turn === 'player' && actor === 'dealer') game.playerSealUsedThisTurn = false;
   game.busy = false; render();
   if (game.turn === 'player' && game.dealerBell) {
-    game.dealerBell = false; game.turn = 'dealer'; game.busy = true; say('恶魔的停站铃响起。你的回合被列车吞掉了。','The demon’s Stop Bell rings. The train swallows your turn.'); render(); await wait(PACE.item); return dealerMove();
+    game.dealerBell = false; game.turn = 'dealer'; game.dealerSealUsedThisTurn = false; game.busy = true; say('恶魔的停站铃响起。你的回合被列车吞掉了。','The demon’s Stop Bell rings. The train swallows your turn.'); render(); await wait(PACE.item); return dealerMove();
   }
   if (game.turn === 'dealer') dealerMove();
 }
@@ -352,7 +369,7 @@ async function dealerMove() {
   game.busy = true; render();
   setMessage(game.dealerItems.length ? tone('恶魔检查自己的道具。', '恶魔的指甲划过道具边缘……', '它挑选工具，像在决定从哪里拆开你。','The demon checks its items.','Its claws scrape across the item tray…','It chooses a tool as if deciding where to open you.') : tone('恶魔盯着弹仓判断下一步。', '恶魔空着手，安静地盯着你。', '它没有道具，只剩牙齿。','The demon studies the chamber.','Empty-handed, the demon stares at you.','It has no items. Only teeth.'));
   await wait(PACE.dealer);
-  if (game.bell) { game.bell = false; game.turn = 'player'; say('停站铃响了。检票员错过了这一回合。','The Stop Bell rings. The demon loses this turn.'); beep('item'); render(); await wait(PACE.item); game.busy = false; return render(); }
+  if (game.bell) { game.bell = false; game.turn = 'player'; game.playerSealUsedThisTurn = false; say('停站铃响了。对方错过了这一回合。','The Stop Bell rings. The opponent loses this turn.'); beep('item'); render(); await wait(PACE.item); game.busy = false; return render(); }
   if (game.dealerItemsSealed) { game.dealerItemsSealed = false; say('封锁条压住了恶魔的道具栏。它只能直接扣动。','The Lock Strip seals the demon’s items. It must fire directly.'); await wait(PACE.item); }
   else await dealerUseItems(Math.min(3, Math.ceil(difficulty / 2)));
   if (game.dealerHp <= 0) return resolveRound();
@@ -374,7 +391,7 @@ async function dealerUseItem() {
   let key;
   if (game.dealerHp < game.dealerMax && game.dealerItems.includes('tea')) key = 'tea';
   else if (!game.dealerShield && game.dealerItems.includes('charm')) key = 'charm';
-  else if (!game.playerItemsSealed && game.dealerItems.includes('seal')) key = 'seal';
+  else if (!game.playerItemsSealed && !game.dealerSealUsedThisTurn && game.dealerItems.includes('seal')) key = 'seal';
   else if (game.dealerKnown === null && game.dealerItems.includes('lamp')) key = 'lamp';
   else if (!game.dealerPowered && game.dealerKnown !== false && game.dealerItems.includes('wrench') && counts().live >= counts().blank) key = 'wrench';
   else if (!game.dealerBell && game.dealerItems.includes('bell') && Math.random() < .65) key = 'bell';
@@ -400,7 +417,12 @@ async function dealerUseItem() {
       else { game.dealerBell = true; say('你保留了断路钳。停站铃将夺走你的下一回合。','You kept the cutter. The Stop Bell will take your next turn.'); }
     } else { game.dealerBell = true; say('恶魔接通停站铃，准备夺走你的下个回合。','The demon connects a Stop Bell to steal your next turn.'); }
   }
-  if (key === 'seal') { game.playerItemsSealed = true; say('恶魔贴下封锁条。你的下个道具阶段被封住了。','The demon applies a Lock Strip. Your next item phase is sealed.'); }
+  if (key === 'seal') {
+    game.dealerSealUsedThisTurn = true;
+    const hookIndex = game.items.indexOf('unsealer');
+    if (hookIndex >= 0) { game.items.splice(hookIndex, 1); refillSupply(); say('你的解封钩自动撕开封锁条，道具栏没有被封住。','Your Seal Hook tears the strip away. Your items remain available.'); }
+    else { game.playerItemsSealed = true; say('对方贴下封锁条。你的下个道具阶段被封住了。','The opponent applies a Lock Strip. Your next item phase is sealed.'); }
+  }
   if (key === 'charm') { game.dealerShield = true; say('恶魔挂起旧护符。下一次伤害将减少 1 点。','The demon hangs an Old Charm. Its next damage is reduced by 1.'); }
   if (key === 'glove') {
     const stolenIndex = Math.floor(Math.random() * game.items.length); const stolen = game.items.splice(stolenIndex, 1)[0];
@@ -428,7 +450,7 @@ async function resolveRound() {
   if (game.round >= 3) return endGame(true);
   game.round++; game.dealerMax = dealerMaxForRound(game.round); game.dealerHp = game.dealerMax;
   game.playerHp = Math.min(game.playerMax, game.playerHp + 1); game.turn = 'player'; game.busy = false;
-  game.itemsLocked = savedInjuries.includes('stiff'); game.selfLocked = savedInjuries.includes('frostbite');
+  game.itemsLocked = savedInjuries.includes('stiff'); game.selfLocked = savedInjuries.includes('frostbite'); game.playerSealUsedThisTurn = false; game.dealerSealUsedThisTurn = false;
   setMessage(tone('检票员倒下，又从下一节车厢站起。机器变得更重了。', '恶魔倒下。下一节车厢里，另一双红眼缓缓睁开。', '那具身体倒下了。下一节车厢却传来骨头重新拼好的声音。','The conductor falls, then rises in the next carriage. The machine grows heavier.','The demon falls. Another pair of red eyes opens in the next carriage.','The body drops. From the next carriage comes the sound of bones rebuilding themselves.'));
   await wait(PACE.round); await loadChamber();
 }
@@ -438,6 +460,8 @@ async function useItem(index) {
   const key = game.items[index]; if (!key) return;
   if (game.playerItemsSealed) return notice('封锁条压住道具栏。本回合只能直接扣动。','Your items are sealed. You must fire this turn.');
   if (key === 'breaker') return notice('断路钳会在对方使用停站铃时询问你是否使用。','The Circuit Cutter asks for your choice when the enemy uses a Stop Bell.');
+  if (key === 'unsealer') return notice('解封钩是被动道具，会自动抵消对方的封锁条。','The Seal Hook is passive and automatically cancels an enemy Lock Strip.');
+  if (key === 'seal' && game.playerSealUsedThisTurn) return notice('本行动回合已经使用过封锁条。','You already used a Lock Strip this action turn.');
   if (game.itemsLocked) return notice('僵硬的手指不听使唤。先扣动一次，才能使用道具。','Your stiff fingers will not move. Trigger once to unlock items.');
   if (key === 'wrench' && game.powered) return notice('机器已经增压，必须先扣动一次。','Pressure is already active. Trigger once first.');
   if (key === 'tea' && game.playerHp >= game.playerMax) return notice('生命值已满，热茶留到受伤后再喝。','Health is full. Save the tea for later.');
@@ -459,7 +483,12 @@ async function useItem(index) {
     if (breakerIndex >= 0) { game.dealerItems.splice(breakerIndex, 1); say('恶魔的断路钳咬断线路，你的停站铃失效了。','The demon cuts the circuit. Your Stop Bell fails.'); }
     else { game.bell = true; say('停站铃已经接通。检票员的下个回合将被跳过。','Stop Bell connected. The demon loses its next turn.'); }
   }
-  if (key === 'seal') { game.dealerItemsSealed = true; say('封锁条压住恶魔的道具栏。它下次只能直接扣动。','The Lock Strip seals the demon’s items. It must fire next turn.'); }
+  if (key === 'seal') {
+    game.playerSealUsedThisTurn = true;
+    const hookIndex = game.dealerItems.indexOf('unsealer');
+    if (hookIndex >= 0) { game.dealerItems.splice(hookIndex, 1); say('对方的解封钩撕开封锁条，这次封锁无效。','The opponent’s Seal Hook tears away your Lock Strip.'); }
+    else { game.dealerItemsSealed = true; say('封锁条压住对方的道具栏。对方下次只能直接扣动。','The Lock Strip seals the opponent’s items. It must fire next turn.'); }
+  }
   if (key === 'charm') { game.playerShield = true; say('旧护符贴上胸口。下一次伤害减少 1 点。','The Old Charm rests on your chest. Reduce the next damage by 1.'); }
   if (key === 'tea') { game.playerHp = Math.min(game.playerMax, game.playerHp + 1); say('热茶让手不再发抖。恢复 1 点生命。','Hot Tea steadies your hands. Restore 1 health.'); }
   if (key === 'inverter') {
@@ -490,7 +519,7 @@ async function completeSteal(dealerIndex) {
   game.busy = true; render(); await wait(PACE.item); game.busy = false; render();
 }
 
-function applyCheat(name, button) {
+async function applyCheat(name, button) {
   if (name === 'cure') {
     savedInjuries = []; localStorage.removeItem('lastTrainInjuries');
     if (game.started) { game.playerMax = 6; game.playerHp = 6; game.itemsLocked = false; game.selfLocked = false; game.firstLampBlocked = false; } else game = freshGame();
@@ -503,6 +532,15 @@ function applyCheat(name, button) {
   if (name === 'peek') { maintenancePeek = !maintenancePeek; say(`弹格持续监视已${maintenancePeek ? '开启' : '关闭'}。`,`Chamber monitor ${maintenancePeek ? 'enabled' : 'disabled'}.`); }
   if (name === 'items') { supplyMode = !supplyMode; refillSupply(); say(`无限全套道具已${supplyMode ? '开启' : '关闭'}。`,`Endless full item set ${supplyMode ? 'enabled' : 'disabled'}.`); }
   if (name === 'weaken') { game.dealerHp = 1; say('维护指令：恶魔生命值已设为 1。','Service command: demon health set to 1.'); }
+  if (name === 'nextLive') { game.shells[0] = true; say('调试：下一格已设为高压。','Debug: next chamber set to LIVE.'); }
+  if (name === 'nextBlank') { game.shells[0] = false; say('调试：下一格已设为空响。','Debug: next chamber set to BLANK.'); }
+  if (name === 'reload') { await loadChamber(); say('调试：弹仓已重新装填。','Debug: chamber reloaded.'); }
+  if (name === 'nextNight') {
+    if (game.round < 3) { game.round++; game.dealerMax = dealerMaxForRound(game.round); game.dealerHp = game.dealerMax; await loadChamber(); say(`调试：已进入第 ${game.round} 夜。`,`Debug: advanced to night ${game.round}.`); }
+    else say('调试：当前已经是最后一夜。','Debug: already on the final night.');
+  }
+  if (name === 'clearPlayerItems') { supplyMode = false; game.items = []; say('调试：玩家道具已清空。','Debug: player items cleared.'); }
+  if (name === 'clearDealerItems') { game.dealerItems = []; say('调试：对方道具已清空。','Debug: opponent items cleared.'); }
   applyLanguage(language);
   ui.cabinet.classList.remove('admin-flash'); void ui.cabinet.offsetWidth; ui.cabinet.classList.add('admin-flash'); beep('item'); render();
 }

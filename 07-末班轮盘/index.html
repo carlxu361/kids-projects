@@ -23,10 +23,13 @@
         <label class="horror-control" for="horrorRange">
           <span><i data-i18n="horror">恐怖指数</i> <output id="horrorValue">3</output></span>
           <input id="horrorRange" type="range" min="1" max="10" value="3">
+          <b class="index-name" id="horrorName">异响</b>
+          <small class="index-scale"><i>1</i><i>5</i><i>10</i></small>
         </label>
         <label class="difficulty-control" for="difficultyRange">
-          <span><i data-i18n="difficulty">难度</i> <output id="difficultyValue">3</output></span>
-          <input id="difficultyRange" type="range" min="1" max="5" value="3">
+          <span><i data-i18n="difficulty">难度</i></span>
+          <input id="difficultyRange" type="range" min="1" max="4" value="2">
+          <b class="index-name" id="difficultyValue">夜行快车</b>
         </label>
         <button class="text-button" id="soundButton" type="button" aria-pressed="true">声音：开</button>
         <button class="text-button" id="musicButton" type="button" aria-pressed="true">音乐：开</button>
@@ -43,7 +46,7 @@
           <svg class="portrait-art" viewBox="0 0 64 64"><path d="M8 8h14v8h20V8h14v15H46v8h6v25H12V31h6v-8H8z"/><path class="portrait-light" d="M20 34h8v7h-8zm16 0h8v7h-8zm-8 14h8v5h-8z"/></svg>
         </div>
         <div class="fighter-copy">
-          <p class="fighter-label" data-i18n="dealer">恶魔检票员</p>
+          <p class="fighter-label" data-i18n="dealer">？？？</p>
           <div class="hearts" id="dealerHearts" aria-label="检票员生命值"></div>
           <strong class="hp-number" id="dealerHpNumber">生命 — / —</strong>
         </div>
@@ -114,7 +117,7 @@
         <li>双方道具上限为 8。恶魔也拥有公开道具，每回合最多连续使用 2 件。</li>
         <li>双方生命上限为 6。新增夺取、反转弹格和随机血量道具。</li>
         <li>恐怖指数 5 以上启用轻微像素溅射，8 以上语言与色调更压迫。</li>
-        <li>断路钳触发时可选择是否抵消停站铃；封锁条可封住一次道具阶段；旧护符抵消 1 点伤害。</li>
+        <li>封锁条每个行动回合限用一次，解封钩会自动抵消它；旧护符抵消 1 点伤害。</li>
       </ol>
       <button class="action primary" id="closeRules" type="button">我已知晓</button>
     </div>
@@ -170,6 +173,12 @@
           <button class="cheat" data-cheat="items" type="button">无限全套：关</button>
           <button class="cheat" data-cheat="weaken" type="button">恶魔剩1血</button>
           <button class="cheat" data-cheat="cure" type="button">治愈所有伤势</button>
+          <button class="cheat" data-cheat="nextLive" type="button">下一格：高压</button>
+          <button class="cheat" data-cheat="nextBlank" type="button">下一格：空响</button>
+          <button class="cheat" data-cheat="reload" type="button">立即重装</button>
+          <button class="cheat" data-cheat="nextNight" type="button">跳至下一夜</button>
+          <button class="cheat" data-cheat="clearPlayerItems" type="button">清空玩家道具</button>
+          <button class="cheat" data-cheat="clearDealerItems" type="button">清空对方道具</button>
         </div>
       </div>
       <button class="text-button" id="closeAdmin" type="button">关闭维修口</button>
