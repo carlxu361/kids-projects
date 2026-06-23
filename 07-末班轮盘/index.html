@@ -9,15 +9,31 @@
 </head>
 <body>
   <div class="noise" aria-hidden="true"></div>
+  <div class="blood-fx" id="bloodFx" aria-hidden="true">
+    <i></i><i></i><i></i><i></i><i></i><i></i>
+  </div>
+  <div class="fp-hands" aria-hidden="true"><i class="hand-left"></i><i class="hand-right"></i></div>
   <main class="cabinet" id="cabinet">
     <header class="topbar">
       <div>
-        <p class="kicker">TERMINAL 09 · 最后一班</p>
-        <h1>末班轮盘</h1>
+        <p class="kicker" data-i18n="kicker">TERMINAL 09 · 最后一班</p>
+        <h1 data-i18n="title">末班轮盘</h1>
       </div>
       <div class="top-actions">
-        <button class="text-button" id="soundButton" type="button" aria-pressed="true">音效：开</button>
+        <label class="horror-control" for="horrorRange">
+          <span><i data-i18n="horror">恐怖指数</i> <output id="horrorValue">3</output></span>
+          <input id="horrorRange" type="range" min="1" max="10" value="3">
+        </label>
+        <label class="difficulty-control" for="difficultyRange">
+          <span><i data-i18n="difficulty">难度</i> <output id="difficultyValue">3</output></span>
+          <input id="difficultyRange" type="range" min="1" max="5" value="3">
+        </label>
+        <button class="text-button" id="soundButton" type="button" aria-pressed="true">声音：开</button>
+        <button class="text-button" id="musicButton" type="button" aria-pressed="true">音乐：开</button>
+        <button class="text-button" id="viewButton" type="button">视角：桌面</button>
+        <button class="text-button" id="langButton" type="button">EN</button>
         <button class="text-button" id="rulesButton" type="button">规则</button>
+        <button class="text-button admin-entry" id="adminButton" type="button">维修口</button>
       </div>
     </header>
 
@@ -27,28 +43,32 @@
           <svg class="portrait-art" viewBox="0 0 64 64"><path d="M8 8h14v8h20V8h14v15H46v8h6v25H12V31h6v-8H8z"/><path class="portrait-light" d="M20 34h8v7h-8zm16 0h8v7h-8zm-8 14h8v5h-8z"/></svg>
         </div>
         <div class="fighter-copy">
-          <p class="fighter-label">恶魔检票员</p>
+          <p class="fighter-label" data-i18n="dealer">恶魔检票员</p>
           <div class="hearts" id="dealerHearts" aria-label="检票员生命值"></div>
+          <strong class="hp-number" id="dealerHpNumber">生命 — / —</strong>
         </div>
+        <div class="inventory-label"><span data-i18n="dealerItems">恶魔道具</span> <b id="dealerItemCount">0 / 8</b></div>
         <div class="dealer-inventory" id="dealerItems" aria-label="恶魔的道具"></div>
       </article>
 
       <section class="machine" id="machine">
         <div class="round-readout">
           <span id="roundLabel">第 1 夜</span>
-          <span id="turnLabel">等待入座</span>
+          <strong id="turnLabel">等待入座</strong>
         </div>
         <div class="chamber-wrap">
-          <div class="chamber" id="chamber" aria-label="当前弹仓">
+          <div class="chamber pressure-rig" id="chamber" aria-label="当前线性弹仓">
+            <div class="press-jaw jaw-top" aria-hidden="true"></div>
+            <div class="pressure-label"><b>NO.09</b><span data-i18n="gate">弹格闸机</span></div>
             <div id="chamberSlots" aria-hidden="true"></div>
-            <span class="chamber-core">09</span>
+            <div class="press-jaw jaw-bottom" aria-hidden="true"></div>
           </div>
-          <div class="chamber-pointer" aria-hidden="true">▼</div>
+          <div class="chamber-pointer" aria-hidden="true"><span data-i18n="current">当前格</span> ▶</div>
           <div class="spark" id="spark" aria-hidden="true"></div>
         </div>
-        <div class="ammo-ledger" aria-live="polite">
-          <span><i class="live-dot"></i>高压 <b id="liveCount">—</b></span>
-          <span><i class="blank-dot"></i>空响 <b id="blankCount">—</b></span>
+        <div class="ammo-ledger" id="ammoLedger" aria-live="polite">
+          <span><i class="live-dot"></i><em data-i18n="live">高压</em> <b id="liveCount">—</b></span>
+          <span><i class="blank-dot"></i><em data-i18n="blank">空响</em> <b id="blankCount">—</b></span>
         </div>
         <div class="machine-status" id="machineStatus" aria-live="polite">机器未通电</div>
         <p class="message" id="message" aria-live="assertive">末班车不载活人。你确定要上车吗？</p>
@@ -59,23 +79,26 @@
           <svg class="portrait-art" viewBox="0 0 64 64"><path d="M21 9h22v6h7v24h-7v7h-7v10H14V42h7V28h-6V15h6z"/><path class="portrait-light" d="M27 22h7v7h-7zm-6 18h22v6H21z"/></svg>
         </div>
         <div class="fighter-copy">
-          <p class="fighter-label">无票乘客</p>
+          <p class="fighter-label" data-i18n="player">无票乘客</p>
           <div class="hearts" id="playerHearts" aria-label="玩家生命值"></div>
+          <strong class="hp-number" id="playerHpNumber">生命 — / —</strong>
         </div>
       </article>
     </section>
 
     <section class="console">
       <div class="injury-strip">
-        <span>永久伤势</span>
+        <span data-i18n="injuries">永久伤势</span>
         <strong id="injuryText">无</strong>
       </div>
-      <div class="items" id="items" aria-label="道具栏"></div>
+      <div class="action-heading" id="actionHint">投入车票，开始第一夜</div>
       <div class="actions" id="actions">
-        <button class="action primary" id="startButton" type="button">投入车票</button>
-        <button class="action target" id="shootDealer" type="button" hidden>对准检票员</button>
-        <button class="action target self" id="shootSelf" type="button" hidden>对准自己</button>
+        <button class="action primary" id="startButton" type="button" data-i18n="start">投入车票</button>
+        <button class="action target" id="shootDealer" type="button" hidden><b data-i18n="fireDealer">开火：恶魔</b><small data-i18n="fireDealerHelp">命中则造成伤害</small></button>
+        <button class="action target self" id="shootSelf" type="button" hidden><b data-i18n="fireSelf">试探：自己</b><small data-i18n="fireSelfHelp">空响可继续行动</small></button>
       </div>
+      <div class="inventory-heading"><span data-i18n="yourItems">你的道具</span><b id="itemCount">0 / 8</b></div>
+      <div class="items" id="items" aria-label="道具栏"></div>
     </section>
   </main>
 
@@ -84,13 +107,28 @@
       <p class="kicker">乘车须知</p>
       <h2>听响，下注，活到终点。</h2>
       <ol>
-        <li>每轮会公开高压与空响的数量，但顺序未知。</li>
+        <li>每次装填公开高压与空响数量，打出第一发后封存为问号。</li>
         <li>高压命中造成 1 点伤害；空响对准自己可继续行动。</li>
         <li>使用道具窥探或操控下一格。三夜后击败检票员即获胜。</li>
         <li>失败会新增一项永久伤势；完整通关只能治愈其中一项。</li>
-        <li>恶魔也拥有公开道具，并会根据局势使用。</li>
+        <li>双方道具上限为 8。恶魔也拥有公开道具，每回合最多连续使用 2 件。</li>
+        <li>双方生命上限为 6。新增夺取、反转弹格和随机血量道具。</li>
+        <li>恐怖指数 5 以上启用轻微像素溅射，8 以上语言与色调更压迫。</li>
+        <li>断路钳触发时可选择是否抵消停站铃；封锁条可封住一次道具阶段；旧护符抵消 1 点伤害。</li>
       </ol>
       <button class="action primary" id="closeRules" type="button">我已知晓</button>
+    </div>
+  </dialog>
+
+  <dialog id="breakerDialog">
+    <div class="dialog-inner">
+      <p class="kicker">CIRCUIT WARNING</p>
+      <h2 data-i18n="breakerAsk">使用断路钳抵消恶魔的停站铃？</h2>
+      <p data-i18n="breakerExplain">使用后断路钳会被消耗；拒绝则失去下一回合。</p>
+      <div class="ending-actions">
+        <button class="action primary" id="useBreaker" type="button" data-i18n="use">使用</button>
+        <button class="text-button" id="keepBreaker" type="button" data-i18n="keep">保留</button>
+      </div>
     </div>
   </dialog>
 
@@ -102,6 +140,39 @@
       <div class="ending-actions">
         <button class="action primary" id="againButton" type="button">再次乘车</button>
       </div>
+    </div>
+  </dialog>
+
+  <dialog id="stealDialog">
+    <div class="dialog-inner">
+      <p class="kicker">扒手手套</p>
+      <h2>选择要夺取的道具</h2>
+      <div class="steal-options" id="stealOptions"></div>
+      <button class="text-button" id="cancelSteal" type="button">取消，不消耗手套</button>
+    </div>
+  </dialog>
+
+  <dialog id="adminDialog">
+    <div class="dialog-inner admin-panel">
+      <p class="kicker">DEVICE SERVICE · NO.09</p>
+      <h2>九号机组维修面板</h2>
+      <div id="adminLogin">
+        <label class="password-label" for="adminPassword">输入维修密钥</label>
+        <input class="password-input" id="adminPassword" type="password" autocomplete="off">
+        <p class="admin-error" id="adminError" aria-live="polite"></p>
+        <button class="action primary" id="adminLoginButton" type="button">开启维护面板</button>
+      </div>
+      <div id="adminCheats" hidden>
+        <div class="cheat-grid">
+          <button class="cheat" data-cheat="heal" type="button">生命全满</button>
+          <button class="cheat" data-cheat="invincible" type="button">绝对屏障：关</button>
+          <button class="cheat" data-cheat="peek" type="button">弹格监视：关</button>
+          <button class="cheat" data-cheat="items" type="button">无限全套：关</button>
+          <button class="cheat" data-cheat="weaken" type="button">恶魔剩1血</button>
+          <button class="cheat" data-cheat="cure" type="button">治愈所有伤势</button>
+        </div>
+      </div>
+      <button class="text-button" id="closeAdmin" type="button">关闭维修口</button>
     </div>
   </dialog>
   <script src="game.js"></script>
