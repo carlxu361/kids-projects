@@ -12,7 +12,6 @@
   <div class="blood-fx" id="bloodFx" aria-hidden="true">
     <i></i><i></i><i></i><i></i><i></i><i></i>
   </div>
-  <div class="fp-hands" aria-hidden="true"><i class="hand-left"></i><i class="hand-right"></i></div>
   <main class="cabinet" id="cabinet">
     <header class="topbar">
       <div>
@@ -47,11 +46,12 @@
         </div>
         <div class="fighter-copy">
           <p class="fighter-label" data-i18n="dealer">？？？</p>
-          <div class="hearts" id="dealerHearts" aria-label="检票员生命值"></div>
+          <div class="hearts" id="dealerHearts" aria-label="它的生命值"></div>
           <strong class="hp-number" id="dealerHpNumber">生命 — / —</strong>
         </div>
-        <div class="inventory-label"><span data-i18n="dealerItems">恶魔道具</span> <b id="dealerItemCount">0 / 8</b></div>
-        <div class="dealer-inventory" id="dealerItems" aria-label="恶魔的道具"></div>
+        <div class="role-badge"><b id="dealerRoleName">未登记</b><small id="dealerRoleAbility">能力未知</small></div>
+        <div class="inventory-label"><span data-i18n="dealerItems">它的道具</span> <b id="dealerItemCount">0 / 8</b></div>
+        <div class="dealer-inventory" id="dealerItems" aria-label="它的道具"></div>
       </article>
 
       <section class="machine" id="machine">
@@ -86,6 +86,7 @@
           <div class="hearts" id="playerHearts" aria-label="玩家生命值"></div>
           <strong class="hp-number" id="playerHpNumber">生命 — / —</strong>
         </div>
+        <div class="role-badge"><b id="playerRoleName">未选择角色</b><small id="playerRoleAbility">投入车票后选择</small></div>
       </article>
     </section>
 
@@ -97,8 +98,9 @@
       <div class="action-heading" id="actionHint">投入车票，开始第一夜</div>
       <div class="actions" id="actions">
         <button class="action primary" id="startButton" type="button" data-i18n="start">投入车票</button>
-        <button class="action target" id="shootDealer" type="button" hidden><b data-i18n="fireDealer">开火：恶魔</b><small data-i18n="fireDealerHelp">命中则造成伤害</small></button>
+        <button class="action target" id="shootDealer" type="button" hidden><b data-i18n="fireDealer">开火：它</b><small data-i18n="fireDealerHelp">命中则造成伤害</small></button>
         <button class="action target self" id="shootSelf" type="button" hidden><b data-i18n="fireSelf">试探：自己</b><small data-i18n="fireSelfHelp">空响可继续行动</small></button>
+        <button class="action role-action" id="characterAction" type="button" hidden><b>角色能力</b><small>当前不可使用</small></button>
       </div>
       <div class="inventory-heading"><span data-i18n="yourItems">你的道具</span><b id="itemCount">0 / 8</b></div>
       <div class="items" id="items" aria-label="道具栏"></div>
@@ -112,12 +114,12 @@
       <ol>
         <li>每次装填公开高压与空响数量，打出第一发后封存为问号。</li>
         <li>高压命中造成 1 点伤害；空响对准自己可继续行动。</li>
-        <li>使用道具窥探或操控下一格。三夜后击败检票员即获胜。</li>
+        <li>使用道具窥探或操控下一格。五夜后击败它即获胜。</li>
         <li>失败会新增一项永久伤势；完整通关只能治愈其中一项。</li>
-        <li>双方道具上限为 8。恶魔也拥有公开道具，每回合最多连续使用 2 件。</li>
-        <li>双方生命上限为 6。新增夺取、反转弹格和随机血量道具。</li>
+        <li>双方道具上限为 8，每次装填固定获得 2 件道具；它每夜恢复至 6 点生命。</li>
+        <li>开局选择一名禁乘角色，它会随机选择另一名；双方角色能力全程生效。</li>
         <li>恐怖指数 5 以上启用轻微像素溅射，8 以上语言与色调更压迫。</li>
-        <li>封锁条每个行动回合限用一次，解封钩会自动抵消它；旧护符抵消 1 点伤害。</li>
+        <li>封锁条每个行动回合限用一次；解封钩与断路钳一样，由持有者选择是否消耗。</li>
       </ol>
       <button class="action primary" id="closeRules" type="button">我已知晓</button>
     </div>
@@ -125,12 +127,35 @@
 
   <dialog id="breakerDialog">
     <div class="dialog-inner">
-      <p class="kicker">CIRCUIT WARNING</p>
-      <h2 data-i18n="breakerAsk">使用断路钳抵消恶魔的停站铃？</h2>
-      <p data-i18n="breakerExplain">使用后断路钳会被消耗；拒绝则失去下一回合。</p>
+      <p class="kicker" id="decisionKicker">INTERRUPT WINDOW</p>
+      <h2 id="decisionTitle">是否使用道具？</h2>
+      <p id="decisionCopy">使用后将消耗。</p>
       <div class="ending-actions">
         <button class="action primary" id="useBreaker" type="button" data-i18n="use">使用</button>
         <button class="text-button" id="keepBreaker" type="button" data-i18n="keep">保留</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="characterDialog">
+    <div class="dialog-inner character-panel">
+      <p class="kicker">FORBIDDEN PASSENGER FILES</p>
+      <h2>选择你的禁乘角色</h2>
+      <p>你选择一份档案。它会从剩余档案中随机抽取一份。</p>
+      <div class="character-grid" id="characterGrid"></div>
+      <button class="text-button" id="cancelCharacter" type="button">返回</button>
+    </div>
+  </dialog>
+
+  <dialog id="declareDialog">
+    <div class="dialog-inner declare-panel">
+      <p class="kicker">RED SIGNAL WAGER</p>
+      <h2>声明一格弹仓</h2>
+      <p>猜中则你下次获得双倍道具；猜错则它获得双倍道具。声明后弹仓会重新打乱。</p>
+      <label><span id="declareIndexLabel">第几格</span> <input id="declareIndex" type="number" min="1" value="1"></label>
+      <div class="ending-actions">
+        <button class="action primary" id="declareLive" type="button">声明高压</button>
+        <button class="action self" id="declareBlank" type="button">声明空响</button>
       </div>
     </div>
   </dialog>
@@ -171,14 +196,14 @@
           <button class="cheat" data-cheat="invincible" type="button">绝对屏障：关</button>
           <button class="cheat" data-cheat="peek" type="button">弹格监视：关</button>
           <button class="cheat" data-cheat="items" type="button">无限全套：关</button>
-          <button class="cheat" data-cheat="weaken" type="button">恶魔剩1血</button>
+          <button class="cheat" data-cheat="weaken" type="button">它剩1血</button>
           <button class="cheat" data-cheat="cure" type="button">治愈所有伤势</button>
           <button class="cheat" data-cheat="nextLive" type="button">下一格：高压</button>
           <button class="cheat" data-cheat="nextBlank" type="button">下一格：空响</button>
           <button class="cheat" data-cheat="reload" type="button">立即重装</button>
           <button class="cheat" data-cheat="nextNight" type="button">跳至下一夜</button>
           <button class="cheat" data-cheat="clearPlayerItems" type="button">清空玩家道具</button>
-          <button class="cheat" data-cheat="clearDealerItems" type="button">清空对方道具</button>
+          <button class="cheat" data-cheat="clearDealerItems" type="button">清空它的道具</button>
         </div>
       </div>
       <button class="text-button" id="closeAdmin" type="button">关闭维修口</button>
