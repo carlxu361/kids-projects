@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D Tactical Aim Prototype</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main id="game-shell">
+      <canvas id="game-canvas"></canvas>
+
+      <section id="start-panel" class="panel">
+        <p class="eyebrow">Prototype 07</p>
+        <h1>裂界行动</h1>
+        <div id="menu-orbit" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+        <p>
+          5v5 攻防、买枪经济、爆能器拾取部署、英雄原型、掩体挡弹和小地图标记。
+          玩法参考竞技攻防结构，素材和角色均为原创简化版。
+        </p>
+        <div class="hero-row" role="group" aria-label="选择英雄">
+          <button class="hero-button active" data-hero="warden" type="button"><span>守护者</span><small>治疗</small></button>
+          <button class="hero-button" data-hero="flare" type="button"><span>焰手</span><small>爆发</small></button>
+          <button class="hero-button" data-hero="brim" type="button"><span>战术官</span><small>烟幕</small></button>
+          <button class="hero-button" data-hero="gust" type="button"><span>疾风</span><small>位移</small></button>
+        </div>
+        <div class="role-row" role="group" aria-label="选择阵营">
+          <button id="attack-button" class="role-button active" type="button">攻方</button>
+          <button id="defense-button" class="role-button" type="button">守方</button>
+        </div>
+        <button id="start-button" type="button">进入回合</button>
+      </section>
+
+      <section id="hud" class="hidden" aria-label="match hud">
+        <div class="hud-group hud-round">
+          <span>回合</span>
+          <strong id="round-label">1 / 7</strong>
+        </div>
+        <div class="hud-group hud-timer">
+          <span>时间</span>
+          <strong id="timer-label">100</strong>
+        </div>
+        <div class="hud-group hud-side">
+          <span>阵营</span>
+          <strong id="side-label">攻方</strong>
+        </div>
+        <div class="hud-group hud-scoreline">
+          <span>比分</span>
+          <strong id="scoreline-label">0 : 0</strong>
+        </div>
+        <div class="hud-group hud-health">
+          <span>生命</span>
+          <strong id="health-label">100</strong>
+        </div>
+        <div class="hud-group hud-ammo">
+          <span>弹药</span>
+          <strong id="ammo-label">25 / 75</strong>
+        </div>
+        <div class="hud-group hud-weapon">
+          <span>武器</span>
+          <strong id="weapon-label">Rifle</strong>
+        </div>
+        <div class="hud-group hud-score">
+          <span>积分</span>
+          <strong id="score-label">0</strong>
+        </div>
+      </section>
+
+      <section id="team-panel" class="hidden" aria-label="team status">
+        <div id="ally-row"></div>
+        <div id="enemy-row"></div>
+      </section>
+
+      <section id="health-panel" class="hidden" aria-label="health">
+        <span>生命</span>
+        <div id="health-track"><div id="health-fill"></div></div>
+        <strong id="health-bar-label">100</strong>
+      </section>
+
+      <section id="objective-panel" class="hidden">
+        <span id="objective-label">选择阵营开始</span>
+        <strong id="objective-status">爆能器未安装</strong>
+        <div id="progress-track"><div id="progress-fill"></div></div>
+      </section>
+
+      <div id="interact-prompt" class="hidden">按住 E</div>
+      <div id="lock-prompt" class="hidden">点击画面重新瞄准</div>
+      <div id="alive-alert" class="hidden">敌方还剩一人</div>
+      <div id="server-badge" class="hidden">本地服务器 · 低延迟</div>
+
+      <section id="minimap-panel" class="hidden" aria-label="minimap">
+        <canvas id="minimap" width="180" height="180"></canvas>
+        <span id="minimap-hint">左键标记 · X 战术图</span>
+      </section>
+
+      <section id="round-banner" class="hidden" aria-live="polite">
+        <span id="round-result">攻方胜利</span>
+        <small id="round-reason">爆能器爆破成功</small>
+      </section>
+
+      <section id="weapon-panel" class="hidden" aria-label="weapon panel">
+        <div id="credits-label">R点 800</div>
+        <div id="weapon-name">Rifle</div>
+        <div id="weapon-slots"></div>
+        <div id="weapon-hint">B 买枪期菜单 · E 拾爆能器/安装/拆除 · 右键开镜 · 1-5 切枪</div>
+      </section>
+
+      <section id="settings-panel" class="panel hidden" aria-label="settings">
+        <p class="eyebrow">设置</p>
+        <h1>暂停</h1>
+        <label>主音量 <input id="volume-slider" type="range" min="0" max="100" value="70" /></label>
+        <label>音效 <input id="sfx-toggle" type="checkbox" checked /></label>
+        <label>灵敏度 <input id="sensitivity-slider" type="range" min="8" max="40" value="22" /></label>
+        <button id="resume-button" type="button">继续</button>
+        <button id="home-button" type="button">回到主页</button>
+      </section>
+
+      <section id="buy-panel" class="hidden" aria-label="buy menu">
+        <div class="buy-head">
+          <strong>买枪阶段</strong>
+          <span id="buy-timer">8</span>
+        </div>
+        <div id="buy-list"></div>
+      </section>
+
+      <section id="kill-effect" class="hidden" aria-live="polite">
+        <div class="kill-skull">
+          <span></span>
+          <i></i>
+        </div>
+        <strong id="kill-title">KILL</strong>
+        <span id="kill-subtitle">精准击倒</span>
+      </section>
+
+      <section id="scope-overlay" class="hidden" aria-hidden="true">
+        <div class="scope-circle"></div>
+        <div class="scope-line-x"></div>
+        <div class="scope-line-y"></div>
+      </section>
+
+      <div id="crosshair" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+
+      <aside id="feed" aria-live="polite"></aside>
+
+      <section id="help-panel">
+        <b>WASD</b> 移动
+        <b>鼠标</b> 瞄准
+        <b>左键</b> 射击/近战
+        <b>Space</b> 跳跃
+        <b>R</b> 换弹
+        <b>1-5</b> 切武器
+        <b>E</b> 安装/拆除/拾枪
+        <b>B</b> 买枪期
+        <b>右键</b> 开镜
+        <b>X</b> 战术图
+        <b>Shift</b> 静步
+        <b>Esc</b> 设置
+      </section>
+    </main>
+
+    <script type="module" src="./game.js"></script>
+  </body>
+</html>
