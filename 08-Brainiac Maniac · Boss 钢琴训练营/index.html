@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="《Brainiac Maniac》八周互动钢琴训练营：切分节奏、半音、快速音型与双手配合。">
+  <title>Brainiac Maniac · Boss 钢琴训练营</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#lesson-panel">跳到今日训练</a>
+
+  <header class="hero">
+    <nav class="topbar" aria-label="主要导航">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">♩</span>
+        <span>Boss 钢琴训练营</span>
+      </div>
+      <button class="sound-toggle" id="sound-toggle" type="button" aria-pressed="true">
+        <span aria-hidden="true">♪</span> 练习音效：开
+      </button>
+    </nav>
+
+    <div class="hero-grid">
+      <section class="hero-copy" aria-labelledby="page-title">
+        <p class="eyebrow">Brainiac Maniac · 8 周 · 每天 10 分钟</p>
+        <h1 id="page-title">不从零开始。<br><em>直接拆 Boss 战。</em></h1>
+        <p class="hero-lead">
+          为有 2 年基础、识谱较慢、正在练双手配合的你设计。从切分节奏、黑键半音和机械低音切入，
+          再逐步靠近 Laura Shigihara 的《Brainiac Maniac》Boss 战感觉。
+        </p>
+        <div class="hero-actions">
+          <button class="primary-button" id="start-today" type="button">开始今天的 10 分钟</button>
+          <button class="text-button" id="jump-route" type="button">查看 8 周路线 ↓</button>
+        </div>
+      </section>
+
+      <section class="roof-scene boss-scene" aria-label="训练进度：钢琴能量正在削弱 Boss 机甲">
+        <div class="moon" aria-hidden="true"></div>
+        <div class="roof-line" aria-hidden="true">
+          <div class="chimney"></div>
+          <div class="plant-pot"><span>♪</span></div>
+          <div class="zombie" id="hero-zombie"><span class="zombie-head">◉</span><span class="zombie-body"></span></div>
+        </div>
+        <div class="distance-card">
+          <div>
+            <span class="utility-label">Boss 能量</span>
+            <strong id="distance-number">100%</strong>
+          </div>
+          <div class="distance-track" aria-hidden="true"><span id="distance-fill"></span></div>
+          <p>每完成一次训练，Boss 能量下降一点。这里只有进度，没有失败惩罚。</p>
+        </div>
+      </section>
+    </div>
+  </header>
+
+  <main>
+    <section class="mission-strip" aria-label="教程重点">
+      <article><span>01</span><strong>先拆节奏</strong><small>切分和重音先单独练</small></article>
+      <article><span>02</span><strong>攻克黑键</strong><small>半音路线不靠临时猜</small></article>
+      <article><span>03</span><strong>组装双手</strong><small>机械低音对齐右手</small></article>
+      <article><span>04</span><strong>听琴纠错</strong><small>麦克风检查单音音高</small></article>
+    </section>
+
+    <section class="practice-shell" id="lesson-panel" tabindex="-1">
+      <aside class="lesson-sidebar" aria-label="训练关卡">
+        <div class="sidebar-heading">
+          <p class="eyebrow">你的 Boss 战路线</p>
+          <h2>8 周 Boss 战</h2>
+        </div>
+        <div class="week-list" id="week-list"></div>
+        <button class="reset-progress" id="reset-progress" type="button">重新开始全部进度</button>
+      </aside>
+
+      <section class="lesson-content" aria-live="polite">
+        <div class="lesson-heading">
+          <div>
+            <p class="eyebrow" id="lesson-kicker">第 1 周 · 地基</p>
+            <h2 id="lesson-title">先抓住 Boss 战重音</h2>
+          </div>
+          <span class="difficulty" id="lesson-difficulty">识谱</span>
+        </div>
+
+        <p class="lesson-goal" id="lesson-goal"></p>
+
+        <div class="ten-minute-plan" id="ten-minute-plan"></div>
+
+        <div class="training-console">
+          <div class="console-topline">
+            <div>
+              <span class="utility-label">今日训练</span>
+              <strong id="exercise-name">中音区定位</strong>
+            </div>
+            <div class="timer" aria-live="polite">
+              <span id="timer-display">10:00</span>
+              <button id="timer-button" type="button">开始计时</button>
+              <button id="timer-reset" type="button" aria-label="重置十分钟计时器">↺</button>
+            </div>
+          </div>
+
+          <div class="mode-tabs" role="tablist" aria-label="谱子显示方式">
+            <button class="mode-tab active" data-mode="both" role="tab" aria-selected="true" type="button">双谱</button>
+            <button class="mode-tab" data-mode="staff" role="tab" aria-selected="false" type="button">五线谱</button>
+            <button class="mode-tab" data-mode="number" role="tab" aria-selected="false" type="button">简谱</button>
+          </div>
+
+          <div class="score-card" id="score-card">
+            <div class="staff-wrap" id="staff-wrap" aria-label="五线谱练习"></div>
+            <div class="number-score" id="number-score" aria-label="简谱练习"></div>
+            <div class="score-hint" id="score-hint"></div>
+          </div>
+
+          <div class="playback-row">
+            <button class="secondary-button" id="listen-button" type="button">▶ 听示范</button>
+            <label class="tempo-control">
+              <span>速度 <strong id="tempo-value">60</strong> BPM</span>
+              <input id="tempo" type="range" min="40" max="100" value="60" step="2">
+            </label>
+            <button class="metronome-button" id="metronome" type="button" aria-pressed="false">节拍器：关</button>
+          </div>
+
+          <div class="keyboard-heading">
+            <div>
+              <strong>点琴键检查音高</strong>
+              <small id="keyboard-prompt">先找到中央 C（C4）</small>
+            </div>
+            <button class="label-toggle" id="label-toggle" type="button" aria-pressed="true">音名提示：开</button>
+          </div>
+          <div class="keyboard-scroll">
+            <div class="piano" id="piano" aria-label="两组八度互动钢琴键盘"></div>
+          </div>
+
+          <div class="check-row">
+            <label class="practice-check">
+              <input type="checkbox" id="practice-check">
+              <span>我能连续弹对 3 次，而且肩膀没有紧</span>
+            </label>
+            <button class="primary-button complete-button" id="complete-lesson" type="button" disabled>完成训练，削弱 Boss</button>
+          </div>
+        </div>
+
+        <section class="mic-trainer" aria-labelledby="mic-title">
+          <div class="mic-copy">
+            <p class="eyebrow">实验功能 · 单音识别</p>
+            <h3 id="mic-title">让网页听你弹一个音</h3>
+            <p>钢琴一次只弹一个音，并让它响 1 秒。网页会显示音名和音准；和弦、踏板混响、周围说话都会降低准确度。</p>
+            <button class="secondary-button" id="mic-toggle" type="button" aria-pressed="false">开启听琴模式</button>
+          </div>
+          <div class="pitch-display" id="pitch-display" aria-live="polite">
+            <span class="utility-label">本关目标音</span>
+            <strong id="mic-target">D4</strong>
+            <div class="detected-row">
+              <span>听到</span>
+              <b id="detected-note">—</b>
+              <small id="detected-cents">等待开始</small>
+            </div>
+            <div class="tuner-rail" aria-hidden="true"><span class="tuner-center"></span><i id="tuner-needle"></i></div>
+            <p id="mic-status">麦克风只在你开启后使用，声音不会上传。</p>
+          </div>
+        </section>
+
+        <aside class="coach-note">
+          <span class="coach-icon" aria-hidden="true">✦</span>
+          <div>
+            <strong>Boss 战教练提醒</strong>
+            <p id="coach-note"></p>
+          </div>
+        </aside>
+      </section>
+    </section>
+
+    <section class="method-section" id="route">
+      <div class="section-heading">
+        <p class="eyebrow">为什么这样练</p>
+        <h2>Boss 曲不是靠硬冲，<br>而是把复杂动作拆开重组。</h2>
+      </div>
+      <div class="method-grid">
+        <article>
+          <span class="method-symbol">眼</span>
+          <h3>黑键路线提前看</h3>
+          <p>半音很多时，先圈升降号和手位变化。眼睛比手先到，才不会弹到一半临时找键。</p>
+        </article>
+        <article>
+          <span class="method-symbol">手</span>
+          <h3>错位节奏先对骨架</h3>
+          <p>先只弹双手共同落下的重拍，再填中间音。直接合手刷整段，错误反而会被练熟。</p>
+        </article>
+        <article>
+          <span class="method-symbol">耳</span>
+          <h3>速度一档一档升</h3>
+          <p>连续三次稳定，才增加 4 BPM。慢练仍保留重音和机械感，慢的是速度，不是音乐。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="copyright-note">
+      <div>
+        <p class="eyebrow">关于完整版</p>
+        <h2>教程教 Boss 战技巧，不复制整首曲谱。</h2>
+      </div>
+      <p>
+        《Brainiac Maniac》由 Laura Shigihara 创作。本网页提供原创的短练习、节奏与伴奏训练；
+        第 7–8 周请配合你合法购买或获得授权的完整曲谱练习。这样既能真正学会，也尊重创作者。
+      </p>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>

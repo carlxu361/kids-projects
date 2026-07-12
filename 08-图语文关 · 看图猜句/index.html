@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="看图猜成语、文言文和古诗词的分年级闯关游戏">
+  <title>图语文关 · 看图猜句</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-theme="academy">
+  <div class="app-shell">
+    <header class="topbar">
+      <button class="brand" id="homeButton" type="button" title="返回选关">
+        <span class="brand-seal">图</span>
+        <span><strong>图语文关</strong><small>看图猜句</small></span>
+      </button>
+      <div class="top-stats" aria-label="游戏状态">
+        <span title="墨点可用于提示"><b>墨点</b><strong id="inkPoints">120</strong></span>
+        <span title="连续答对题数"><b>连胜</b><strong id="streakCount">0</strong></span>
+        <span title="已获得星数"><b>星章</b><strong id="starCount">0</strong></span>
+      </div>
+      <label class="theme-picker">
+        <span>画风</span>
+        <select id="themeSelect" aria-label="选择画风">
+          <option value="academy">书院蓝</option>
+          <option value="bamboo">竹林绿</option>
+          <option value="night">夜读朱</option>
+        </select>
+      </label>
+    </header>
+
+    <main>
+      <section class="screen setup-screen is-active" id="setupScreen">
+        <div class="setup-grid">
+          <aside class="control-rail" aria-label="闯关设置">
+            <div class="section-heading">
+              <div><small>第一步</small><h1>选一卷，开始猜</h1></div>
+              <span class="scope-label">小学 90 题</span>
+            </div>
+
+            <fieldset class="control-group">
+              <legend>题目模式</legend>
+              <div class="segmented four" id="modeSelector">
+                <button class="is-selected" type="button" data-mode="mixed">混合</button>
+                <button type="button" data-mode="idiom">成语</button>
+                <button type="button" data-mode="classic">文言</button>
+                <button type="button" data-mode="poem">诗词</button>
+              </div>
+            </fieldset>
+
+            <fieldset class="control-group">
+              <legend>年级</legend>
+              <div class="grade-picker" id="gradeSelector">
+                <button type="button" data-grade="1">一</button>
+                <button type="button" data-grade="2">二</button>
+                <button type="button" data-grade="3">三</button>
+                <button type="button" data-grade="4">四</button>
+                <button class="is-selected" type="button" data-grade="5">五</button>
+                <button type="button" data-grade="6">六</button>
+              </div>
+              <p class="control-note">只抽当前年级题目，不再混入其他年级。</p>
+            </fieldset>
+
+            <fieldset class="control-group">
+              <legend>答题方式</legend>
+              <div class="segmented three" id="answerSelector">
+                <button class="is-selected" type="button" data-answer-mode="auto">自动搭配</button>
+                <button type="button" data-answer-mode="input">输入</button>
+                <button type="button" data-answer-mode="choice">四选一</button>
+              </div>
+            </fieldset>
+
+            <div class="inline-controls">
+              <label class="stepper-label" for="stageSize">每关题数</label>
+              <div class="stepper">
+                <button id="decreaseSize" type="button" aria-label="减少题数">−</button>
+                <output id="stageSizeOutput" for="stageSize">10</output>
+                <input id="stageSize" type="range" min="5" max="15" step="1" value="10">
+                <button id="increaseSize" type="button" aria-label="增加题数">＋</button>
+              </div>
+            </div>
+
+            <label class="toggle-row">
+              <span><strong>答题计时</strong><small>每题 45 秒，可随时关闭</small></span>
+              <input id="timerToggle" type="checkbox" checked>
+              <i aria-hidden="true"></i>
+            </label>
+          </aside>
+
+          <section class="map-panel" aria-labelledby="mapTitle">
+            <div class="map-header">
+              <div><small>第二步</small><h2 id="mapTitle">选择闯关地点</h2></div>
+              <div class="legend"><span><i class="done"></i>完成</span><span><i class="open"></i>可挑战</span></div>
+            </div>
+            <div class="quest-map" id="questMap"></div>
+            <div class="inventory-strip">
+              <div><strong>行囊</strong><small>墨点用来买提示：没提示券时，每次提示扣 15 墨点</small></div>
+              <ul id="inventoryList" aria-label="已拥有道具"></ul>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="screen game-screen" id="gameScreen" aria-live="polite">
+        <div class="game-toolbar">
+          <button class="icon-button" id="exitGame" type="button" title="退出本关" aria-label="退出本关">←</button>
+          <div class="progress-block">
+            <div><span id="currentModeLabel">混合卷</span><strong id="questionCounter">1 / 10</strong></div>
+            <div class="progress-track"><i id="progressFill"></i></div>
+          </div>
+          <div class="timer" id="timerDisplay" aria-label="剩余时间"><span>计时</span><strong>45</strong></div>
+        </div>
+
+        <div class="question-layout">
+          <section class="riddle-sheet">
+            <div class="sheet-title">
+              <div><span id="questionGrade">五年级</span><h2 id="questionTitle">看图猜句</h2></div>
+              <span class="mode-stamp" id="modeStamp">混合</span>
+            </div>
+            <p class="source-line" id="sourceLine">观察每一块图形、文字和符号</p>
+            <div class="rebus-board" id="rebusBoard" aria-label="看图谜题"></div>
+            <p class="question-prompt" id="questionPrompt">这幅图表示哪一句？</p>
+          </section>
+
+          <section class="answer-panel">
+            <div id="answerArea"></div>
+            <div class="answer-actions">
+              <button class="secondary-button" id="hintButton" type="button"><span aria-hidden="true">灯</span> 提示 <small>−15</small></button>
+              <button class="primary-button" id="submitAnswer" type="button">确认答案 <span aria-hidden="true">→</span></button>
+            </div>
+            <div class="feedback" id="feedback" hidden>
+              <div class="feedback-mark" id="feedbackMark">✓</div>
+              <div><strong id="feedbackTitle">答对了</strong><p id="feedbackText"></p></div>
+              <button class="primary-button" id="nextQuestion" type="button">下一题 <span aria-hidden="true">→</span></button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="screen result-screen" id="resultScreen">
+        <div class="result-sheet">
+          <span class="result-seal" id="resultSeal">通</span>
+          <small>本关结算</small>
+          <h2 id="resultTitle">过关</h2>
+          <div class="result-stars" id="resultStars" aria-label="获得星数">★ ★ ★</div>
+          <div class="result-grid">
+            <div><strong id="correctResult">8</strong><span>答对</span></div>
+            <div><strong id="accuracyResult">80%</strong><span>正确率</span></div>
+            <div><strong id="pointsResult">+95</strong><span>墨点</span></div>
+          </div>
+          <div class="reward-banner" id="rewardBanner"><span>奖</span><div><small>获得道具</small><strong>提示券 × 1</strong></div></div>
+          <div class="result-actions">
+            <button class="secondary-button" id="retryButton" type="button">再闯一次</button>
+            <button class="primary-button" id="backToMap" type="button">返回地图</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="questions.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

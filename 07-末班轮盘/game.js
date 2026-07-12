@@ -31,7 +31,11 @@ const itemInfo = {
   magnet: ['回程磁铁', '把最后一格移到最前'],
   carbon: ['复写票', '复制它的一件随机道具'],
   clamp: ['静默夹', '封住它下一次角色能力'],
-  compass: ['尾灯罗盘', '查看最后一格']
+  compass: ['尾灯罗盘', '查看最后一格'],
+  unclamp: ['松夹钥匙', '触发时选择是否抵消静默夹'],
+  coupler: ['首尾车钩', '交换第一格与最后一格'],
+  scanner: ['双格听诊器', '查看接下来两格'],
+  ration: ['应急口粮', '生命不高于2时恢复2血']
 };
 
 const itemIcons = {
@@ -50,7 +54,11 @@ const itemIcons = {
   magnet: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 4h8v14c0 7 8 7 8 0V4h8v15c0 15-24 15-24 0zm3 2h3v5H7zm15 0h3v5h-3z"/></svg>',
   carbon: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 3h17l5 5v18H5zm4 5v3h12V8zm0 7v2h14v-2zm0 6v2h10v-2z"/><path d="M9 6h16v22H9v-3h13V9H9z"/></svg>',
   clamp: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 7h12v7H9v4h14v-4h-6V7h12v12l-5 5H8l-5-5zm8 19h10v3H11z"/></svg>',
-  compass: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2l5 9 9 5-9 5-5 9-5-9-9-5 9-5zm0 8-3 8 3 4 3-8z"/></svg>'
+  compass: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2l5 9 9 5-9 5-5 9-5-9-9-5 9-5zm0 8-3 8 3 4 3-8z"/></svg>',
+  unclamp: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 4h9v5H9v14h14v-4h5v9H5zm13 2h10v9h-4v-4h-6zm-7 7h10v6H11l3 3-4 4-8-10 8-10 4 4z"/></svg>',
+  coupler: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 7h9v5H8v8h4v5H3zm26 0v18h-9v-5h4v-8h-4V7zM10 13h12v6H10z"/></svg>',
+  scanner: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 6h12v20H3zm14 0h12v20H17zM7 11h4v10H7zm14 0h4v10h-4z"/></svg>',
+  ration: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 5h22v22H5zm5 5v12h12V10zm4 2h4v3h3v4h-3v3h-4v-3h-3v-4h3z"/></svg>'
 };
 
 const itemInfoEn = {
@@ -58,16 +66,17 @@ const itemInfoEn = {
   bell: ['Stop Bell', 'Skip the opponent turn'], tea: ['Hot Tea', 'Restore 1 health'], glove: ['Pickpocket Glove', 'Choose and steal an enemy item'],
   inverter: ['Inverter', 'Reverse the next chamber'], vial: ['Fate Vial', 'Restore 2 health or lose 1'], breaker: ['Circuit Cutter', 'Optionally cancel an enemy Stop Bell'],
   seal: ['Lock Strip', 'Block one enemy item phase'], charm: ['Old Charm', 'Reduce the next damage by 1'], unsealer: ['Seal Hook', 'Choose whether to cancel one Lock Strip'],
-  magnet: ['Return Magnet', 'Move the last chamber to the front'], carbon: ['Carbon Ticket', 'Copy one random item from it'], clamp: ['Silence Clamp', 'Block its next character ability'], compass: ['Tail Compass', 'Reveal the last chamber']
+  magnet: ['Return Magnet', 'Move the last chamber to the front'], carbon: ['Carbon Ticket', 'Copy one random item from it'], clamp: ['Silence Clamp', 'Block its next character ability'], compass: ['Tail Compass', 'Reveal the last chamber'],
+  unclamp: ['Clamp Key', 'Choose whether to cancel a Silence Clamp'], coupler: ['End Coupler', 'Swap the first and last chambers'], scanner: ['Twin Stethoscope', 'Reveal the next two chambers'], ration: ['Emergency Ration', 'At 2 health or less, restore 2']
 };
 
 const roles = {
   tailwatch: { name: '尾灯侦察员', en: 'TAIL WATCHER', ability: '每夜开始时查看最后 2 格。', abilityEn: 'See the final 2 chambers at the start of each night.' },
   medic: { name: '缝票医师', en: 'TICKET SURGEON', ability: '丢弃 2 件道具，恢复 1 点生命。', abilityEn: 'Discard 2 items to restore 1 health.' },
-  reverser: { name: '逆相旅客', en: 'INVERSE RIDER', ability: '对自己开火时，高压与空响互换。', abilityEn: 'When firing at self, live and blank swap.' },
-  mimic: { name: '影印员', en: 'MIMEOGRAPHER', ability: '对方使用道具时，可耗 1 血复制；每夜一次。', abilityEn: 'Spend 1 health to copy an enemy item once per night.' },
+  reverser: { name: '逆相旅客', en: 'INVERSE RIDER', ability: '无论谁开火，只要命中自己，高压与空响立即互换。', abilityEn: 'No matter who fires, any shot that hits you swaps live and blank.' },
+  mimic: { name: '影印员', en: 'MIMEOGRAPHER', ability: '对方使用道具时，可耗 1 血复制；每个行动回合一次。', abilityEn: 'Spend 1 health to copy an enemy item once per action turn.' },
   scavenger: { name: '空膛拾荒者', en: 'BLANK SCAVENGER', ability: '对自己打出空响，立即获得 1 件道具。', abilityEn: 'A blank fired at self immediately grants 1 item.' },
-  whitesmith: { name: '白票铸工', en: 'WHITE-TICKET SMITH', ability: '每夜获得一发可选装入的恩赐弹。', abilityEn: 'Gain one optional boon round each night.' },
+  whitesmith: { name: '白票铸工', en: 'WHITE-TICKET SMITH', ability: '每次装填都可选择加入一发恩赐弹。', abilityEn: 'Every load may include one optional boon round.' },
   prophet: { name: '红灯预言家', en: 'RED-LAMP PROPHET', ability: '装填后声明弹格；输赢决定下次谁获得双倍道具。', abilityEn: 'Declare a chamber after loading; the winner gets double items next load.' },
   bloodlink: { name: '连座者', en: 'BLOOD-LINKED', ability: '生命不高于 4 时，自射高压会让对方也失去 1 血。', abilityEn: 'At 4 health or less, a self live hit also wounds the opponent.' }
 };
@@ -131,7 +140,7 @@ function freshGame() {
     itemsLocked: savedInjuries.includes('stiff'), selfLocked: savedInjuries.includes('frostbite'), chamberTotal: 0, chamberStep: 0,
     countsVisible: false, publicCounts: { live: 0, blank: 0 }, playerRole: selectedRole, dealerRole: null,
     playerRoleBlocked: false, dealerRoleBlocked: false, playerMimicUsed: false, dealerMimicUsed: false,
-    playerDoubleNext: false, dealerDoubleNext: false, specialIndex: -1, specialOwner: null, boonPlayer: 0, boonDealer: 0,
+    playerDoubleNext: false, dealerDoubleNext: false, specialIndex: -1, specialOwner: null, tailReveal: [],
     firstLampBlocked: savedInjuries.includes('tinnitus'), started: false };
 }
 
@@ -201,6 +210,8 @@ function itemLimit() { return savedInjuries.includes('pockets') ? 4 : 8; }
 function updateHTML(element, html) { if (element.innerHTML !== html) element.innerHTML = html; }
 function itemName(key) { return (language === 'en' ? itemInfoEn[key] : itemInfo[key])[0]; }
 function itemDescription(key) { return (language === 'en' ? itemInfoEn[key] : itemInfo[key])[1]; }
+function chamberLabel(index) { return game.specialIndex === index ? tr('恩赐弹','BOON ROUND') : game.shells[index] ? tr('高压','LIVE') : tr('空响','BLANK'); }
+function clearTailReveal() { game.tailReveal = []; }
 function roleName(key) { return key ? (language === 'en' ? roles[key].en : roles[key].name) : tr('未登记','UNREGISTERED'); }
 function roleAbility(key) { return key ? (language === 'en' ? roles[key].abilityEn : roles[key].ability) : tr('能力未知','ABILITY UNKNOWN'); }
 function addRandomItem(owner = 'player', amount = 1) {
@@ -239,9 +250,9 @@ function applyLanguage(nextLanguage = language) {
   const cheatLabels = {
     heal: tr('生命全满','FULL HEALTH'), invincible: tr(`防护屏障：${invincible ? '开' : '关'}`,`ABSOLUTE BARRIER: ${invincible ? 'ON' : 'OFF'}`),
     peek: tr(`弹格监视：${maintenancePeek ? '开' : '关'}`,`CHAMBER MONITOR: ${maintenancePeek ? 'ON' : 'OFF'}`), items: tr(`无限全套：${supplyMode ? '开' : '关'}`,`ENDLESS FULL SET: ${supplyMode ? 'ON' : 'OFF'}`),
-    weaken: tr('它剩1血','IT TO 1 HEALTH'), cure: tr('治愈所有伤势','CURE ALL INJURIES'),
+    weaken: tr('对方剩1血','OPPONENT TO 1 HEALTH'), cure: tr('治愈所有伤势','CURE ALL INJURIES'),
     nextLive: tr('下一格：高压','NEXT: LIVE'), nextBlank: tr('下一格：空响','NEXT: BLANK'), reload: tr('立即重装','RELOAD NOW'), nextNight: tr('跳至下一夜','SKIP TO NEXT NIGHT'),
-    clearPlayerItems: tr('清空玩家道具','CLEAR PLAYER ITEMS'), clearDealerItems: tr('清空它的道具','CLEAR ITS ITEMS')
+    clearPlayerItems: tr('清空玩家道具','CLEAR PLAYER ITEMS'), clearDealerItems: tr('清空对方道具','CLEAR OPPONENT ITEMS')
   };
   document.querySelectorAll('[data-cheat]').forEach(button => { button.textContent = cheatLabels[button.dataset.cheat]; });
   applyHorrorLevel(horrorLevel); applyDifficulty(difficulty); render();
@@ -304,17 +315,19 @@ function render() {
   document.querySelector('.dealer-card').classList.toggle('shielded', game.dealerShield);
   ui.shootDealer.disabled = !canAct; ui.shootSelf.disabled = !canAct || game.selfLocked;
   const baseStatus = game.powered ? tr('⚡ 你的增压已就绪','⚡ YOUR PRESSURE IS READY') : game.dealerPowered ? tr('⚡ 它的增压已就绪','⚡ ITS PRESSURE IS READY') : game.started ? tr(`弹仓剩余 ${game.shells.length} 格`, `${game.shells.length} CHAMBERS REMAIN`) : tr('机器未通电','MACHINE OFFLINE');
-  const peekStatus = maintenancePeek && game.started && game.shells.length ? tr(` ｜ 监视：${game.shells[0] ? '高压' : '空响'}`, ` | MONITOR: ${game.shells[0] ? 'LIVE' : 'BLANK'}`) : '';
+  const peekType = game.specialIndex === 0 ? tr('恩赐弹','BOON') : game.shells[0] ? tr('高压','LIVE') : tr('空响','BLANK');
+  const peekStatus = maintenancePeek && game.started && game.shells.length ? tr(` ｜ 监视：${peekType}`, ` | MONITOR: ${peekType}`) : '';
   ui.machineStatus.textContent = baseStatus + peekStatus;
   ui.machineStatus.classList.toggle('powered', game.powered || game.dealerPowered); ui.machineStatus.classList.toggle('peek-active', maintenancePeek);
   ui.chamber.style.setProperty('--slot-count', game.chamberTotal || 6);
   updateHTML(ui.slots, Array.from({ length: game.chamberTotal || 6 }, (_, i) => {
     const used = i < game.chamberStep;
-    return `<span class="chamber-hole ${used ? 'used' : ''} ${i === game.chamberStep ? 'next' : ''}"><i>${i + 1}</i></span>`;
+    const reveal = game.tailReveal?.find(mark => mark.index === i);
+    return `<span class="chamber-hole ${used ? 'used' : ''} ${i === game.chamberStep ? 'next' : ''} ${reveal ? `tail-${reveal.type}` : ''}"><i>${reveal?.type === 'special' ? '✦' : i + 1}</i></span>`;
   }).join(''));
   updateHTML(ui.items, game.items.length ? game.items.map((key, i) => {
-    const blocked = !canAct || game.itemsLocked || game.playerItemsSealed || key === 'breaker' || key === 'unsealer' || (key === 'seal' && game.playerSealUsedThisTurn) || (key === 'wrench' && game.powered) || (key === 'tea' && game.playerHp >= game.playerMax) || (key === 'bell' && game.bell) || (key === 'glove' && !game.dealerItems.length) || (key === 'charm' && game.playerShield);
-    const reason = game.playerItemsSealed ? tr('本回合道具已被封锁','ITEMS LOCKED THIS TURN') : key === 'breaker' ? tr('触发时由你选择是否使用','CHOOSE WHEN IT TRIGGERS') : key === 'unsealer' ? tr('触发时由你选择是否使用','CHOOSE WHEN IT TRIGGERS') : key === 'seal' && game.playerSealUsedThisTurn ? tr('本行动回合已经使用过','ALREADY USED THIS ACTION TURN') : game.itemsLocked ? tr('首次扣动后解锁','UNLOCKS AFTER FIRST TRIGGER') : key === 'wrench' && game.powered ? tr('增压已经启用','PRESSURE ALREADY ACTIVE') : key === 'tea' && game.playerHp >= game.playerMax ? tr('生命值已满','HEALTH IS FULL') : key === 'bell' && game.bell ? tr('停站铃已经启用','STOP BELL ACTIVE') : key === 'glove' && !game.dealerItems.length ? tr('它没有道具','IT HAS NO ITEMS') : key === 'charm' && game.playerShield ? tr('护符已经生效','CHARM ALREADY ACTIVE') : itemDescription(key);
+    const blocked = !canAct || game.itemsLocked || game.playerItemsSealed || key === 'breaker' || key === 'unsealer' || key === 'unclamp' || (key === 'seal' && game.playerSealUsedThisTurn) || (key === 'wrench' && game.powered) || (key === 'tea' && game.playerHp >= game.playerMax) || (key === 'ration' && game.playerHp > 2) || (key === 'bell' && game.bell) || (key === 'glove' && !game.dealerItems.length) || (key === 'charm' && game.playerShield);
+    const reason = game.playerItemsSealed ? tr('本回合道具已被封锁','ITEMS LOCKED THIS TURN') : ['breaker','unsealer','unclamp'].includes(key) ? tr('触发时由你选择是否使用','CHOOSE WHEN IT TRIGGERS') : key === 'seal' && game.playerSealUsedThisTurn ? tr('本行动回合已经使用过','ALREADY USED THIS ACTION TURN') : game.itemsLocked ? tr('首次扣动后解锁','UNLOCKS AFTER FIRST TRIGGER') : key === 'wrench' && game.powered ? tr('增压已经启用','PRESSURE ALREADY ACTIVE') : key === 'tea' && game.playerHp >= game.playerMax ? tr('生命值已满','HEALTH IS FULL') : key === 'ration' && game.playerHp > 2 ? tr('生命需不高于2','REQUIRES 2 HEALTH OR LESS') : key === 'bell' && game.bell ? tr('停站铃已经启用','STOP BELL ACTIVE') : key === 'glove' && !game.dealerItems.length ? tr('它没有道具','IT HAS NO ITEMS') : key === 'charm' && game.playerShield ? tr('护符已经生效','CHARM ALREADY ACTIVE') : itemDescription(key);
     return `<button class="item" data-index="${i}" ${blocked ? 'disabled' : ''} aria-label="${itemName(key)}: ${reason}"><span class="item-image">${itemIcons[key]}</span><span class="item-copy"><b>${itemName(key)}</b><small>${reason}</small></span></button>`;
   }).join('') : `<span class="kicker">${tr('道具栏为空','ITEM TRAY EMPTY')}</span>`);
   updateHTML(ui.dealerItems, game.dealerItems.length ? game.dealerItems.map(key => `<span class="dealer-item" title="${itemName(key)}">${itemIcons[key]}</span>`).join('') : `<small>${tr('无道具','NO ITEMS')}</small>`);
@@ -355,13 +368,13 @@ function askDeclaration() {
 
 async function prepareRoleLoad() {
   const notes = [];
-  game.specialIndex = -1; game.specialOwner = null;
-  if (game.playerRole === 'whitesmith' && game.boonPlayer > 0 && roleReady('player', 'whitesmith')) {
+  game.specialIndex = -1; game.specialOwner = null; game.tailReveal = [];
+  if (game.playerRole === 'whitesmith' && roleReady('player', 'whitesmith')) {
     const use = await askDecision('将恩赐弹装入本次弹仓？','命中自己恢复1血；命中它则获得1件道具。拒绝会保留此弹。','LOAD THE BOON ROUND?','Hit yourself to heal 1; hit it to gain 1 item. Refusing keeps the round.','装入','保留');
-    if (use) { game.boonPlayer--; game.specialIndex = Math.floor(Math.random() * game.shells.length); game.specialOwner = 'player'; notes.push(tr('你装入了一发恩赐弹。','You load one boon round.')); }
+    if (use) { game.specialIndex = Math.floor(Math.random() * game.shells.length); game.specialOwner = 'player'; notes.push(tr('你装入了一发恩赐弹。','You load one boon round.')); }
   }
-  if (game.dealerRole === 'whitesmith' && game.boonDealer > 0 && roleReady('dealer', 'whitesmith') && Math.random() < .7) {
-    game.boonDealer--; game.specialIndex = Math.floor(Math.random() * game.shells.length); game.specialOwner = 'dealer'; notes.push(tr('它往弹仓里塞进一发白色弹壳。','It slips a white shell into the chamber.'));
+  if (game.dealerRole === 'whitesmith' && roleReady('dealer', 'whitesmith') && Math.random() < .7) {
+    game.specialIndex = Math.floor(Math.random() * game.shells.length); game.specialOwner = 'dealer'; notes.push(tr('它往弹仓里塞进一发白色弹壳。','It slips a white shell into the chamber.'));
   }
   const specialPresent = game.specialIndex >= 0;
   if (game.playerRole === 'prophet' && roleReady('player', 'prophet')) {
@@ -376,7 +389,10 @@ async function prepareRoleLoad() {
     else { game.playerDoubleNext = true; notes.push(tr(`它的声明错误：你下次获得4件道具。`,`Its declaration fails: you gain 4 items next load.`)); }
     game.shells = shuffle(game.shells); if (specialPresent) game.specialIndex = Math.floor(Math.random() * game.shells.length);
   }
-  if (game.playerRole === 'tailwatch' && roleReady('player', 'tailwatch')) notes.push(tr(`尾灯记录：最后两格是 ${game.shells.slice(-2).map(x => x ? '高压' : '空响').join('、')}。`,`Tail record: final two are ${game.shells.slice(-2).map(x => x ? 'live' : 'blank').join(', ')}.`));
+  if (game.playerRole === 'tailwatch' && roleReady('player', 'tailwatch')) {
+    game.tailReveal = game.shells.slice(-2).map((live, offset) => ({ index: game.shells.length - 2 + offset, type: game.specialIndex === game.shells.length - 2 + offset ? 'special' : live ? 'live' : 'blank' }));
+    notes.push(tr(`尾灯记录已标在最后两格。`,`The final two chambers are now color-marked.`));
+  }
   if (game.dealerRole === 'tailwatch' && roleReady('dealer', 'tailwatch')) game.dealerTailKnown = game.shells.slice(-2);
   return notes;
 }
@@ -400,7 +416,6 @@ async function startGame() {
   if (!selectedRole) { renderCharacterChoices(); return ui.character.showModal(); }
   game = freshGame(); game.started = true; game.playerRole = selectedRole;
   const dealerChoices = Object.keys(roles).filter(key => key !== selectedRole); game.dealerRole = dealerChoices[Math.floor(Math.random() * dealerChoices.length)];
-  if (game.playerRole === 'whitesmith') game.boonPlayer = 1; if (game.dealerRole === 'whitesmith') game.boonDealer = 1;
   ui.start.hidden = true; ui.shootDealer.hidden = false; ui.shootSelf.hidden = false;
   startMusic(); await loadChamber();
 }
@@ -422,7 +437,9 @@ async function fire(target, actor = 'player') {
   else { game.dealerPowered = false; game.dealerKnown = null; }
   const rawLive = game.shells.shift();
   const actorRole = actor === 'player' ? game.playerRole : game.dealerRole;
-  const invertSelf = target === 'self' && actorRole === 'reverser' && roleReady(actor, 'reverser');
+  const targetOwner = target === 'self' ? actor : actor === 'player' ? 'dealer' : 'player';
+  const targetRole = targetOwner === 'player' ? game.playerRole : game.dealerRole;
+  const invertSelf = targetRole === 'reverser' && roleReady(targetOwner, 'reverser');
   const live = invertSelf ? !rawLive : rawLive;
   const specialFired = game.specialIndex === 0 ? game.specialOwner : null;
   if (game.specialIndex >= 0) game.specialIndex--; if (specialFired) { game.specialIndex = -1; game.specialOwner = null; }
@@ -471,11 +488,11 @@ async function fire(target, actor = 'player') {
   if (!game.shells.length) await loadChamber();
   if (!live && target === 'self') game.turn = actor;
   else game.turn = actor === 'player' ? 'dealer' : 'player';
-  if (game.turn === 'dealer' && actor === 'player') game.dealerSealUsedThisTurn = false;
-  if (game.turn === 'player' && actor === 'dealer') game.playerSealUsedThisTurn = false;
+  if (game.turn === 'dealer' && actor === 'player') { game.dealerSealUsedThisTurn = false; game.playerMimicUsed = false; }
+  if (game.turn === 'player' && actor === 'dealer') { game.playerSealUsedThisTurn = false; game.dealerMimicUsed = false; }
   game.busy = false; render();
   if (game.turn === 'player' && game.dealerBell) {
-    game.dealerBell = false; game.turn = 'dealer'; game.dealerSealUsedThisTurn = false; game.busy = true; say('它的停站铃响起。你的回合被列车吞掉了。','Its Stop Bell rings. The train swallows your turn.'); render(); await wait(PACE.item); return dealerMove();
+    game.dealerBell = false; game.turn = 'dealer'; game.dealerSealUsedThisTurn = false; game.playerMimicUsed = false; game.busy = true; say('它的停站铃响起。你的回合被列车吞掉了。','Its Stop Bell rings. The train swallows your turn.'); render(); await wait(PACE.item); return dealerMove();
   }
   if (game.turn === 'dealer') dealerMove();
 }
@@ -484,7 +501,7 @@ async function dealerMove() {
   game.busy = true; render();
   setMessage(game.dealerItems.length ? tone('它检查自己的道具。', '它的指甲划过道具边缘……', '它挑选工具，像在决定从哪里拆开你。','It checks its items.','Its claws scrape across the item tray…','It chooses a tool as if deciding where to open you.') : tone('它盯着弹仓判断下一步。', '它空着手，安静地盯着你。', '它没有道具，只剩牙齿。','It studies the chamber.','Empty-handed, it stares at you.','It has no items. Only teeth.'));
   await wait(PACE.dealer);
-  if (game.bell) { game.bell = false; game.turn = 'player'; game.playerSealUsedThisTurn = false; say('停站铃响了。它错过了这一回合。','The Stop Bell rings. It loses this turn.'); beep('item'); render(); await wait(PACE.item); game.busy = false; return render(); }
+  if (game.bell) { game.bell = false; game.turn = 'player'; game.playerSealUsedThisTurn = false; game.dealerMimicUsed = false; say('停站铃响了。它错过了这一回合。','The Stop Bell rings. It loses this turn.'); beep('item'); render(); await wait(PACE.item); game.busy = false; return render(); }
   if (game.dealerRole === 'medic' && game.dealerHp < game.dealerMax && game.dealerItems.length >= 2 && roleReady('dealer','medic')) {
     game.dealerItems.splice(0,2); game.dealerHp++; say('它撕碎两件道具缝合伤口，恢复1血。','It shreds two items to stitch itself and heals 1.'); render(); await wait(PACE.item);
   }
@@ -505,9 +522,20 @@ async function dealerUseItems(limit) {
   }
 }
 
+async function applyRoleClamp(target) {
+  const tray = target === 'player' ? game.items : game.dealerItems, index = tray.indexOf('unclamp');
+  let cancel = false;
+  if (index >= 0 && target === 'player') cancel = await askDecision('使用松夹钥匙抵消静默夹？','使用后钥匙会被消耗；保留则下一次角色能力失效。','USE THE CLAMP KEY?','Using it consumes the key. Keeping it blocks your next ability.');
+  else if (index >= 0) cancel = Math.random() < .7;
+  if (cancel) { tray.splice(index,1); if (target === 'player') refillSupply(); say(target === 'player' ? '你用松夹钥匙弹开了静默夹。' : '它消耗松夹钥匙，弹开了静默夹。', target === 'player' ? 'You spend a Clamp Key and spring the clamp open.' : 'It spends a Clamp Key and springs the clamp open.'); return false; }
+  if (target === 'player') game.playerRoleBlocked = true; else game.dealerRoleBlocked = true;
+  say(target === 'player' ? '静默夹扣住你的角色档案。下一次能力失效。' : index >= 0 ? '它保留松夹钥匙，角色档案仍被扣住。' : '静默夹扣住它的角色档案。它的下一次能力失效。', target === 'player' ? 'The Silence Clamp blocks your next ability.' : 'The Silence Clamp blocks its next ability.');
+  return true;
+}
+
 async function applyCopiedEffect(owner, key) {
   const player = owner === 'player';
-  if (key === 'lamp') { if (player) say(game.shells[0] ? '复制的检修灯显示：下一格高压。' : '复制的检修灯显示：下一格空响。','Copied lamp reveals the next chamber.'); else game.dealerKnown = game.shells[0]; }
+  if (key === 'lamp') { if (player) say(`复制的检修灯显示：下一格是${chamberLabel(0)}。`,`Copied lamp: next is ${chamberLabel(0)}.`); else game.dealerKnown = game.shells[0]; }
   if (key === 'wrench') player ? game.powered = true : game.dealerPowered = true;
   if (key === 'tea') player ? game.playerHp = Math.min(game.playerMax, game.playerHp + 1) : game.dealerHp = Math.min(game.dealerMax, game.dealerHp + 1);
   if (key === 'charm') player ? game.playerShield = true : game.dealerShield = true;
@@ -515,30 +543,34 @@ async function applyCopiedEffect(owner, key) {
   if (key === 'seal') player ? game.dealerItemsSealed = true : game.playerItemsSealed = true;
   if (key === 'inverter' && game.shells.length) { game.shells[0] = !game.shells[0]; if (game.dealerKnown !== null) game.dealerKnown = !game.dealerKnown; }
   if (key === 'vial') { const delta = Math.random() < .5 ? -1 : 2; if (player) game.playerHp = Math.max(0,Math.min(game.playerMax,game.playerHp + delta)); else game.dealerHp = Math.max(0,Math.min(game.dealerMax,game.dealerHp + delta)); }
-  if (key === 'ticket' && game.shells.length) { game.shells.shift(); game.chamberStep++; if (game.specialIndex >= 0) game.specialIndex--; if (!game.shells.length) await loadChamber(); }
+  if (key === 'ticket' && game.shells.length) { game.shells.shift(); game.chamberStep++; if (game.specialIndex >= 0) game.specialIndex--; clearTailReveal(); if (!game.shells.length) await loadChamber(); }
   if (key === 'glove') { const source = player ? game.dealerItems : game.items; if (source.length) { const stolen = source.splice(Math.floor(Math.random() * source.length),1)[0]; (player ? game.items : game.dealerItems).push(stolen); refillSupply(); } }
-  if (key === 'magnet' && game.shells.length > 1) { game.shells.unshift(game.shells.pop()); if (game.specialIndex >= 0) game.specialIndex = game.specialIndex === game.shells.length - 1 ? 0 : game.specialIndex + 1; }
+  if (key === 'magnet' && game.shells.length > 1) { game.shells.unshift(game.shells.pop()); if (game.specialIndex >= 0) game.specialIndex = game.specialIndex === game.shells.length - 1 ? 0 : game.specialIndex + 1; clearTailReveal(); }
   if (key === 'carbon') { const source = player ? game.dealerItems : game.items, tray = player ? game.items : game.dealerItems, limit = player ? itemLimit() : 8; if (source.length && tray.length < limit) tray.push(source[Math.floor(Math.random() * source.length)]); }
-  if (key === 'clamp') player ? game.dealerRoleBlocked = true : game.playerRoleBlocked = true;
-  if (key === 'compass' && game.shells.length) { if (player) say(game.shells.at(-1) ? '复制的尾灯罗盘指向红色：最后一格高压。' : '复制的尾灯罗盘沉默：最后一格空响。','The copied compass reveals the final chamber.'); else game.dealerTailKnown = [game.shells.at(-1)]; }
+  if (key === 'clamp') await applyRoleClamp(player ? 'dealer' : 'player');
+  if (key === 'compass' && game.shells.length) { if (player) say(`复制的尾灯罗盘：最后一格是${chamberLabel(game.shells.length - 1)}。`,`Copied compass: final chamber is ${chamberLabel(game.shells.length - 1)}.`); else game.dealerTailKnown = [game.shells.at(-1)]; }
+  if (key === 'coupler' && game.shells.length > 1) { [game.shells[0],game.shells[game.shells.length - 1]] = [game.shells.at(-1),game.shells[0]]; if (game.specialIndex === 0) game.specialIndex = game.shells.length - 1; else if (game.specialIndex === game.shells.length - 1) game.specialIndex = 0; clearTailReveal(); }
+  if (key === 'scanner') { if (player) say(`复制的听诊器：${[0,1].filter(i=>i<game.shells.length).map(i=>chamberLabel(i)).join('、')}。`,`Copied scanner: ${[0,1].filter(i=>i<game.shells.length).map(i=>chamberLabel(i)).join(', ')}.`); else game.dealerKnown = game.shells[0]; }
+  if (key === 'ration') player ? game.playerHp = Math.min(game.playerMax,game.playerHp + 2) : game.dealerHp = Math.min(game.dealerMax,game.dealerHp + 2);
 }
 
 async function maybeMimic(user, key) {
   const copier = user === 'player' ? 'dealer' : 'player';
   const roleKey = copier === 'player' ? game.playerRole : game.dealerRole, usedKey = copier === 'player' ? 'playerMimicUsed' : 'dealerMimicUsed';
   const hp = copier === 'player' ? game.playerHp : game.dealerHp;
-  if (roleKey !== 'mimic' || game[usedKey] || hp <= 1 || !roleReady(copier, 'mimic')) return;
+  if (roleKey !== 'mimic' || game[usedKey] || (hp <= 1 && !(copier === 'player' && invincible)) || !roleReady(copier, 'mimic')) return;
   let copy = Math.random() < .65;
-  if (copier === 'player') copy = await askDecision(`耗1血复制「${itemInfo[key][0]}」？`,'每夜限一次；复制效果但不会获得原道具。',`SPEND 1 HEALTH TO COPY ${itemInfoEn[key][0]}?`,'Once per night. Copy the effect, not the item.','复制','放弃');
+  if (copier === 'player') copy = await askDecision(`耗1血复制「${itemInfo[key][0]}」？`,'每个行动回合限一次；复制效果但不会获得原道具。',`SPEND 1 HEALTH TO COPY ${itemInfoEn[key][0]}?`,'Once per action turn. Copy the effect, not the item.','复制','放弃');
   if (!copy) return;
-  game[usedKey] = true; if (copier === 'player') game.playerHp--; else game.dealerHp--;
-  await applyCopiedEffect(copier, key); say(copier === 'player' ? `你耗1血复制了「${itemInfo[key][0]}」。` : `它耗1血复制了「${itemInfo[key][0]}」。`, copier === 'player' ? `You spend 1 health to copy ${itemInfoEn[key][0]}.` : `It spends 1 health to copy ${itemInfoEn[key][0]}.`);
+  game[usedKey] = true; if (copier === 'player' && !invincible) game.playerHp--; else if (copier === 'dealer') game.dealerHp--;
+  await applyCopiedEffect(copier, key); say(copier === 'player' ? invincible ? `防护屏障挡住血量消耗，你复制了「${itemInfo[key][0]}」。` : `你耗1血复制了「${itemInfo[key][0]}」。` : `它耗1血复制了「${itemInfo[key][0]}」。`, copier === 'player' ? invincible ? `The barrier blocks the health cost. You copy ${itemInfoEn[key][0]}.` : `You spend 1 health to copy ${itemInfoEn[key][0]}.` : `It spends 1 health to copy ${itemInfoEn[key][0]}.`);
 }
 
 async function dealerUseItem() {
   if (!game.dealerItems.length) return false;
   let key;
-  if (game.dealerHp < game.dealerMax && game.dealerItems.includes('tea')) key = 'tea';
+  if (game.dealerHp <= 2 && game.dealerItems.includes('ration')) key = 'ration';
+  else if (game.dealerHp < game.dealerMax && game.dealerItems.includes('tea')) key = 'tea';
   else if (!game.dealerShield && game.dealerItems.includes('charm')) key = 'charm';
   else if (!game.playerItemsSealed && !game.dealerSealUsedThisTurn && game.dealerItems.includes('seal')) key = 'seal';
   else if (game.dealerKnown === null && game.dealerItems.includes('lamp')) key = 'lamp';
@@ -552,6 +584,8 @@ async function dealerUseItem() {
   else if (game.dealerItems.includes('carbon') && game.items.length) key = 'carbon';
   else if (!game.playerRoleBlocked && game.dealerItems.includes('clamp')) key = 'clamp';
   else if (game.dealerItems.includes('compass')) key = 'compass';
+  else if (game.dealerItems.includes('scanner')) key = 'scanner';
+  else if (game.dealerItems.includes('coupler') && game.shells.length > 1) key = 'coupler';
   if (!key) return false;
   game.dealerItems.splice(game.dealerItems.indexOf(key), 1); beep('item');
   ui.machine.classList.remove('item-surge'); void ui.machine.offsetWidth; ui.machine.classList.add('item-surge');
@@ -594,12 +628,16 @@ async function dealerUseItem() {
   if (key === 'ticket') {
     const removed = game.shells.shift(); game.chamberStep++; say(`它用废票弃掉一格：${removed ? '高压' : '空响'}。`,`It discards a ${removed ? 'live' : 'blank'} chamber with a Void Ticket.`);
     if (game.specialIndex >= 0) game.specialIndex--;
+    clearTailReveal();
     if (!game.shells.length) await loadChamber();
   }
-  if (key === 'magnet') { game.shells.unshift(game.shells.pop()); if (game.specialIndex >= 0) game.specialIndex = game.specialIndex === game.shells.length - 1 ? 0 : game.specialIndex + 1; say('它用回程磁铁把最后一格拖到最前。','It drags the final chamber to the front.'); }
+  if (key === 'magnet') { game.shells.unshift(game.shells.pop()); if (game.specialIndex >= 0) game.specialIndex = game.specialIndex === game.shells.length - 1 ? 0 : game.specialIndex + 1; clearTailReveal(); say('它用回程磁铁把最后一格拖到最前。','It drags the final chamber to the front.'); }
   if (key === 'carbon') { const copied = game.items[Math.floor(Math.random() * game.items.length)]; if (copied && game.dealerItems.length < 8) game.dealerItems.push(copied); say('它的复写票印出一件你的道具。','Its Carbon Ticket copies one of your items.'); }
-  if (key === 'clamp') { game.playerRoleBlocked = true; say('它把静默夹扣在你的角色档案上。','It clamps your character file shut.'); }
+  if (key === 'clamp') await applyRoleClamp('player');
   if (key === 'compass') { game.dealerTailKnown = [game.shells.at(-1)]; say('它看了一眼尾灯罗盘，没有告诉你答案。','It checks the Tail Compass and says nothing.'); }
+  if (key === 'coupler') { [game.shells[0],game.shells[game.shells.length - 1]] = [game.shells.at(-1),game.shells[0]]; if (game.specialIndex === 0) game.specialIndex = game.shells.length - 1; else if (game.specialIndex === game.shells.length - 1) game.specialIndex = 0; clearTailReveal(); say('它用首尾车钩交换了第一格与最后一格。','It swaps the first and last chambers with an End Coupler.'); }
+  if (key === 'scanner') { game.dealerKnown = game.shells[0]; say('它听完接下来两格，只对你笑了一下。','It listens to the next two chambers and only smiles.'); }
+  if (key === 'ration') { game.dealerHp = Math.min(game.dealerMax,game.dealerHp + 2); say('它撕开应急口粮，恢复2血。','It opens an Emergency Ration and restores 2 health.'); }
   await maybeMimic('dealer', key);
   render(); await wait(PACE.item); return true;
 }
@@ -611,7 +649,7 @@ async function resolveRound() {
   game.round++; game.dealerMax = 6; game.dealerHp = 6;
   game.playerHp = Math.min(game.playerMax, game.playerHp + 1); game.turn = 'player'; game.busy = false;
   game.itemsLocked = savedInjuries.includes('stiff'); game.selfLocked = savedInjuries.includes('frostbite'); game.playerSealUsedThisTurn = false; game.dealerSealUsedThisTurn = false;
-  game.playerMimicUsed = false; game.dealerMimicUsed = false; if (game.playerRole === 'whitesmith') game.boonPlayer++; if (game.dealerRole === 'whitesmith') game.boonDealer++;
+  game.playerMimicUsed = false; game.dealerMimicUsed = false;
   game.dealerShield = savedInjuries.includes('debt');
   setMessage(tone('它倒下，又从下一节车厢站起。生命重新亮满六格。', '它倒下。下一节车厢里，另一双红眼缓缓睁开。', '那具身体倒下了。下一节车厢却传来骨头重新拼好的声音。','It falls, then rises in the next carriage with all six lights restored.','It falls. Another pair of red eyes opens in the next carriage.','The body drops. From the next carriage comes the sound of bones rebuilding themselves.'));
   await wait(PACE.round); await loadChamber();
@@ -623,10 +661,12 @@ async function useItem(index) {
   if (game.playerItemsSealed) return notice('封锁条压住道具栏。本回合只能直接扣动。','Your items are sealed. You must fire this turn.');
   if (key === 'breaker') return notice('断路钳会在它使用停站铃时询问你是否使用。','The Circuit Cutter asks for your choice when it uses a Stop Bell.');
   if (key === 'unsealer') return notice('解封钩会在它使用封锁条时询问你是否消耗。','The Seal Hook asks for your choice when it uses a Lock Strip.');
+  if (key === 'unclamp') return notice('松夹钥匙会在它使用静默夹时询问你是否消耗。','The Clamp Key asks for your choice when it uses a Silence Clamp.');
   if (key === 'seal' && game.playerSealUsedThisTurn) return notice('本行动回合已经使用过封锁条。','You already used a Lock Strip this action turn.');
   if (game.itemsLocked) return notice('僵硬的手指不听使唤。先扣动一次，才能使用道具。','Your stiff fingers will not move. Trigger once to unlock items.');
   if (key === 'wrench' && game.powered) return notice('机器已经增压，必须先扣动一次。','Pressure is already active. Trigger once first.');
   if (key === 'tea' && game.playerHp >= game.playerMax) return notice('生命值已满，热茶留到受伤后再喝。','Health is full. Save the tea for later.');
+  if (key === 'ration' && game.playerHp > 2) return notice('生命不高于2时才能使用应急口粮。','Emergency Ration requires 2 health or less.');
   if (key === 'bell' && game.bell) return notice('停站铃已经接通，不能重复接线。','A Stop Bell is already connected.');
   if (key === 'glove') {
     if (!game.dealerItems.length) return notice('它没有可夺取的道具。','It has no item to steal.');
@@ -636,10 +676,10 @@ async function useItem(index) {
   }
   if (key === 'lamp') {
     if (game.firstLampBlocked) { game.firstLampBlocked = false; say('耳鸣盖过了机器声。你什么也没看清。','Tinnitus drowns out the machine. You see nothing.'); }
-    else say(game.shells[0] ? '检修灯映出红色线圈：下一格是高压。' : '检修灯下空空如也：下一格是空响。', game.shells[0] ? 'The lamp reveals a red coil: next is LIVE.' : 'The lamp reveals an empty slot: next is BLANK.');
+    else say(`检修灯显示：下一格是${chamberLabel(0)}。`,`The lamp reveals: next is ${chamberLabel(0)}.`);
   }
   if (key === 'wrench') { game.powered = true; say('线圈被拧紧。你的下一次高压命中造成 2 点伤害。','The coil is tightened. Your next live hit deals 2 damage.'); }
-  if (key === 'ticket') { const removed = game.shells.shift(); game.chamberStep++; if (game.specialIndex >= 0) game.specialIndex--; say(`废票卷走了一格：${removed ? '高压' : '空响'}。`, `The Void Ticket discards a ${removed ? 'live' : 'blank'} chamber.`); if (!game.shells.length) await loadChamber(); }
+  if (key === 'ticket') { const removedLabel = chamberLabel(0); game.shells.shift(); game.chamberStep++; if (game.specialIndex >= 0) game.specialIndex--; clearTailReveal(); say(`废票卷走了一格：${removedLabel}。`, `The Void Ticket discards: ${removedLabel}.`); if (!game.shells.length) await loadChamber(); }
   if (key === 'bell') {
     const breakerIndex = game.dealerItems.indexOf('breaker');
     if (breakerIndex >= 0) { game.dealerItems.splice(breakerIndex, 1); say('它的断路钳咬断线路，你的停站铃失效了。','It cuts the circuit. Your Stop Bell fails.'); }
@@ -655,7 +695,7 @@ async function useItem(index) {
   if (key === 'charm') { game.playerShield = true; say('旧护符贴上胸口。下一次伤害减少 1 点。','The Old Charm rests on your chest. Reduce the next damage by 1.'); }
   if (key === 'tea') { game.playerHp = Math.min(game.playerMax, game.playerHp + 1); say('热茶让手不再发抖。恢复 1 点生命。','Hot Tea steadies your hands. Restore 1 health.'); }
   if (key === 'inverter') {
-    game.shells[0] = !game.shells[0]; ui.chamber.classList.remove('invert-spin'); void ui.chamber.offsetWidth; ui.chamber.classList.add('invert-spin');
+    game.shells[0] = !game.shells[0]; clearTailReveal(); ui.chamber.classList.remove('invert-spin'); void ui.chamber.offsetWidth; ui.chamber.classList.add('invert-spin');
     say('换向器发出刺耳蜂鸣。下一格已经反转。','The Inverter screams. The next chamber is reversed.');
   }
   if (key === 'vial') {
@@ -664,10 +704,13 @@ async function useItem(index) {
     else if (!invincible) game.playerHp = Math.max(0, game.playerHp - 1);
     say(delta > 0 ? '命运药剂：恢复 2 点生命。' : invincible ? '命运药剂试图扣血，但防护屏障完全阻挡了它。' : '命运药剂：失去 1 点生命。', delta > 0 ? 'Fate Vial: restored 2 health.' : invincible ? 'The Fate Vial tried to harm you, but the barrier blocked everything.' : 'Fate Vial: lost 1 health.');
   }
-  if (key === 'magnet') { game.shells.unshift(game.shells.pop()); if (game.specialIndex >= 0) game.specialIndex = game.specialIndex === game.shells.length - 1 ? 0 : game.specialIndex + 1; say('回程磁铁把最后一格拖到最前。','The Return Magnet drags the final chamber to the front.'); }
+  if (key === 'magnet') { game.shells.unshift(game.shells.pop()); if (game.specialIndex >= 0) game.specialIndex = game.specialIndex === game.shells.length - 1 ? 0 : game.specialIndex + 1; clearTailReveal(); say('回程磁铁把最后一格拖到最前。','The Return Magnet drags the final chamber to the front.'); }
   if (key === 'carbon') { const copied = game.dealerItems[Math.floor(Math.random() * game.dealerItems.length)]; if (copied && game.items.length <= itemLimit()) game.items.push(copied); say(copied ? `复写票印出它的「${itemInfo[copied][0]}」。` : '它没有可供复写的道具。', copied ? `The Carbon Ticket copies its ${itemInfoEn[copied][0]}.` : 'It has nothing to copy.'); }
-  if (key === 'clamp') { game.dealerRoleBlocked = true; say('静默夹扣住它的角色档案。它的下一次能力失效。','The Silence Clamp blocks its next character ability.'); }
-  if (key === 'compass') say(game.shells.at(-1) ? '尾灯罗盘指向红色：最后一格是高压。' : '尾灯罗盘沉默：最后一格是空响。', game.shells.at(-1) ? 'The Tail Compass says the final chamber is LIVE.' : 'The Tail Compass says the final chamber is BLANK.');
+  if (key === 'clamp') await applyRoleClamp('dealer');
+  if (key === 'compass') say(`尾灯罗盘显示：最后一格是${chamberLabel(game.shells.length - 1)}。`,`The Tail Compass shows: final chamber is ${chamberLabel(game.shells.length - 1)}.`);
+  if (key === 'coupler') { [game.shells[0],game.shells[game.shells.length - 1]] = [game.shells.at(-1),game.shells[0]]; if (game.specialIndex === 0) game.specialIndex = game.shells.length - 1; else if (game.specialIndex === game.shells.length - 1) game.specialIndex = 0; clearTailReveal(); say('首尾车钩交换了第一格与最后一格。','The End Coupler swaps the first and last chambers.'); }
+  if (key === 'scanner') say(`双格听诊器显示：${[0,1].filter(i=>i<game.shells.length).map(i=>chamberLabel(i)).join('、')}。`,`Twin Stethoscope: ${[0,1].filter(i=>i<game.shells.length).map(i=>chamberLabel(i)).join(', ')}.`);
+  if (key === 'ration') { game.playerHp = Math.min(game.playerMax,game.playerHp + 2); say('你撕开应急口粮，恢复2血。','You open an Emergency Ration and restore 2 health.'); }
   await maybeMimic('player', key);
   game.items.splice(index, 1); refillSupply(); beep('item');
   ui.machine.classList.remove('item-surge'); void ui.machine.offsetWidth; ui.machine.classList.add('item-surge');
