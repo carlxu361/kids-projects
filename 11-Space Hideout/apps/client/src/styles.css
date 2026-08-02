@@ -1,0 +1,157 @@
+:root {
+  color-scheme: dark;
+  --void: #061318;
+  --steel: #102930;
+  --glass: rgba(20, 56, 64, 0.72);
+  --line: #31d8c8;
+  --warning: #f4c05f;
+  --danger: #ef5d75;
+  --text: #eefaf8;
+  --muted: #9fc6c1;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 960px;
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(49, 216, 200, 0.05) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(rgba(244, 192, 95, 0.04) 1px, transparent 1px) 0 0 / 48px 48px,
+    var(--void);
+  color: var(--text);
+}
+
+button {
+  min-height: 42px;
+  border: 1px solid rgba(49, 216, 200, 0.3);
+  border-radius: 8px;
+  padding: 0 16px;
+  background: rgba(49, 216, 200, 0.12);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+button:first-child {
+  background: var(--line);
+  color: #041114;
+  font-weight: 800;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  color: rgba(238, 250, 248, 0.42);
+  border-color: rgba(159, 198, 193, 0.16);
+  background: rgba(159, 198, 193, 0.08);
+}
+
+#app {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 48px;
+}
+
+#phaser-root {
+  position: fixed;
+  inset: auto 48px 48px auto;
+  width: 420px;
+  height: 236px;
+  border: 1px solid rgba(49, 216, 200, 0.22);
+  border-radius: 8px;
+  overflow: hidden;
+  opacity: 0.92;
+  pointer-events: none;
+}
+
+#phaser-root canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.terminal {
+  width: min(1120px, 100%);
+  display: grid;
+  grid-template-columns: minmax(420px, 1fr) 360px;
+  gap: 28px;
+  align-items: stretch;
+}
+
+.terminal__copy,
+.terminal__status {
+  border: 1px solid rgba(49, 216, 200, 0.22);
+  border-radius: 8px;
+  background: var(--glass);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
+}
+
+.terminal__copy {
+  padding: 44px;
+}
+
+.kicker {
+  margin: 0 0 14px;
+  color: var(--warning);
+  font-family: "Courier New", ui-monospace, monospace;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-size: 68px;
+  line-height: 0.95;
+  letter-spacing: 0;
+}
+
+.summary {
+  margin: 18px 0 28px;
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.terminal__status {
+  padding: 22px;
+}
+
+dl {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(159, 198, 193, 0.16);
+}
+
+dt {
+  color: var(--muted);
+}
+
+dd {
+  margin: 0;
+  color: var(--text);
+  text-align: right;
+}

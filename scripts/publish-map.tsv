@@ -1,12 +1,13 @@
-werewolf.html	01-月影村狼人杀	月影村狼人杀	多人狼人杀网页游戏，6到12人同屏轮流操作
-chess.html	03-王冠棋桌	王冠棋桌	带谜题、棋谱和外观设置的国际象棋网页游戏
-poker-games.html	04-王牌牌室	王牌牌室	扑克牌小游戏合集，包含记忆、配对、猜高低等玩法
-2048.html	05-叠叠方块 · 2048	叠叠方块 · 2048	孩子创作的网页游戏
-2048-classic	06-2048 · 经典数字游戏	2048 · 经典数字游戏	孩子创作的网页游戏
-devil-roulette	07-末班轮盘	末班轮盘	孩子创作的网页游戏
-extraction-raid-prototype	08-撤离线：原型	撤离线：原型	孩子创作的网页游戏
-final-review-camp	08-学习探险手册	学习探险手册	孩子创作的网页游戏
-picture-chinese-quest	08-图语文关 · 看图猜句	图语文关 · 看图猜句	孩子创作的网页游戏
-roof-piano-camp	08-Brainiac Maniac · Boss 钢琴训练营	Brainiac Maniac · Boss 钢琴训练营	孩子创作的网页游戏
-zu	09-3D Tactical Aim Prototype	3D Tactical Aim Prototype	孩子创作的网页游戏
-neon-move-arena	10-Neon Move Arena	Neon Move Arena	孩子创作的网页游戏
+werewolf.html	01-月影村狼人杀	月影村狼人杀	6 到 12 人同屏轮流操作的社交推理网页游戏	社交推理	🐺
+chess.html	03-王冠棋桌	王冠棋桌	带谜题、棋谱和外观设置的国际象棋练习桌	棋类策略	♟️
+poker-games.html	04-王牌牌室	王牌牌室	扑克牌小游戏合集，包含记忆、配对、猜高低等玩法	纸牌合集	🃏
+2048.html	05-叠叠方块 · 2048	叠叠方块 · 2048	单文件版 2048 合成小游戏，适合快速打开练手	益智合成	🔢
+2048-classic	06-2048 · 经典数字游戏	2048 · 经典数字游戏	带独立目录和经典规则的 2048 数字合成游戏	益智合成	🔢
+devil-roulette	07-末班轮盘	末班轮盘	带紧张轮盘节奏的本地网页派对原型	派对竞技	🎲
+extraction-raid-prototype	08-撤离线：原型	撤离线：原型	第一人称搜打撤原型，包含搜索、战斗、背包和撤离循环	动作原型	🚀
+final-review-camp	08-学习探险手册	学习探险手册	语文、数学、英语复习闯关工具，包含错题、草稿和宠物奖励	学习工具	📚
+picture-chinese-quest	08-图语文关 · 看图猜句	图语文关 · 看图猜句	看图理解中文句子的语文练习小游戏	学习工具	🖼️
+roof-piano-camp	08-Brainiac Maniac · Boss 钢琴训练营	Brainiac Maniac · Boss 钢琴训练营	分阶段钢琴训练营，练习节奏、识谱、左右手配合和单音音准	音乐训练	🎹
+zu	09-3D Tactical Aim Prototype	3D Tactical Aim Prototype	原创 3D 战术射击原型，练习移动、瞄准、HUD 和 AI 队友	动作原型	🎯
+neon-move-arena	10-Neon Move Arena	Neon Move Arena	本地多人霓虹竞技场，支持 AI 补位、回合计分和突变器	派对竞技	⚡
+space-hideout	11-Space Hideout	Space Hideout	Hide n Seek 多人联机重建原型，包含 pnpm 前后端骨架和 AI 决策地基	联机原型	🛰️

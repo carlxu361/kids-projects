@@ -7,15 +7,16 @@
   <style>
     :root {
       color-scheme: light;
-      --paper: #f8f4ea;
-      --ink: #22201c;
-      --muted: #70695f;
-      --line: #d8cdbc;
-      --sky: #2d8cff;
-      --leaf: #43a56d;
-      --sun: #f1a93b;
-      --berry: #d94f70;
-      --card: #fffdf7;
+      --paper: #f4f7fb;
+      --ink: #172033;
+      --muted: #627086;
+      --line: #d8e0ee;
+      --card: #ffffff;
+      --blue: #276ef1;
+      --green: #0f9f72;
+      --yellow: #f3ad32;
+      --pink: #d94f70;
+      --violet: #7357d8;
     }
     * { box-sizing: border-box; }
     body {
@@ -23,88 +24,172 @@
       min-height: 100vh;
       color: var(--ink);
       background:
-        linear-gradient(90deg, rgba(45, 140, 255, .08) 1px, transparent 1px),
-        linear-gradient(rgba(45, 140, 255, .08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(39, 110, 241, .07) 1px, transparent 1px),
+        linear-gradient(rgba(15, 159, 114, .07) 1px, transparent 1px),
         var(--paper);
-      background-size: 28px 28px;
+      background-size: 30px 30px;
       font-family: ui-rounded, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
     }
-    header, main, footer { width: min(1100px, calc(100% - 32px)); margin: 0 auto; }
-    header { padding: 48px 0 26px; }
+    header, main, footer {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+    header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: end;
+      padding: 44px 0 22px;
+    }
     .label {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       margin-bottom: 14px;
       color: var(--muted);
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 800;
     }
-    .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      background: var(--leaf);
-      box-shadow: 18px 0 0 var(--sun), 36px 0 0 var(--berry);
+    .label-dot {
+      flex: 0 0 54px;
+      width: 54px;
+      height: 12px;
+      border-radius: 0;
+      background:
+        radial-gradient(circle at 6px 6px, var(--green) 0 6px, transparent 7px),
+        radial-gradient(circle at 27px 6px, var(--yellow) 0 6px, transparent 7px),
+        radial-gradient(circle at 48px 6px, var(--pink) 0 6px, transparent 7px);
     }
     h1 {
-      max-width: 720px;
+      max-width: 760px;
       margin: 0;
-      font-size: clamp(38px, 8vw, 82px);
-      line-height: .95;
+      font-size: clamp(38px, 7vw, 76px);
+      line-height: 1;
       letter-spacing: 0;
     }
+    h1 span {
+      display: block;
+    }
     .intro {
-      max-width: 620px;
+      max-width: 650px;
       margin: 18px 0 0;
       color: var(--muted);
-      font-size: clamp(16px, 2vw, 20px);
+      font-size: clamp(16px, 2vw, 19px);
       line-height: 1.75;
     }
-    main { padding: 10px 0 52px; }
-    .shelf {
+    .stats {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(2, minmax(110px, 1fr));
+      gap: 10px;
+      min-width: 250px;
     }
-    .project {
-      min-height: 210px;
-      padding: 18px;
-      border: 2px solid var(--ink);
+    .stat {
+      padding: 14px;
+      border: 1px solid var(--line);
       border-radius: 8px;
-      color: inherit;
-      background: var(--card);
-      box-shadow: 6px 6px 0 rgba(34, 32, 28, .18);
-      text-decoration: none;
-      transition: transform .16s ease, box-shadow .16s ease;
+      background: rgba(255, 255, 255, .78);
     }
-    .project:hover,
-    .project:focus-visible {
-      transform: translate(-3px, -3px);
-      box-shadow: 9px 9px 0 rgba(34, 32, 28, .18);
-      outline: none;
+    .stat strong {
+      display: block;
+      font-size: 28px;
+      line-height: 1;
     }
-    .num {
+    .stat span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    main {
+      display: grid;
+      gap: 24px;
+      padding: 18px 0 54px;
+    }
+    .category-section {
+      padding-top: 10px;
+    }
+    .category-heading {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .category-icon {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 42px;
-      height: 42px;
-      margin-bottom: 18px;
-      border-radius: 50%;
+      width: 46px;
+      height: 46px;
+      border-radius: 8px;
       color: white;
-      background: var(--sky);
-      font-weight: 900;
+      background: var(--blue);
+      font-size: 24px;
+      box-shadow: 4px 4px 0 rgba(23, 32, 51, .14);
     }
-    .project:nth-child(2n) .num { background: var(--leaf); }
-    .project:nth-child(3n) .num { background: var(--sun); }
-    .project:nth-child(4n) .num { background: var(--berry); }
+    .category-section:nth-child(2n) .category-icon { background: var(--green); }
+    .category-section:nth-child(3n) .category-icon { background: var(--yellow); }
+    .category-section:nth-child(4n) .category-icon { background: var(--pink); }
+    .category-section:nth-child(5n) .category-icon { background: var(--violet); }
     h2 {
       margin: 0;
-      font-size: 24px;
+      font-size: 25px;
       letter-spacing: 0;
     }
-    .project p {
+    .category-heading p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .project-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 360px));
+      gap: 14px;
+      justify-content: start;
+    }
+    .project-card {
+      display: grid;
+      grid-template-rows: auto auto auto 1fr;
+      min-height: 220px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: inherit;
+      background: var(--card);
+      box-shadow: 0 12px 28px rgba(23, 32, 51, .08);
+      text-decoration: none;
+      transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+    }
+    .project-card:hover,
+    .project-card:focus-visible {
+      transform: translateY(-3px);
+      border-color: rgba(39, 110, 241, .55);
+      box-shadow: 0 18px 36px rgba(23, 32, 51, .14);
+      outline: none;
+    }
+    .project-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 52px;
+      height: 52px;
+      margin-bottom: 14px;
+      border-radius: 8px;
+      background: #edf3ff;
+      font-size: 29px;
+    }
+    .project-meta {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+    h3 {
+      margin: 8px 0 0;
+      font-size: 22px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+    .project-card p {
       margin: 10px 0 0;
       color: var(--muted);
       line-height: 1.65;
@@ -114,85 +199,216 @@
       color: var(--muted);
       font-size: 14px;
     }
+    @media (max-width: 760px) {
+      header {
+        grid-template-columns: 1fr;
+      }
+      .stats {
+        min-width: 0;
+        max-width: 360px;
+      }
+    }
   </style>
 </head>
 <body>
   <header>
-    <div class="label"><span class="dot"></span>作品集</div>
-    <h1>小小开发者的游戏和学习工具</h1>
-    <p class="intro">这里收藏孩子用 AI 和代码做出来的小项目。每个作品都可以直接打开体验，也可以继续修改、升级、发布。</p>
+    <div>
+      <div class="label"><span class="label-dot"></span>作品集</div>
+      <h1><span>小小开发者的游戏</span><span>和学习工具</span></h1>
+      <p class="intro">这里收藏孩子用 AI 和代码做出来的小项目。现在按类型合并展示，每个作品都有图标、简介和独立入口。</p>
+    </div>
+    <div class="stats" aria-label="作品集统计">
+      <div class="stat"><strong>14</strong><span>个作品</span></div>
+      <div class="stat"><strong>9</strong><span>个类型</span></div>
+    </div>
   </header>
 
   <main>
-    <section class="shelf" aria-label="项目列表">
-      <a class="project" href="./01-月影村狼人杀/">
-        <span class="num">01</span>
-        <h2>月影村狼人杀</h2>
-        <p>多人狼人杀网页游戏，6到12人同屏轮流操作。</p>
-      </a>
-      <a class="project" href="./02-AI学习助手/">
-        <span class="num">02</span>
-        <h2>AI学习助手</h2>
-        <p>制定学习计划、跟踪进度、收集徽章的学习工具。</p>
-      </a>
-      <a class="project" href="./03-王冠棋桌/">
-        <span class="num">03</span>
-        <h2>王冠棋桌</h2>
-        <p>带谜题、棋谱和外观设置的国际象棋网页游戏。</p>
-      </a>
-      <a class="project" href="./04-王牌牌室/">
-        <span class="num">04</span>
-        <h2>王牌牌室</h2>
-        <p>扑克牌小游戏合集，包含记忆、配对、猜高低等玩法。</p>
-      </a>
-      <a class="project" href="./05-叠叠方块 · 2048/">
-        <span class="num">05</span>
-        <h2>叠叠方块 · 2048</h2>
-        <p>孩子创作的网页游戏。</p>
-      </a>
-      <a class="project" href="./06-2048 · 经典数字游戏/">
-        <span class="num">06</span>
-        <h2>2048 · 经典数字游戏</h2>
-        <p>孩子创作的网页游戏。</p>
-      </a>
-      <a class="project" href="./07-末班轮盘/">
-        <span class="num">07</span>
-        <h2>末班轮盘</h2>
-        <p>孩子创作的网页游戏。</p>
-      </a>
-      <a class="project" href="./08-撤离线：原型/">
-        <span class="num">08</span>
-        <h2>撤离线：原型</h2>
-        <p>孩子创作的网页游戏。</p>
-      </a>
-      <a class="project" href="./08-学习探险手册/">
-        <span class="num">08</span>
-        <h2>学习探险手册</h2>
-        <p>孩子创作的网页游戏。</p>
-      </a>
-      <a class="project" href="./08-图语文关 · 看图猜句/">
-        <span class="num">08</span>
-        <h2>图语文关 · 看图猜句</h2>
-        <p>孩子创作的网页游戏。</p>
-      </a>
-      <a class="project" href="./08-Brainiac Maniac · Boss 钢琴训练营/">
-        <span class="num">08</span>
-        <h2>Brainiac Maniac · Boss 钢琴训练营</h2>
-        <p>孩子创作的网页游戏。</p>
-      </a>
-      <a class="project" href="./09-3D Tactical Aim Prototype/">
-        <span class="num">09</span>
-        <h2>3D Tactical Aim Prototype</h2>
-        <p>孩子创作的网页游戏。</p>
-      </a>
-      <a class="project" href="./10-Neon Move Arena/">
-        <span class="num">10</span>
-        <h2>Neon Move Arena</h2>
-        <p>孩子创作的网页游戏。</p>
-      </a>
-    </section>
+      <section class="category-section" aria-labelledby="category-学习工具">
+        <div class="category-heading">
+          <span class="category-icon" aria-hidden="true">📚</span>
+          <div>
+            <h2 id="category-学习工具">学习工具</h2>
+            <p>复习、识字、钢琴和 AI 学习辅助都放在这里。</p>
+          </div>
+        </div>
+        <div class="project-grid">
+        <a class="project-card" href="./02-AI学习助手/" aria-label="AI学习助手">
+          <span class="project-icon" aria-hidden="true">🤖</span>
+          <span class="project-meta">学习工具 · 02</span>
+          <h3>AI学习助手</h3>
+          <p>AI 驱动的学习助手，制定计划、跟踪进度、收集徽章。</p>
+        </a>
+        <a class="project-card" href="./08-学习探险手册/" aria-label="学习探险手册">
+          <span class="project-icon" aria-hidden="true">📚</span>
+          <span class="project-meta">学习工具 · 08</span>
+          <h3>学习探险手册</h3>
+          <p>语文、数学、英语复习闯关工具，包含错题、草稿和宠物奖励。</p>
+        </a>
+        <a class="project-card" href="./08-图语文关 · 看图猜句/" aria-label="图语文关 · 看图猜句">
+          <span class="project-icon" aria-hidden="true">🖼️</span>
+          <span class="project-meta">学习工具 · 08</span>
+          <h3>图语文关 · 看图猜句</h3>
+          <p>看图理解中文句子的语文练习小游戏。</p>
+        </a>
+        </div>
+      </section>
+      <section class="category-section" aria-labelledby="category-联机原型">
+        <div class="category-heading">
+          <span class="category-icon" aria-hidden="true">🛰️</span>
+          <div>
+            <h2 id="category-联机原型">联机原型</h2>
+            <p>多人联机、房间、AI 决策这类工程型游戏。</p>
+          </div>
+        </div>
+        <div class="project-grid">
+        <a class="project-card" href="./11-Space Hideout/" aria-label="Space Hideout">
+          <span class="project-icon" aria-hidden="true">🛰️</span>
+          <span class="project-meta">联机原型 · 11</span>
+          <h3>Space Hideout</h3>
+          <p>Hide n Seek 多人联机重建原型，包含 pnpm 前后端骨架和 AI 决策地基。</p>
+        </a>
+        </div>
+      </section>
+      <section class="category-section" aria-labelledby="category-动作原型">
+        <div class="category-heading">
+          <span class="category-icon" aria-hidden="true">🎯</span>
+          <div>
+            <h2 id="category-动作原型">动作原型</h2>
+            <p>移动、瞄准、探索和战斗循环练习。</p>
+          </div>
+        </div>
+        <div class="project-grid">
+        <a class="project-card" href="./08-撤离线：原型/" aria-label="撤离线：原型">
+          <span class="project-icon" aria-hidden="true">🚀</span>
+          <span class="project-meta">动作原型 · 08</span>
+          <h3>撤离线：原型</h3>
+          <p>第一人称搜打撤原型，包含搜索、战斗、背包和撤离循环。</p>
+        </a>
+        <a class="project-card" href="./09-3D Tactical Aim Prototype/" aria-label="3D Tactical Aim Prototype">
+          <span class="project-icon" aria-hidden="true">🎯</span>
+          <span class="project-meta">动作原型 · 09</span>
+          <h3>3D Tactical Aim Prototype</h3>
+          <p>原创 3D 战术射击原型，练习移动、瞄准、HUD 和 AI 队友。</p>
+        </a>
+        </div>
+      </section>
+      <section class="category-section" aria-labelledby="category-派对竞技">
+        <div class="category-heading">
+          <span class="category-icon" aria-hidden="true">⚡</span>
+          <div>
+            <h2 id="category-派对竞技">派对竞技</h2>
+            <p>适合短时间重复游玩、看局势变化的本地游戏。</p>
+          </div>
+        </div>
+        <div class="project-grid">
+        <a class="project-card" href="./07-末班轮盘/" aria-label="末班轮盘">
+          <span class="project-icon" aria-hidden="true">🎲</span>
+          <span class="project-meta">派对竞技 · 07</span>
+          <h3>末班轮盘</h3>
+          <p>带紧张轮盘节奏的本地网页派对原型。</p>
+        </a>
+        <a class="project-card" href="./10-Neon Move Arena/" aria-label="Neon Move Arena">
+          <span class="project-icon" aria-hidden="true">⚡</span>
+          <span class="project-meta">派对竞技 · 10</span>
+          <h3>Neon Move Arena</h3>
+          <p>本地多人霓虹竞技场，支持 AI 补位、回合计分和突变器。</p>
+        </a>
+        </div>
+      </section>
+      <section class="category-section" aria-labelledby="category-益智合成">
+        <div class="category-heading">
+          <span class="category-icon" aria-hidden="true">🔢</span>
+          <div>
+            <h2 id="category-益智合成">益智合成</h2>
+            <p>规则简单、目标清楚，适合练习策略和观察。</p>
+          </div>
+        </div>
+        <div class="project-grid">
+        <a class="project-card" href="./05-叠叠方块 · 2048/" aria-label="叠叠方块 · 2048">
+          <span class="project-icon" aria-hidden="true">🔢</span>
+          <span class="project-meta">益智合成 · 05</span>
+          <h3>叠叠方块 · 2048</h3>
+          <p>单文件版 2048 合成小游戏，适合快速打开练手。</p>
+        </a>
+        <a class="project-card" href="./06-2048 · 经典数字游戏/" aria-label="2048 · 经典数字游戏">
+          <span class="project-icon" aria-hidden="true">🔢</span>
+          <span class="project-meta">益智合成 · 06</span>
+          <h3>2048 · 经典数字游戏</h3>
+          <p>带独立目录和经典规则的 2048 数字合成游戏。</p>
+        </a>
+        </div>
+      </section>
+      <section class="category-section" aria-labelledby="category-棋类策略">
+        <div class="category-heading">
+          <span class="category-icon" aria-hidden="true">♟️</span>
+          <div>
+            <h2 id="category-棋类策略">棋类策略</h2>
+            <p>需要提前思考和复盘的策略桌面游戏。</p>
+          </div>
+        </div>
+        <div class="project-grid">
+        <a class="project-card" href="./03-王冠棋桌/" aria-label="王冠棋桌">
+          <span class="project-icon" aria-hidden="true">♟️</span>
+          <span class="project-meta">棋类策略 · 03</span>
+          <h3>王冠棋桌</h3>
+          <p>带谜题、棋谱和外观设置的国际象棋练习桌。</p>
+        </a>
+        </div>
+      </section>
+      <section class="category-section" aria-labelledby="category-纸牌合集">
+        <div class="category-heading">
+          <span class="category-icon" aria-hidden="true">🃏</span>
+          <div>
+            <h2 id="category-纸牌合集">纸牌合集</h2>
+            <p>用扑克牌规则做出来的小玩法集合。</p>
+          </div>
+        </div>
+        <div class="project-grid">
+        <a class="project-card" href="./04-王牌牌室/" aria-label="王牌牌室">
+          <span class="project-icon" aria-hidden="true">🃏</span>
+          <span class="project-meta">纸牌合集 · 04</span>
+          <h3>王牌牌室</h3>
+          <p>扑克牌小游戏合集，包含记忆、配对、猜高低等玩法。</p>
+        </a>
+        </div>
+      </section>
+      <section class="category-section" aria-labelledby="category-社交推理">
+        <div class="category-heading">
+          <span class="category-icon" aria-hidden="true">🐺</span>
+          <div>
+            <h2 id="category-社交推理">社交推理</h2>
+            <p>多人轮流操作、观察发言和判断身份的作品。</p>
+          </div>
+        </div>
+        <div class="project-grid">
+        <a class="project-card" href="./01-月影村狼人杀/" aria-label="月影村狼人杀">
+          <span class="project-icon" aria-hidden="true">🐺</span>
+          <span class="project-meta">社交推理 · 01</span>
+          <h3>月影村狼人杀</h3>
+          <p>6 到 12 人同屏轮流操作的社交推理网页游戏。</p>
+        </a>
+        </div>
+      </section>
+      <section class="category-section" aria-labelledby="category-音乐训练">
+        <div class="category-heading">
+          <span class="category-icon" aria-hidden="true">🎹</span>
+          <div>
+            <h2 id="category-音乐训练">音乐训练</h2>
+            <p>把音乐练习拆成更容易坚持的小关卡。</p>
+          </div>
+        </div>
+        <div class="project-grid">
+        <a class="project-card" href="./08-Brainiac Maniac · Boss 钢琴训练营/" aria-label="Brainiac Maniac · Boss 钢琴训练营">
+          <span class="project-icon" aria-hidden="true">🎹</span>
+          <span class="project-meta">音乐训练 · 08</span>
+          <h3>Brainiac Maniac · Boss 钢琴训练营</h3>
+          <p>分阶段钢琴训练营，练习节奏、识谱、左右手配合和单音音准。</p>
+        </a>
+        </div>
+      </section>
   </main>
 
-  <footer>更新作品后运行发布脚本，GitHub 和 Vercel 会跟着更新。</footer>
+  <footer>更新作品后运行发布脚本，作品集会重新整理首页和项目文件。</footer>
 </body>
 </html>

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Space Hideout</title>
+  </head>
+  <body>
+    <main id="app">
+      <section class="terminal">
+        <div class="terminal__copy">
+          <p class="kicker">Hide n Seek rebuild</p>
+          <h1>Space Hideout</h1>
+          <p class="summary">新的联机地基已启动。</p>
+          <div class="actions">
+            <button id="connect-button" type="button">连接服务器</button>
+            <button type="button" disabled>快速匹配</button>
+            <button type="button" disabled>私人房间</button>
+            <button type="button" disabled>任务训练</button>
+          </div>
+        </div>
+        <div class="terminal__status" aria-label="系统状态">
+          <dl>
+            <div>
+              <dt>HTTP</dt>
+              <dd id="http-status">等待检查</dd>
+            </div>
+            <div>
+              <dt>Socket</dt>
+              <dd id="socket-status">未连接</dd>
+            </div>
+            <div>
+              <dt>Phase</dt>
+              <dd id="phase-status">lobby</dd>
+            </div>
+            <div>
+              <dt>Protocol</dt>
+              <dd id="protocol-status">未知</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+      <div id="phaser-root" aria-hidden="true"></div>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

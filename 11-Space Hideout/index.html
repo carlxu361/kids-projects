@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Space Hideout</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --ink: #172033;
+      --muted: #617086;
+      --panel: #ffffff;
+      --line: #dbe3ef;
+      --blue: #246bfe;
+      --green: #12a875;
+      --yellow: #f4b63d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(36, 107, 254, .10), transparent 32%),
+        linear-gradient(315deg, rgba(18, 168, 117, .12), transparent 30%),
+        var(--bg);
+      font-family: ui-rounded, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    }
+    main {
+      width: min(880px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 56px 0;
+    }
+    .panel {
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .88);
+      box-shadow: 0 18px 50px rgba(30, 45, 80, .12);
+    }
+    .mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 58px;
+      height: 58px;
+      margin-bottom: 18px;
+      border-radius: 16px;
+      background: var(--blue);
+      color: white;
+      font-size: 30px;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(34px, 6vw, 62px);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+    .category {
+      margin: 12px 0 0;
+      color: var(--green);
+      font-weight: 800;
+    }
+    p {
+      max-width: 660px;
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.8;
+    }
+    .steps {
+      display: grid;
+      gap: 12px;
+      margin-top: 28px;
+    }
+    code {
+      display: block;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #101828;
+      color: #f5f8ff;
+      font-size: 15px;
+      overflow-x: auto;
+    }
+    a {
+      display: inline-flex;
+      margin-top: 24px;
+      color: var(--blue);
+      font-weight: 800;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="panel">
+      <div class="mark">🛰️</div>
+      <h1>Space Hideout</h1>
+      <div class="category">联机原型</div>
+      <p>Hide n Seek 多人联机重建原型，包含 pnpm 前后端骨架和 AI 决策地基。这个作品是前后端联机工程，不能只靠静态网页完整运行；作品集先展示项目入口和本地启动方式。</p>
+      <div class="steps" aria-label="本地启动命令">
+        <code>cd /Users/xjc/Developer/games/projects/space-hideout</code>
+        <code>pnpm install</code>
+        <code>pnpm dev</code>
+      </div>
+      <a href="../">返回作品集</a>
+    </section>
+  </main>
+</body>
+</html>

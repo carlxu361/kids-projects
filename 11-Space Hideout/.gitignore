@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+.DS_Store
+.env
+.env.*
+*.log
+playwright-report/
+test-results/
+.pnpm-store/
+apps/client/public/audio/original/*
+!apps/client/public/audio/original/.gitkeep

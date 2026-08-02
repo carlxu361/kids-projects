@@ -1,0 +1,28 @@
+{
+  "name": "space-hideout",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "dev": "pnpm --filter @space-hideout/shared build && concurrently -n server,client -c magenta,cyan \"pnpm --filter @space-hideout/server dev\" \"pnpm --filter @space-hideout/client dev\"",
+    "build": "pnpm --filter @space-hideout/shared build && pnpm --filter @space-hideout/server build && pnpm --filter @space-hideout/client build",
+    "typecheck": "pnpm --filter @space-hideout/shared typecheck && pnpm --filter @space-hideout/shared build && pnpm --filter @space-hideout/server typecheck && pnpm --filter @space-hideout/client typecheck",
+    "lint": "eslint .",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "test": "pnpm --filter @space-hideout/shared test && pnpm --filter @space-hideout/server test && pnpm --filter @space-hideout/client test",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.32.0",
+    "@playwright/test": "^1.54.2",
+    "@types/node": "^24.1.0",
+    "concurrently": "^9.2.0",
+    "eslint": "^9.32.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.38.0",
+    "vitest": "^3.2.4"
+  }
+}

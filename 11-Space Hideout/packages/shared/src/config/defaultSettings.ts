@@ -1,0 +1,33 @@
+import type { HideNSeekSettings } from "../types/settings.js";
+
+export const DEFAULT_SETTINGS: HideNSeekSettings = {
+  mapId: "orbital_outpost_01",
+  hunterSelectionMode: "random",
+  playerSpeedMultiplier: 1,
+  crewmateVision: 260,
+  hunterVision: 230,
+  commonTaskCount: 1,
+  shortTaskCount: 2,
+  longTaskCount: 1,
+  commonTaskReductionSeconds: 4,
+  shortTaskReductionSeconds: 6,
+  longTaskReductionSeconds: 10,
+  headStartSeconds: 10,
+  hideSeconds: 240,
+  finalHideSeconds: 60,
+  maxVentUses: 3,
+  visionMode: "flashlight",
+  crewmateFlashlightAngle: 100,
+  hunterFlashlightAngle: 80,
+  flashlightRange: 330,
+  killDistance: 58,
+  killCooldownSeconds: 15,
+  clickTargetToKill: true,
+  finalHideHunterSpeedMultiplier: 1.25,
+  finalHidePingsEnabled: true,
+  finalHidePingIntervalSeconds: 5,
+  seekMapEnabled: true,
+  seekMapUpdateIntervalMs: 2000,
+  showNames: true,
+  publicLobbyTags: ["casual"]
+};
