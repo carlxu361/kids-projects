@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Neon Move Arena</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div class="title-block">
+          <p class="eyebrow">Neon Move Arena</p>
+          <h1>霓虹移动竞技场</h1>
+        </div>
+        <div class="actions">
+          <label class="target-picker">
+            <span>玩家</span>
+            <select id="humanCount">
+              <option value="1">1 人 + 3 AI</option>
+              <option value="2" selected>2 人 + 2 AI</option>
+              <option value="3">3 人 + 1 AI</option>
+              <option value="4">4 人</option>
+            </select>
+          </label>
+          <label class="target-picker">
+            <span>目标</span>
+            <select id="targetScore">
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100" selected>100</option>
+            </select>
+          </label>
+          <button id="startButton" type="button">开始</button>
+          <button id="restartButton" class="ghost" type="button">重开</button>
+        </div>
+      </header>
+
+      <section class="game-layout">
+        <aside class="panel">
+          <section class="match-strip">
+            <div>
+              <span class="label">回合</span>
+              <strong id="roundText">0</strong>
+            </div>
+            <div>
+              <span class="label">时间</span>
+              <strong id="timerText">60</strong>
+            </div>
+            <div>
+              <span class="label">状态</span>
+              <strong id="phaseText">待机</strong>
+            </div>
+          </section>
+
+          <section class="mutator-box">
+            <span class="label">突变器</span>
+            <strong id="mutatorName">未启动</strong>
+            <p id="mutatorText">每 3 个回合切换一次。</p>
+          </section>
+
+          <section id="playerList" class="player-list" aria-label="players"></section>
+
+          <section id="keyGrid" class="key-grid" aria-label="controls"></section>
+        </aside>
+
+        <div class="stage">
+          <canvas id="gameCanvas" width="1280" height="720" aria-label="Neon Move Arena game canvas"></canvas>
+          <div id="banner" class="banner is-visible">
+            <strong>选择人数后开始</strong>
+            <span>余下位置由 AI 补上，4 人同屏积分赛</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="game.js"></script>
+  </body>
+</html>

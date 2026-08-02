@@ -20,12 +20,15 @@
           5v5 攻防、买枪经济、爆能器拾取部署、英雄原型、掩体挡弹和小地图标记。
           玩法参考竞技攻防结构，素材和角色均为原创简化版。
         </p>
-        <div class="hero-row" role="group" aria-label="选择英雄">
-          <button class="hero-button active" data-hero="warden" type="button"><span>守护者</span><small>治疗</small></button>
-          <button class="hero-button" data-hero="flare" type="button"><span>焰手</span><small>爆发</small></button>
-          <button class="hero-button" data-hero="brim" type="button"><span>战术官</span><small>烟幕</small></button>
-          <button class="hero-button" data-hero="gust" type="button"><span>疾风</span><small>位移</small></button>
-        </div>
+        <section id="hero-select-panel" aria-label="英雄选择">
+          <div class="hero-select-title"><span>英雄选择</span><small>每名英雄 3 个原创技能</small></div>
+          <div class="hero-row" role="group" aria-label="选择英雄">
+            <button class="hero-button active" data-hero="warden" type="button"><span>守护者</span><small>稳点支援</small><i>Q 急救环 · F 守位信标 · H 装甲补给</i></button>
+            <button class="hero-button" data-hero="flare" type="button"><span>焰手</span><small>入口压制</small><i>Q 燃烧区 · F 闪焰压制 · H 热浪推进</i></button>
+            <button class="hero-button" data-hero="brim" type="button"><span>战术官</span><small>控图指挥</small><i>Q 遮断烟幕 · F 热源扫描 · H 推进号令</i></button>
+            <button class="hero-button" data-hero="gust" type="button"><span>疾风</span><small>突破扰乱</small><i>Q 诱导冲刺 · F 静风步 · H 侧闪</i></button>
+          </div>
+        </section>
         <div class="role-row" role="group" aria-label="选择阵营">
           <button id="attack-button" class="role-button active" type="button">攻方</button>
           <button id="defense-button" class="role-button" type="button">守方</button>
@@ -77,22 +80,32 @@
         <span>生命</span>
         <div id="health-track"><div id="health-fill"></div></div>
         <strong id="health-bar-label">100</strong>
+        <strong id="armor-label">护甲 0</strong>
+        <small id="noise-label">静步：未暴露</small>
       </section>
 
       <section id="objective-panel" class="hidden">
         <span id="objective-label">选择阵营开始</span>
         <strong id="objective-status">爆能器未安装</strong>
+        <small id="objective-carrier">爆能器：未拾取</small>
         <div id="progress-track"><div id="progress-fill"></div></div>
       </section>
 
       <div id="interact-prompt" class="hidden">按住 E</div>
       <div id="lock-prompt" class="hidden">点击画面重新瞄准</div>
       <div id="alive-alert" class="hidden">敌方还剩一人</div>
+      <div id="damage-direction" class="hidden">受击：前方</div>
+      <div id="damage-sense" class="hidden" aria-hidden="true">
+        <span class="sense-front"></span>
+        <span class="sense-back"></span>
+        <span class="sense-left"></span>
+        <span class="sense-right"></span>
+      </div>
       <div id="server-badge" class="hidden">本地服务器 · 低延迟</div>
 
       <section id="minimap-panel" class="hidden" aria-label="minimap">
         <canvas id="minimap" width="180" height="180"></canvas>
-        <span id="minimap-hint">左键标记 · X 战术图</span>
+        <span id="minimap-hint">左键标记 · X 关闭 · Alt 准心小指示</span>
       </section>
 
       <section id="round-banner" class="hidden" aria-live="polite">
@@ -101,10 +114,10 @@
       </section>
 
       <section id="weapon-panel" class="hidden" aria-label="weapon panel">
-        <div id="credits-label">R点 800</div>
-        <div id="weapon-name">Rifle</div>
+        <div class="weapon-panel-top"><div id="weapon-name">Rifle</div><div id="credits-label">星核 800</div></div>
+        <div id="ability-label" aria-label="hero abilities"><span class="ability-pill ready" data-slot="q"><b>Q</b><span>技能</span><em>就绪</em></span><span class="ability-pill ready" data-slot="f"><b>F</b><span>技能</span><em>就绪</em></span><span class="ability-pill ready" data-slot="h"><b>H</b><span>技能</span><em>就绪</em></span></div>
         <div id="weapon-slots"></div>
-        <div id="weapon-hint">B 买枪期菜单 · E 拾爆能器/安装/拆除 · 右键开镜 · 1-5 切枪</div>
+        <div id="weapon-hint">B 买枪期菜单 · E 拾爆能器/安装/拆除 · G 丢当前枪 · T 丢爆能器 · X 战术图 · Alt 小指示 · C/V 单点探头 · Q/F/H 技能 · Ctrl 半蹲 · Z 单点趴下 · 右键开镜 · 1 刀 · 2 手枪 · 3/4 主武器</div>
       </section>
 
       <section id="settings-panel" class="panel hidden" aria-label="settings">
@@ -113,13 +126,26 @@
         <label>主音量 <input id="volume-slider" type="range" min="0" max="100" value="70" /></label>
         <label>音效 <input id="sfx-toggle" type="checkbox" checked /></label>
         <label>灵敏度 <input id="sensitivity-slider" type="range" min="8" max="40" value="22" /></label>
+        <label>性能档位
+          <select id="quality-select">
+            <option value="smooth">流畅</option>
+            <option value="balanced">均衡</option>
+            <option value="sharp">清晰</option>
+          </select>
+        </label>
+        <label>键位方案
+          <select id="keymap-select">
+            <option value="default">默认：X 战术图 · T 丢爆能器</option>
+            <option value="compact">紧凑：Tab/X 战术图 · Y/T 丢爆能器</option>
+          </select>
+        </label>
         <button id="resume-button" type="button">继续</button>
         <button id="home-button" type="button">回到主页</button>
       </section>
 
       <section id="buy-panel" class="hidden" aria-label="buy menu">
         <div class="buy-head">
-          <strong>买枪阶段</strong>
+          <div><strong>买枪阶段</strong><small id="buy-hint">B 关闭后可移动 · 仅买枪期可购买</small></div>
           <span id="buy-timer">8</span>
         </div>
         <div id="buy-list"></div>
@@ -155,12 +181,15 @@
         <b>左键</b> 射击/近战
         <b>Space</b> 跳跃
         <b>R</b> 换弹
-        <b>1-5</b> 切武器
+        <b>1/2/3/4</b> 切武器
         <b>E</b> 安装/拆除/拾枪
         <b>B</b> 买枪期
         <b>右键</b> 开镜
         <b>X</b> 战术图
         <b>Shift</b> 静步
+        <b>C/V</b> 单点探头
+        <b>Z</b> 单点趴下
+        <b>G/T</b> 丢枪/丢爆能器
         <b>Esc</b> 设置
       </section>
     </main>
