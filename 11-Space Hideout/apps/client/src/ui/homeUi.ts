@@ -20,6 +20,7 @@ export function bindHomeUi(network: ClientNetwork): void {
   const connectButton = document.querySelector<HTMLButtonElement>("#connect-button");
   const trainingButton = document.querySelector<HTMLButtonElement>("#training-button");
   const overviewButton = document.querySelector<HTMLButtonElement>("#overview-button");
+  const startRoundButton = document.querySelector<HTMLButtonElement>("#start-round-button");
   const matchButton = document.querySelector<HTMLButtonElement>("#match-button");
   const launcherForm = document.querySelector<HTMLFormElement>("#launcher-form");
 
@@ -55,6 +56,15 @@ export function bindHomeUi(network: ClientNetwork): void {
   });
   overviewButton?.addEventListener("click", () => {
     window.dispatchEvent(new Event("space-hideout:overview"));
+  });
+  startRoundButton?.addEventListener("click", () => {
+    window.dispatchEvent(new Event("space-hideout:start"));
+  });
+  window.addEventListener("space-hideout:round-started", () => {
+    document.querySelector<HTMLElement>("#mission-briefing")?.setAttribute("hidden", "");
+  });
+  window.addEventListener("space-hideout:round-reset", () => {
+    document.querySelector<HTMLElement>("#mission-briefing")?.removeAttribute("hidden");
   });
 }
 
@@ -97,6 +107,11 @@ function bindPlaytestTelemetry(): void {
   window.addEventListener("space-hideout:task", (event) => {
     const detail = (event as CustomEvent<{ completed: number }>).detail;
     if (detail) setText("#task-status", `${detail.completed} / 3`);
+  });
+
+  window.addEventListener("space-hideout:vent", (event) => {
+    const detail = (event as CustomEvent<{ uses: number }>).detail;
+    if (detail) setText("#vent-status", `${detail.uses} 次`);
   });
 
   window.addEventListener("space-hideout:status", (event) => {

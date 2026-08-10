@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { findNavigationPath, nearestNavigationNode, type NavigationNode } from "../game/navigation";
 
 const MAP_WIDTH = 2600;
 const MAP_HEIGHT = 1600;
@@ -7,6 +8,8 @@ const ROUND_HIDE_MS = 90_000;
 const FINAL_HIDE_MS = 25_000;
 const TERMINAL_TIME_REDUCTION_MS = 8_000;
 const CAPTURE_DISTANCE = 48;
+const MAX_VENT_USES = 3;
+const BOT_RADIUS = 18;
 
 type Appearance = {
   color: string;
@@ -28,6 +31,32 @@ type KeySet = {
 };
 
 type Terminal = Point & { id: string; label: string; done: boolean };
+type Vent = Point & { id: string; exitId: string };
+type Ladder = Point & { id: string; exitId: string };
+type Zipline = Point & { id: string; exit: Point };
+type Transit = {
+  kind: "ladder" | "zipline";
+  from: Point;
+  to: Point;
+  startedAt: number;
+  durationMs: number;
+  label: string;
+};
+type BotState = "patrol" | "chase" | "search" | "repair" | "flee";
+type BotAgent = {
+  id: string;
+  label: string;
+  position: Point;
+  state: BotState;
+  route: string[];
+  routeTarget?: string;
+  patrolIndex: number;
+  patrolNodes: string[];
+  preferredTaskOffset: number;
+  taskStartedAt?: number;
+  lastSeen?: Point;
+  ventUses: number;
+};
 
 const DEFAULT_APPEARANCE: Appearance = {
   color: "#31d8c8",
@@ -48,6 +77,45 @@ const WALLS: Wall[] = [
   { x: 2280, y: 1220, width: 120, height: 170 }
 ];
 
+const NAVIGATION_NODES: NavigationNode[] = [
+  { id: "spawn", x: 285, y: 1180, links: ["cargo", "observation"] },
+  { id: "cargo", x: 500, y: 1160, links: ["spawn", "lower-west"] },
+  { id: "lower-west", x: 790, y: 1190, links: ["cargo", "maintenance"] },
+  { id: "maintenance", x: 940, y: 1160, links: ["lower-west", "central-south"] },
+  { id: "central-south", x: 1260, y: 980, links: ["maintenance", "comms", "engine"] },
+  { id: "comms", x: 1470, y: 680, links: ["central-south", "upper-mid", "reactor-entry"] },
+  { id: "engine", x: 1980, y: 1110, links: ["central-south", "engine-east"] },
+  { id: "engine-east", x: 2220, y: 1100, links: ["engine", "reactor-entry"] },
+  { id: "observation", x: 430, y: 760, links: ["spawn", "upper-west"] },
+  { id: "upper-west", x: 720, y: 650, links: ["observation", "upper-mid"] },
+  { id: "upper-mid", x: 1100, y: 660, links: ["upper-west", "comms"] },
+  { id: "reactor-entry", x: 2040, y: 660, links: ["comms", "engine-east", "reactor"] },
+  { id: "reactor", x: 2180, y: 390, links: ["reactor-entry"] }
+];
+
+const VENTS: Vent[] = [
+  { id: "cargo-duct", x: 310, y: 1280, exitId: "observation-duct" },
+  { id: "observation-duct", x: 420, y: 700, exitId: "cargo-duct" },
+  { id: "comms-duct", x: 1360, y: 840, exitId: "engine-duct" },
+  { id: "engine-duct", x: 1950, y: 1160, exitId: "comms-duct" },
+  { id: "reactor-duct", x: 2260, y: 580, exitId: "maintenance-duct" },
+  { id: "maintenance-duct", x: 900, y: 1150, exitId: "reactor-duct" }
+];
+
+const LADDERS: Ladder[] = [
+  { id: "cargo-lower", x: 330, y: 1200, exitId: "cargo-upper" },
+  { id: "cargo-upper", x: 720, y: 730, exitId: "cargo-lower" },
+  { id: "control-lower", x: 1210, y: 1020, exitId: "control-upper" },
+  { id: "control-upper", x: 1210, y: 630, exitId: "control-lower" },
+  { id: "reactor-lower", x: 1800, y: 870, exitId: "reactor-upper" },
+  { id: "reactor-upper", x: 1800, y: 590, exitId: "reactor-lower" }
+];
+
+const ZIPLINES: Zipline[] = [
+  { id: "observation-slide", x: 700, y: 720, exit: { x: 1130, y: 690 } },
+  { id: "engine-slide", x: 1670, y: 900, exit: { x: 2020, y: 1080 } }
+];
+
 export class BootScene extends Phaser.Scene {
   private mapGraphics?: Phaser.GameObjects.Graphics;
   private dynamicGraphics?: Phaser.GameObjects.Graphics;
@@ -61,11 +129,50 @@ export class BootScene extends Phaser.Scene {
     { id: "comms", label: "通讯阵列", x: 1470, y: 680, done: false },
     { id: "reactor", label: "反应堆调相器", x: 2180, y: 390, done: false }
   ];
+  private crewBots: BotAgent[] = [
+    {
+      id: "crew-a",
+      label: "BOT-星尘",
+      position: { x: 360, y: 1240 },
+      state: "repair",
+      route: [],
+      patrolIndex: 0,
+      patrolNodes: ["cargo", "maintenance", "upper-west"],
+      preferredTaskOffset: 0,
+      ventUses: 2
+    },
+    {
+      id: "crew-b",
+      label: "BOT-轨道",
+      position: { x: 2190, y: 1160 },
+      state: "repair",
+      route: [],
+      patrolIndex: 0,
+      patrolNodes: ["engine", "reactor", "comms"],
+      preferredTaskOffset: 1,
+      ventUses: 2
+    }
+  ];
+  private hunterBot: BotAgent = {
+    id: "hunter",
+    label: "BOT-棱镜",
+    position: { x: 2110, y: 530 },
+    state: "patrol",
+    route: [],
+    patrolIndex: 0,
+    patrolNodes: ["reactor", "comms", "central-south", "engine", "reactor-entry"],
+    preferredTaskOffset: 0,
+    ventUses: 0
+  };
   private botLabels: Phaser.GameObjects.Text[] = [];
   private lastTelemetryAt = 0;
   private remainingRoundMs = ROUND_HIDE_MS;
+  private roundStarted = false;
   private roundOver = false;
   private announcedFinalHide = false;
+  private playerVentUses = MAX_VENT_USES;
+  private deathMarker?: Point;
+  private transit?: Transit;
   private readonly onAppearance = (event: Event): void => {
     const customEvent = event as CustomEvent<Partial<Appearance>>;
     this.appearance = { ...this.appearance, ...customEvent.detail };
@@ -74,6 +181,14 @@ export class BootScene extends Phaser.Scene {
     this.player = { x: 285, y: 1180 };
     this.facing = -Math.PI / 2;
     this.resetRound();
+    this.roundStarted = false;
+    window.dispatchEvent(new Event("space-hideout:round-reset"));
+  };
+  private readonly onStart = (): void => {
+    if (this.roundStarted) return;
+    this.roundStarted = true;
+    this.publishStatus("猎手信号已激活：BOT-棱镜正在开始搜索");
+    window.dispatchEvent(new Event("space-hideout:round-started"));
   };
   private readonly onOverview = (): void => {
     const camera = this.cameras.main;
@@ -114,14 +229,16 @@ export class BootScene extends Phaser.Scene {
 
     window.addEventListener("space-hideout:appearance", this.onAppearance);
     window.addEventListener("space-hideout:reset", this.onReset);
+    window.addEventListener("space-hideout:start", this.onStart);
     window.addEventListener("space-hideout:overview", this.onOverview);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       window.removeEventListener("space-hideout:appearance", this.onAppearance);
       window.removeEventListener("space-hideout:reset", this.onReset);
+      window.removeEventListener("space-hideout:start", this.onStart);
       window.removeEventListener("space-hideout:overview", this.onOverview);
     });
 
-    this.publishStatus("逃离猎手，修复终端可缩短普通躲藏时间");
+    this.publishStatus("准备舱待命：确认猎手信号后开始躲藏");
     this.publishTelemetry(0, 0);
   }
 
@@ -130,24 +247,38 @@ export class BootScene extends Phaser.Scene {
       return;
     }
 
-    if (!this.roundOver) this.updatePlayer(delta);
-    if (!this.roundOver && this.keys && Phaser.Input.Keyboard.JustDown(this.keys.interact)) {
-      this.tryRepairTerminal();
+    if (this.roundStarted && !this.roundOver) {
+      if (this.transit) this.updateTransit(time);
+      else this.updatePlayer(delta);
+    }
+    if (
+      this.roundStarted &&
+      !this.roundOver &&
+      !this.transit &&
+      this.keys &&
+      Phaser.Input.Keyboard.JustDown(this.keys.interact)
+    ) {
+      this.tryInteract();
     }
 
-    const positions = this.getBotPositions(time);
-    if (!this.roundOver) {
+    if (this.roundStarted && !this.roundOver) {
       this.remainingRoundMs = Math.max(0, this.remainingRoundMs - delta);
       if (this.isFinalHide() && !this.announcedFinalHide) {
         this.announcedFinalHide = true;
         this.publishStatus("FINAL HIDE：终端关闭，猎手正在加速追踪");
       }
+      this.updateBots(time, delta);
     }
+    const positions = this.getBotPositions();
     this.dynamicGraphics.clear();
     this.drawFacilityMotion(this.dynamicGraphics, time);
     this.drawTerminals(this.dynamicGraphics, time);
+    this.drawVents(this.dynamicGraphics, time);
+    this.drawLadders(this.dynamicGraphics, time);
+    this.drawZiplines(this.dynamicGraphics, time);
     this.drawBots(this.dynamicGraphics, positions, time);
     this.drawPlayer(this.dynamicGraphics, time);
+    this.drawDeathMarker(this.dynamicGraphics, time);
     this.positionLabels(positions);
 
     const hunter = positions.hunter;
@@ -157,12 +288,14 @@ export class BootScene extends Phaser.Scene {
       1
     );
     if (
+      this.roundStarted &&
       !this.roundOver &&
+      !this.transit &&
       Phaser.Math.Distance.Between(this.player.x, this.player.y, hunter.x, hunter.y) <=
         CAPTURE_DISTANCE
     ) {
       this.finishRound("caught");
-    } else if (!this.roundOver && this.remainingRoundMs <= 0) {
+    } else if (this.roundStarted && !this.roundOver && this.remainingRoundMs <= 0) {
       this.finishRound("escaped");
     }
     if (time - this.lastTelemetryAt > 90) {
@@ -281,28 +414,36 @@ export class BootScene extends Phaser.Scene {
     this.playerAnchor.setPosition(this.player.x, this.player.y);
   }
 
-  private isBlocked(x: number, y: number): boolean {
+  private isBlocked(x: number, y: number, radius = PLAYER_RADIUS): boolean {
     if (
-      x < 115 + PLAYER_RADIUS ||
-      y < 115 + PLAYER_RADIUS ||
-      x > MAP_WIDTH - 115 - PLAYER_RADIUS ||
-      y > MAP_HEIGHT - 115 - PLAYER_RADIUS
+      x < 115 + radius ||
+      y < 115 + radius ||
+      x > MAP_WIDTH - 115 - radius ||
+      y > MAP_HEIGHT - 115 - radius
     ) {
       return true;
     }
     return WALLS.some(
       (wall) =>
-        x + PLAYER_RADIUS > wall.x &&
-        x - PLAYER_RADIUS < wall.x + wall.width &&
-        y + PLAYER_RADIUS > wall.y &&
-        y - PLAYER_RADIUS < wall.y + wall.height
+        x + radius > wall.x &&
+        x - radius < wall.x + wall.width &&
+        y + radius > wall.y &&
+        y - radius < wall.y + wall.height
     );
   }
 
-  private tryRepairTerminal(): void {
+  private tryInteract(): void {
+    if (this.tryRepairTerminal()) return;
+    if (this.tryUseVent()) return;
+    if (this.tryUseZipline()) return;
+    if (this.tryUseLadder()) return;
+    this.publishStatus("附近没有终端、跃迁管、梯子或滑索");
+  }
+
+  private tryRepairTerminal(): boolean {
     if (this.isFinalHide()) {
       this.publishStatus("FINAL HIDE 中终端已关闭，只能继续逃跑");
-      return;
+      return true;
     }
     const terminal = this.terminals.find(
       (item) =>
@@ -310,46 +451,295 @@ export class BootScene extends Phaser.Scene {
         Phaser.Math.Distance.Between(this.player.x, this.player.y, item.x, item.y) < 78
     );
     if (!terminal) {
-      this.publishStatus("附近没有可修复的终端");
-      return;
+      return false;
     }
+    this.completeTerminal(terminal, "你");
+    return true;
+  }
+
+  private completeTerminal(terminal: Terminal, operator: string): void {
+    if (terminal.done || this.isFinalHide()) return;
     terminal.done = true;
     const completed = this.terminals.filter((item) => item.done).length;
     const reducibleTime = Math.max(0, this.remainingRoundMs - FINAL_HIDE_MS);
     const reduction = Math.min(TERMINAL_TIME_REDUCTION_MS, reducibleTime);
     this.remainingRoundMs -= reduction;
     this.publishStatus(
-      `${terminal.label} 已修复，猎手搜索时间减少 ${Math.ceil(reduction / 1000)} 秒`
+      `${operator}修复了${terminal.label}，猎手搜索时间减少 ${Math.ceil(reduction / 1000)} 秒`
     );
     window.dispatchEvent(new CustomEvent("space-hideout:task", { detail: { completed } }));
   }
 
-  private getBotPositions(time: number): { crewA: Point; crewB: Point; hunter: Point } {
-    const hunterTime = time * (this.isFinalHide() ? 1.28 : 1);
-    return {
-      crewA: this.pointOnLoop(time / 8800, [
-        { x: 360, y: 1240 },
-        { x: 920, y: 1180 },
-        { x: 1480, y: 780 },
-        { x: 1260, y: 580 },
-        { x: 620, y: 650 },
-        { x: 300, y: 960 }
-      ]),
-      crewB: this.pointOnLoop(time / 9800 + 0.35, [
-        { x: 2190, y: 1160 },
-        { x: 1880, y: 840 },
-        { x: 2100, y: 430 },
-        { x: 1560, y: 650 },
-        { x: 1740, y: 1050 }
-      ]),
-      hunter: this.pointOnLoop(hunterTime / 7600 + 0.12, [
-        { x: 2110, y: 530 },
-        { x: 1660, y: 620 },
-        { x: 1420, y: 930 },
-        { x: 2020, y: 1120 },
-        { x: 2290, y: 880 }
-      ])
+  private tryUseVent(): boolean {
+    const vent = VENTS.find(
+      (item) => Phaser.Math.Distance.Between(this.player.x, this.player.y, item.x, item.y) < 70
+    );
+    if (!vent) return false;
+    if (this.playerVentUses <= 0) {
+      this.publishStatus("跃迁管电量已耗尽");
+      return true;
+    }
+    const exit = VENTS.find((item) => item.id === vent.exitId);
+    if (!exit) return true;
+    this.player = { x: exit.x, y: exit.y };
+    this.playerAnchor?.setPosition(this.player.x, this.player.y);
+    this.playerVentUses -= 1;
+    window.dispatchEvent(
+      new CustomEvent("space-hideout:vent", { detail: { uses: this.playerVentUses } })
+    );
+    this.publishStatus("你通过跃迁管甩开了追踪");
+    return true;
+  }
+
+  private tryUseLadder(): boolean {
+    const ladder = LADDERS.find(
+      (item) => Phaser.Math.Distance.Between(this.player.x, this.player.y, item.x, item.y) < 72
+    );
+    if (!ladder) return false;
+    const exit = LADDERS.find((item) => item.id === ladder.exitId);
+    if (!exit) return true;
+    this.startTransit(
+      "ladder",
+      { x: ladder.x, y: ladder.y },
+      { x: exit.x, y: exit.y },
+      1_150,
+      "攀爬升降梯"
+    );
+    return true;
+  }
+
+  private tryUseZipline(): boolean {
+    const zipline = ZIPLINES.find(
+      (item) => Phaser.Math.Distance.Between(this.player.x, this.player.y, item.x, item.y) < 72
+    );
+    if (!zipline) return false;
+    this.startTransit("zipline", { x: zipline.x, y: zipline.y }, zipline.exit, 780, "滑索加速中");
+    return true;
+  }
+
+  private startTransit(
+    kind: Transit["kind"],
+    from: Point,
+    to: Point,
+    durationMs: number,
+    label: string
+  ): void {
+    this.transit = { kind, from, to, startedAt: this.time.now, durationMs, label };
+    this.player = { ...from };
+    this.playerAnchor?.setPosition(this.player.x, this.player.y);
+    this.publishStatus(label);
+  }
+
+  private updateTransit(time: number): void {
+    const transit = this.transit;
+    if (!transit) return;
+    const progress = Phaser.Math.Clamp((time - transit.startedAt) / transit.durationMs, 0, 1);
+    const eased = transit.kind === "zipline" ? 1 - (1 - progress) * (1 - progress) : progress;
+    this.player = {
+      x: Phaser.Math.Linear(transit.from.x, transit.to.x, eased),
+      y: Phaser.Math.Linear(transit.from.y, transit.to.y, eased)
     };
+    this.playerAnchor?.setPosition(this.player.x, this.player.y);
+    if (progress >= 1) {
+      this.transit = undefined;
+      this.publishStatus(transit.kind === "zipline" ? "滑索落地，继续躲藏" : "已到达另一层");
+    }
+  }
+
+  private getBotPositions(): { crewA: Point; crewB: Point; hunter: Point } {
+    return {
+      crewA: this.crewBots[0]?.position ?? { x: 360, y: 1240 },
+      crewB: this.crewBots[1]?.position ?? { x: 2190, y: 1160 },
+      hunter: this.hunterBot.position
+    };
+  }
+
+  private updateBots(time: number, delta: number): void {
+    this.updateHunter(time, delta);
+    this.crewBots.forEach((bot) => this.updateCrewBot(bot, time, delta));
+  }
+
+  private updateHunter(_time: number, delta: number): void {
+    const hunter = this.hunterBot;
+    const distanceToPlayer = Phaser.Math.Distance.Between(
+      hunter.position.x,
+      hunter.position.y,
+      this.player.x,
+      this.player.y
+    );
+    const canSeePlayer = distanceToPlayer < 390 && this.hasClearPath(hunter.position, this.player);
+    const speed = (canSeePlayer ? 205 : 142) * (this.isFinalHide() ? 1.25 : 1);
+
+    if (canSeePlayer) {
+      hunter.state = "chase";
+      hunter.lastSeen = { ...this.player };
+      this.moveAgentToward(hunter, this.player, speed, delta);
+      return;
+    }
+
+    if (hunter.lastSeen) {
+      hunter.state = "search";
+      const target = nearestNavigationNode(
+        NAVIGATION_NODES,
+        hunter.lastSeen.x,
+        hunter.lastSeen.y
+      ).id;
+      this.routeAgentTo(hunter, target);
+      this.moveAgentAlongRoute(hunter, 164 * (this.isFinalHide() ? 1.25 : 1), delta);
+      if (
+        Phaser.Math.Distance.Between(
+          hunter.position.x,
+          hunter.position.y,
+          hunter.lastSeen.x,
+          hunter.lastSeen.y
+        ) < 72
+      ) {
+        hunter.lastSeen = undefined;
+      }
+      return;
+    }
+
+    hunter.state = "patrol";
+    const target = hunter.patrolNodes[hunter.patrolIndex] ?? "reactor";
+    this.routeAgentTo(hunter, target);
+    this.moveAgentAlongRoute(hunter, speed, delta);
+    if (this.isAtNavigationNode(hunter, target)) {
+      hunter.patrolIndex = (hunter.patrolIndex + 1) % hunter.patrolNodes.length;
+      hunter.routeTarget = undefined;
+    }
+  }
+
+  private updateCrewBot(bot: BotAgent, time: number, delta: number): void {
+    const hunterDistance = Phaser.Math.Distance.Between(
+      bot.position.x,
+      bot.position.y,
+      this.hunterBot.position.x,
+      this.hunterBot.position.y
+    );
+    if (hunterDistance < 300) {
+      bot.state = "flee";
+      if (hunterDistance < 115 && this.tryBotVent(bot)) return;
+      const safeNode = NAVIGATION_NODES.reduce((best, node) => {
+        const bestDistance = Phaser.Math.Distance.Between(
+          best.x,
+          best.y,
+          this.hunterBot.position.x,
+          this.hunterBot.position.y
+        );
+        const nodeDistance = Phaser.Math.Distance.Between(
+          node.x,
+          node.y,
+          this.hunterBot.position.x,
+          this.hunterBot.position.y
+        );
+        return nodeDistance > bestDistance ? node : best;
+      });
+      this.routeAgentTo(bot, safeNode.id);
+      this.moveAgentAlongRoute(bot, 188, delta);
+      return;
+    }
+
+    const remainingTasks = this.terminals.filter((terminal) => !terminal.done);
+    if (remainingTasks.length === 0 || this.isFinalHide()) {
+      bot.state = "patrol";
+      const target = bot.patrolNodes[bot.patrolIndex] ?? "cargo";
+      this.routeAgentTo(bot, target);
+      this.moveAgentAlongRoute(bot, 126, delta);
+      if (this.isAtNavigationNode(bot, target)) {
+        bot.patrolIndex = (bot.patrolIndex + 1) % bot.patrolNodes.length;
+        bot.routeTarget = undefined;
+      }
+      return;
+    }
+
+    const terminal = remainingTasks[bot.preferredTaskOffset % remainingTasks.length];
+    if (!terminal) return;
+    bot.state = "repair";
+    this.routeAgentTo(bot, terminal.id);
+    this.moveAgentAlongRoute(bot, 142, delta);
+    if (Phaser.Math.Distance.Between(bot.position.x, bot.position.y, terminal.x, terminal.y) < 62) {
+      if (!bot.taskStartedAt) bot.taskStartedAt = time;
+      if (time - bot.taskStartedAt > 2_400) {
+        this.completeTerminal(terminal, bot.label);
+        bot.taskStartedAt = undefined;
+        bot.routeTarget = undefined;
+      }
+    } else {
+      bot.taskStartedAt = undefined;
+    }
+  }
+
+  private routeAgentTo(agent: BotAgent, targetId: string): void {
+    if (agent.routeTarget === targetId && agent.route.length > 0) return;
+    const start = nearestNavigationNode(NAVIGATION_NODES, agent.position.x, agent.position.y).id;
+    agent.route = findNavigationPath(NAVIGATION_NODES, start, targetId).slice(1);
+    agent.routeTarget = targetId;
+  }
+
+  private moveAgentAlongRoute(agent: BotAgent, speed: number, delta: number): void {
+    const targetId = agent.route[0];
+    if (!targetId) return;
+    const target = NAVIGATION_NODES.find((node) => node.id === targetId);
+    if (!target) return;
+    this.moveAgentToward(agent, target, speed, delta);
+    if (Phaser.Math.Distance.Between(agent.position.x, agent.position.y, target.x, target.y) < 14) {
+      agent.position = { x: target.x, y: target.y };
+      agent.route.shift();
+    }
+  }
+
+  private moveAgentToward(agent: BotAgent, target: Point, speed: number, delta: number): void {
+    const distance = Phaser.Math.Distance.Between(
+      agent.position.x,
+      agent.position.y,
+      target.x,
+      target.y
+    );
+    if (distance < 1) return;
+    const step = Math.min(distance, (speed * delta) / 1000);
+    const nextX = agent.position.x + ((target.x - agent.position.x) / distance) * step;
+    const nextY = agent.position.y + ((target.y - agent.position.y) / distance) * step;
+    if (!this.isBlocked(nextX, agent.position.y, BOT_RADIUS)) agent.position.x = nextX;
+    if (!this.isBlocked(agent.position.x, nextY, BOT_RADIUS)) agent.position.y = nextY;
+  }
+
+  private isAtNavigationNode(agent: BotAgent, nodeId: string): boolean {
+    const node = NAVIGATION_NODES.find((item) => item.id === nodeId);
+    return Boolean(
+      node && Phaser.Math.Distance.Between(agent.position.x, agent.position.y, node.x, node.y) < 18
+    );
+  }
+
+  private hasClearPath(start: Point, end: Point): boolean {
+    const distance = Phaser.Math.Distance.Between(start.x, start.y, end.x, end.y);
+    const samples = Math.ceil(distance / 16);
+    for (let index = 1; index < samples; index += 1) {
+      const ratio = index / samples;
+      if (
+        this.isBlocked(
+          Phaser.Math.Linear(start.x, end.x, ratio),
+          Phaser.Math.Linear(start.y, end.y, ratio),
+          BOT_RADIUS
+        )
+      ) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private tryBotVent(bot: BotAgent): boolean {
+    if (bot.ventUses <= 0) return false;
+    const vent = VENTS.find(
+      (item) => Phaser.Math.Distance.Between(bot.position.x, bot.position.y, item.x, item.y) < 92
+    );
+    const exit = vent ? VENTS.find((item) => item.id === vent.exitId) : undefined;
+    if (!exit) return false;
+    bot.position = { x: exit.x, y: exit.y };
+    bot.ventUses -= 1;
+    bot.route = [];
+    bot.routeTarget = undefined;
+    return true;
   }
 
   private drawFacilityMotion(g: Phaser.GameObjects.Graphics, time: number): void {
@@ -405,6 +795,66 @@ export class BootScene extends Phaser.Scene {
     }
   }
 
+  private drawVents(g: Phaser.GameObjects.Graphics, time: number): void {
+    for (const vent of VENTS) {
+      const pulse = 0.6 + Math.sin(time / 250 + vent.x) * 0.22;
+      g.lineStyle(2, 0x6c7dff, pulse);
+      g.strokeCircle(vent.x, vent.y, 20);
+      g.lineStyle(3, 0x35d9c7, 0.72);
+      g.strokeCircle(vent.x, vent.y, 12);
+      g.fillStyle(0x112e40, 1);
+      g.fillCircle(vent.x, vent.y, 8);
+      g.lineStyle(1, 0xeefbf8, 0.45);
+      g.lineBetween(vent.x - 5, vent.y - 2, vent.x + 5, vent.y - 2);
+      g.lineBetween(vent.x - 5, vent.y + 3, vent.x + 5, vent.y + 3);
+    }
+  }
+
+  private drawLadders(g: Phaser.GameObjects.Graphics, time: number): void {
+    for (const ladder of LADDERS) {
+      const pulse = 0.5 + Math.sin(time / 260 + ladder.y) * 0.18;
+      g.fillStyle(0x17282b, 0.94);
+      g.fillRoundedRect(ladder.x - 16, ladder.y - 25, 32, 50, 6);
+      g.lineStyle(3, 0xf7c65b, 0.86);
+      g.lineBetween(ladder.x - 10, ladder.y - 19, ladder.x - 10, ladder.y + 19);
+      g.lineBetween(ladder.x + 10, ladder.y - 19, ladder.x + 10, ladder.y + 19);
+      g.lineStyle(2, 0xf7c65b, pulse);
+      for (let rung = -12; rung <= 12; rung += 8) {
+        g.lineBetween(ladder.x - 10, ladder.y + rung, ladder.x + 10, ladder.y + rung);
+      }
+      g.fillStyle(0xf7c65b, pulse);
+      g.fillTriangle(
+        ladder.x,
+        ladder.y - 38,
+        ladder.x - 6,
+        ladder.y - 28,
+        ladder.x + 6,
+        ladder.y - 28
+      );
+    }
+  }
+
+  private drawZiplines(g: Phaser.GameObjects.Graphics, time: number): void {
+    for (const zipline of ZIPLINES) {
+      g.lineStyle(3, 0xf0647c, 0.72);
+      g.lineBetween(zipline.x, zipline.y, zipline.exit.x, zipline.exit.y);
+      g.fillStyle(0x251e24, 1);
+      g.fillCircle(zipline.x, zipline.y, 18);
+      g.lineStyle(3, 0xf0647c, 0.9);
+      g.strokeCircle(zipline.x, zipline.y, 18 + Math.sin(time / 150) * 2);
+      const angle = Phaser.Math.Angle.Between(zipline.x, zipline.y, zipline.exit.x, zipline.exit.y);
+      g.fillStyle(0xf7c65b, 0.9);
+      g.fillTriangle(
+        zipline.x + Math.cos(angle) * 26,
+        zipline.y + Math.sin(angle) * 26,
+        zipline.x + Math.cos(angle + 2.5) * 14,
+        zipline.y + Math.sin(angle + 2.5) * 14,
+        zipline.x + Math.cos(angle - 2.5) * 14,
+        zipline.y + Math.sin(angle - 2.5) * 14
+      );
+    }
+  }
+
   private drawBots(
     g: Phaser.GameObjects.Graphics,
     positions: { crewA: Point; crewB: Point; hunter: Point },
@@ -432,6 +882,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   private drawPlayer(g: Phaser.GameObjects.Graphics, time: number): void {
+    if (this.deathMarker) return;
     const spread = Phaser.Math.DegToRad(28);
     const range = 235;
     g.fillStyle(0xeffbf8, 0.1);
@@ -453,6 +904,23 @@ export class BootScene extends Phaser.Scene {
     );
     g.lineStyle(2, 0xeffbf8, 0.74);
     g.strokeCircle(this.player.x, this.player.y, 31 + Math.sin(time / 220) * 2);
+  }
+
+  private drawDeathMarker(g: Phaser.GameObjects.Graphics, time: number): void {
+    const marker = this.deathMarker;
+    if (!marker) return;
+    const flicker = 0.58 + Math.sin(time / 120) * 0.16;
+    g.fillStyle(0x000000, 0.34);
+    g.fillEllipse(marker.x, marker.y + 18, 62, 18);
+    g.fillStyle(this.toColor(this.appearance.color), 0.58);
+    g.fillRoundedRect(marker.x - 26, marker.y - 8, 52, 28, 12);
+    g.fillStyle(0x102126, 0.96);
+    g.fillRoundedRect(marker.x - 8, marker.y - 19, 35, 18, 8);
+    g.lineStyle(2, 0xf7c65b, flicker);
+    g.strokeCircle(marker.x, marker.y, 36 + Math.sin(time / 180) * 3);
+    g.fillStyle(0xf0647c, flicker);
+    g.fillCircle(marker.x - 18, marker.y + 7, 3);
+    g.fillCircle(marker.x + 4, marker.y + 20, 2);
   }
 
   private drawAgent(
@@ -538,13 +1006,27 @@ export class BootScene extends Phaser.Scene {
 
   private positionLabels(positions: { crewA: Point; crewB: Point; hunter: Point }): void {
     const labelData = [
-      [positions.crewA, "BOT-星尘"],
-      [positions.crewB, "BOT-轨道"],
-      [positions.hunter, "BOT-棱镜"]
+      [
+        positions.crewA,
+        `${this.crewBots[0]?.label ?? "BOT-星尘"} · ${this.botStateCopy(this.crewBots[0]?.state)}`
+      ],
+      [
+        positions.crewB,
+        `${this.crewBots[1]?.label ?? "BOT-轨道"} · ${this.botStateCopy(this.crewBots[1]?.state)}`
+      ],
+      [positions.hunter, `${this.hunterBot.label} · ${this.botStateCopy(this.hunterBot.state)}`]
     ] as const;
-    labelData.forEach(([position], index) =>
-      this.botLabels[index]?.setPosition(position.x, position.y + 42)
-    );
+    labelData.forEach(([position, label], index) => {
+      this.botLabels[index]?.setText(label).setPosition(position.x, position.y + 42);
+    });
+  }
+
+  private botStateCopy(state: BotState | undefined): string {
+    if (state === "chase") return "追击";
+    if (state === "search") return "搜索";
+    if (state === "repair") return "修复";
+    if (state === "flee") return "撤离";
+    return "巡逻";
   }
 
   private createLabel(text: string, color: string): Phaser.GameObjects.Text {
@@ -576,18 +1058,59 @@ export class BootScene extends Phaser.Scene {
   }
 
   private resetRound(): void {
+    const crewA = this.crewBots[0];
+    const crewB = this.crewBots[1];
+    if (!crewA || !crewB) return;
     this.remainingRoundMs = ROUND_HIDE_MS;
     this.roundOver = false;
     this.announcedFinalHide = false;
+    this.deathMarker = undefined;
+    this.transit = undefined;
+    this.playerVentUses = MAX_VENT_USES;
+    this.crewBots = [
+      {
+        ...crewA,
+        position: { x: 360, y: 1240 },
+        state: "repair",
+        route: [],
+        routeTarget: undefined,
+        taskStartedAt: undefined,
+        lastSeen: undefined,
+        ventUses: 2
+      },
+      {
+        ...crewB,
+        position: { x: 2190, y: 1160 },
+        state: "repair",
+        route: [],
+        routeTarget: undefined,
+        taskStartedAt: undefined,
+        lastSeen: undefined,
+        ventUses: 2
+      }
+    ];
+    this.hunterBot = {
+      ...this.hunterBot,
+      position: { x: 2110, y: 530 },
+      state: "patrol",
+      route: [],
+      routeTarget: undefined,
+      lastSeen: undefined,
+      patrolIndex: 0
+    };
     this.terminals.forEach((terminal) => {
       terminal.done = false;
     });
     window.dispatchEvent(new CustomEvent("space-hideout:task", { detail: { completed: 0 } }));
+    window.dispatchEvent(
+      new CustomEvent("space-hideout:vent", { detail: { uses: this.playerVentUses } })
+    );
     this.publishStatus("已回到出生舱，新的躲藏回合开始");
   }
 
   private finishRound(outcome: "caught" | "escaped"): void {
     this.roundOver = true;
+    if (outcome === "caught") this.deathMarker = { ...this.player };
     this.cameras.main.shake(220, outcome === "caught" ? 0.006 : 0.003);
     this.publishStatus(
       outcome === "caught"
@@ -607,20 +1130,6 @@ export class BootScene extends Phaser.Scene {
 
   private publishStatus(message: string): void {
     window.dispatchEvent(new CustomEvent("space-hideout:status", { detail: { message } }));
-  }
-
-  private pointOnLoop(progress: number, points: Point[]): Point {
-    const wrapped = Phaser.Math.Wrap(progress, 0, 1);
-    const scaled = wrapped * points.length;
-    const index = Math.floor(scaled);
-    const nextIndex = (index + 1) % points.length;
-    const local = scaled - index;
-    const start = points[index] ?? points[0] ?? { x: MAP_WIDTH / 2, y: MAP_HEIGHT / 2 };
-    const end = points[nextIndex] ?? start;
-    return {
-      x: Phaser.Math.Linear(start.x, end.x, local),
-      y: Phaser.Math.Linear(start.y, end.y, local)
-    };
   }
 
   private toColor(hex: string): number {

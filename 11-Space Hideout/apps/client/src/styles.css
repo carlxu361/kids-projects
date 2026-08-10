@@ -83,6 +83,111 @@ button:disabled {
   display: block;
 }
 
+.mission-briefing {
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 26px;
+  background: rgba(3, 12, 16, 0.78);
+  backdrop-filter: blur(5px);
+}
+.mission-briefing[hidden] {
+  display: none;
+}
+.mission-briefing__frame {
+  width: min(520px, calc(100% - 32px));
+  padding: 38px 42px 30px;
+  border: 1px solid rgba(240, 100, 124, 0.66);
+  border-radius: 8px;
+  background: #0a1d21;
+  box-shadow:
+    0 0 0 7px rgba(240, 100, 124, 0.07),
+    0 30px 70px rgba(0, 0, 0, 0.48);
+  text-align: center;
+}
+.hunter-sigil {
+  position: relative;
+  width: 70px;
+  height: 70px;
+  margin: 0 auto 20px;
+  border: 3px solid var(--coral);
+  clip-path: polygon(50% 0, 92% 24%, 92% 76%, 50% 100%, 8% 76%, 8% 24%);
+  box-shadow: 0 0 24px rgba(240, 100, 124, 0.36);
+  animation: sigil-pulse 1.5s ease-in-out infinite;
+}
+.hunter-sigil span {
+  position: absolute;
+  left: 50%;
+  width: 3px;
+  height: 44px;
+  background: var(--sun);
+  transform-origin: 50% 100%;
+}
+.hunter-sigil span:nth-child(1) {
+  top: 10px;
+  transform: translateX(-50%) rotate(0deg);
+}
+.hunter-sigil span:nth-child(2) {
+  top: 18px;
+  transform: translateX(-50%) rotate(120deg);
+}
+.hunter-sigil span:nth-child(3) {
+  top: 18px;
+  transform: translateX(-50%) rotate(240deg);
+}
+.briefing-kicker {
+  margin: 0;
+  color: var(--sun);
+  font:
+    800 11px/1.2 "Courier New",
+    ui-monospace,
+    monospace;
+  letter-spacing: 0.1em;
+}
+.mission-briefing h2 {
+  margin: 10px 0 7px;
+  font-size: 32px;
+  letter-spacing: 0;
+}
+.briefing-hunter {
+  margin: 0;
+  color: var(--muted);
+}
+.briefing-hunter strong {
+  color: var(--coral);
+}
+.briefing-objectives {
+  display: grid;
+  gap: 6px;
+  margin: 24px 0;
+  padding: 15px 16px;
+  border-top: 1px solid rgba(169, 242, 229, 0.22);
+  border-bottom: 1px solid rgba(169, 242, 229, 0.22);
+  color: var(--ink);
+  text-align: left;
+}
+.briefing-objectives p,
+.briefing-controls {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.start-round-button {
+  width: 100%;
+  min-height: 48px;
+  color: #071116;
+  border-color: var(--sun);
+  background: var(--sun);
+  font-weight: 900;
+}
+.briefing-controls {
+  margin-top: 14px;
+  color: var(--muted);
+  font-family: "Courier New", ui-monospace, monospace;
+}
+
 .game-hud {
   position: absolute;
   z-index: 2;
@@ -687,6 +792,12 @@ body[data-static-demo="true"] .playtest-panel {
   }
   50% {
     opacity: 1;
+  }
+}
+@keyframes sigil-pulse {
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 34px rgba(240, 100, 124, 0.55);
   }
 }
 @keyframes avatar-float {
