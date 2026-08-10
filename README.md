@@ -9,7 +9,7 @@
 | 02 | [AI学习助手](./02-AI学习助手/) | 学习工具 | 🤖 | AI 驱动的学习助手，制定计划、跟踪进度、收集徽章 |
 | 08 | [学习探险手册](./08-学习探险手册/) | 学习工具 | 📚 | 语文、数学、英语复习闯关工具，包含错题、草稿和宠物奖励 |
 | 08 | [图语文关 · 看图猜句](./08-图语文关 · 看图猜句/) | 学习工具 | 🖼️ | 看图理解中文句子的语文练习小游戏 |
-| 11 | [Space Hideout](./11-Space Hideout/) | 联机原型 | 🛰️ | Hide n Seek 多人联机重建原型，包含 pnpm 前后端骨架和 AI 决策地基 |
+| 11 | [Space Hideout](./11-Space Hideout/) | 联机原型 | 🛰️ | 可直接游玩的原创太空躲藏试玩：逃离猎手、修复终端并存活到倒计时结束 |
 | 08 | [撤离线：原型](./08-撤离线：原型/) | 动作原型 | 🚀 | 第一人称搜打撤原型，包含搜索、战斗、背包和撤离循环 |
 | 09 | [3D Tactical Aim Prototype](./09-3D Tactical Aim Prototype/) | 动作原型 | 🎯 | 原创 3D 战术射击原型，练习移动、瞄准、HUD 和 AI 队友 |
 | 07 | [末班轮盘](./07-末班轮盘/) | 派对竞技 | 🎲 | 带紧张轮盘节奏的本地网页派对原型 |
@@ -25,11 +25,22 @@
 
 大多数作品可以直接打开对应文件夹里的 `index.html`。
 
-像 `Space Hideout` 这样的联机工程需要在原项目目录运行：
+`Space Hideout` 可以在作品集中直接运行线上试玩版：
+
+```text
+https://xxby.carlxu.cn/11-Space%20Hideout/
+```
+
+完整多人联机仍可在本机用启动器运行：
+
+```text
+/Users/xjc/Developer/games/启动 Space Hideout.command
+```
+
+也可以在原项目目录手动运行：
 
 ```bash
 cd /Users/xjc/Developer/games/projects/space-hideout
-pnpm install
 pnpm dev
 ```
 

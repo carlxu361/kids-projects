@@ -8,7 +8,7 @@
 - Project name: kids-projects
 - Created date: 2026-08-02
 - Main goal: 展示和发布徐锦成的网页游戏作品集
-- Current status: 已把 Space Hideout 加入发布脚本，并把作品集首页优化为按类型分组的展示面板
+- Current status: 已把 Space Hideout 加入发布脚本、优化为按类型分组的展示面板，并支持在作品集中直接运行其可操作的大地图静态试玩版
 - Tech stack: HTML, CSS, JavaScript, static files
 
 ## User Preferences For This Project
@@ -31,6 +31,9 @@
 - 2026-08-02: 发布脚本位于 `/Users/xjc/Documents/kids-projects/scripts/publish-games.sh`，项目映射表位于 `/Users/xjc/Documents/kids-projects/scripts/publish-map.tsv`。
 - 2026-08-02: `publish-map.tsv` 采用 6 列：源文件/目录、作品集目录、标题、简介、类型、图标；首页按类型分组生成。
 - 2026-08-02: 发布脚本支持根目录 `index.html` 的静态游戏，也支持根目录 `package.json` 的工程项目；工程项目会排除 `node_modules`、`dist`、测试报告等目录，并生成作品集入口页。
+- 2026-08-02: `Space Hideout` 作品集入口页是启动台：默认填写 `http://127.0.0.1:5173`，可以检测/打开本地游戏，并提示双击 `/Users/xjc/Developer/games/启动 Space Hideout.command`。
+- 2026-08-02: `space-hideout` 是特殊发布项目：脚本会用 `VITE_STATIC_DEMO=1` 构建 Phaser 客户端，并把构建产物直接发布到 `11-Space Hideout/`，因此 Vercel 静态站点可以直接打开试玩版。
+- 2026-08-10: `11-Space Hideout/` 的根入口直接使用 Vite 构建产物，不再嵌套在线试玩 iframe；发布脚本会将构建后的 `index.html` 和 `assets/` 放到该目录根部。
 
 ## Useful Commands
 
@@ -39,6 +42,7 @@ Record commands that are useful but not obvious.
 ```bash
 python3 -m http.server 8787
 PUBLISH_SKIP_GIT=1 /Users/xjc/Documents/kids-projects/scripts/publish-games.sh
+/Users/xjc/Developer/games/启动\ Space\ Hideout.command
 ```
 
 ## Pitfalls And Fixes
@@ -76,6 +80,10 @@ Format:
 
 - 2026-08-02: 从模板创建作品集本地 `AGENTS.md` 和 `MEMORY.md`，准备加入 Space Hideout 并优化首页。
 - 2026-08-02: 将 `space-hideout` 加入作品集为 `11-Space Hideout`；优化首页为按类型分组的展示面板，为每个作品显示图标、类型、编号和简介；本地预览与桌面/窄屏截图检查通过。
+- 2026-08-02: 将 `11-Space Hideout` 入口页升级为本地游戏启动台，加入网址输入、检测按钮、双击启动器路径、外观/AI/动画预览。
+- 2026-08-02: 改为在作品集内直接载入 Space Hideout 静态试玩版；页面展示外观切换、AI 状态和飞船动画，完整多人服务器仍在后续阶段部署。
+- 2026-08-02: Space Hideout 静态试玩升级为可操作大地图：作品集会嵌入 WASD/Shift/E 移动、终端修复、AI 巡逻、危险表和完整装扮面板；多人服务器仍需后续部署。
+- 2026-08-10: Space Hideout 线上入口改为直接进入可完成的原创躲藏试玩回合，不再显示本机启动说明或 iframe 包装页。
 
 ## Do Not Store
 

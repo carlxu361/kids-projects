@@ -1,112 +1,406 @@
 <!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Space Hideout</title>
-  <style>
-    :root {
-      color-scheme: light;
-      --bg: #f5f7fb;
-      --ink: #172033;
-      --muted: #617086;
-      --panel: #ffffff;
-      --line: #dbe3ef;
-      --blue: #246bfe;
-      --green: #12a875;
-      --yellow: #f4b63d;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      color: var(--ink);
-      background:
-        linear-gradient(135deg, rgba(36, 107, 254, .10), transparent 32%),
-        linear-gradient(315deg, rgba(18, 168, 117, .12), transparent 30%),
-        var(--bg);
-      font-family: ui-rounded, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
-    }
-    main {
-      width: min(880px, calc(100% - 32px));
-      margin: 0 auto;
-      padding: 56px 0;
-    }
-    .panel {
-      padding: 28px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, .88);
-      box-shadow: 0 18px 50px rgba(30, 45, 80, .12);
-    }
-    .mark {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 58px;
-      height: 58px;
-      margin-bottom: 18px;
-      border-radius: 16px;
-      background: var(--blue);
-      color: white;
-      font-size: 30px;
-    }
-    h1 {
-      margin: 0;
-      font-size: clamp(34px, 6vw, 62px);
-      line-height: 1;
-      letter-spacing: 0;
-    }
-    .category {
-      margin: 12px 0 0;
-      color: var(--green);
-      font-weight: 800;
-    }
-    p {
-      max-width: 660px;
-      margin: 18px 0 0;
-      color: var(--muted);
-      font-size: 18px;
-      line-height: 1.8;
-    }
-    .steps {
-      display: grid;
-      gap: 12px;
-      margin-top: 28px;
-    }
-    code {
-      display: block;
-      padding: 14px 16px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #101828;
-      color: #f5f8ff;
-      font-size: 15px;
-      overflow-x: auto;
-    }
-    a {
-      display: inline-flex;
-      margin-top: 24px;
-      color: var(--blue);
-      font-weight: 800;
-      text-decoration: none;
-    }
-  </style>
-</head>
-<body>
-  <main>
-    <section class="panel">
-      <div class="mark">🛰️</div>
-      <h1>Space Hideout</h1>
-      <div class="category">联机原型</div>
-      <p>Hide n Seek 多人联机重建原型，包含 pnpm 前后端骨架和 AI 决策地基。这个作品是前后端联机工程，不能只靠静态网页完整运行；作品集先展示项目入口和本地启动方式。</p>
-      <div class="steps" aria-label="本地启动命令">
-        <code>cd /Users/xjc/Developer/games/projects/space-hideout</code>
-        <code>pnpm install</code>
-        <code>pnpm dev</code>
-      </div>
-      <a href="../">返回作品集</a>
-    </section>
-  </main>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Space Hideout</title>
+    <script>
+      if (
+        window.location.protocol.startsWith("http") &&
+        window.location.pathname.includes("/apps/client")
+      ) {
+        window.location.replace(new URL("../../", window.location.href).toString());
+      }
+    </script>
+    <script type="module" crossorigin src="./assets/index-CkKDHlfq.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DiKgSo8T.css">
+  </head>
+  <body>
+    <main id="app">
+      <section class="game-shell" aria-label="Space Hideout 大地图试玩">
+        <div id="phaser-root" aria-label="可操作的太空设施地图"></div>
+
+        <header class="game-hud game-hud--top">
+          <div class="game-brand">
+            <span class="signal-dot" aria-hidden="true"></span>
+            <div>
+              <p>ORBITAL OUTPOST / PLAYTEST</p>
+              <h1>Space Hideout</h1>
+            </div>
+          </div>
+          <div class="hud-status" aria-live="polite">
+            <span id="round-phase">普通躲藏</span>
+            <span id="round-clock">01:30</span>
+            <span id="game-status">正在校准飞船设施</span>
+            <span id="position-readout">坐标 285 · 1180</span>
+          </div>
+        </header>
+
+        <aside class="game-hud game-hud--left" aria-label="任务和操作">
+          <div class="hud-block">
+            <span class="hud-label">修复终端</span>
+            <strong id="task-status">0 / 3</strong>
+            <p>靠近发光终端后按 E，可缩短猎手搜索时间</p>
+          </div>
+          <div class="hud-block danger-readout">
+            <span class="hud-label">威胁波形仪</span>
+            <div
+              id="danger-console"
+              class="danger-console"
+              role="meter"
+              aria-label="猎手接近程度"
+              aria-valuemin="0"
+              aria-valuemax="6"
+              aria-valuenow="0"
+            >
+              <div class="danger-console__header">
+                <span>THREAT ARRAY</span>
+                <span id="danger-index">静默</span>
+              </div>
+              <div class="danger-crystals" aria-hidden="true">
+                <span class="danger-crystal" data-danger-segment="1"></span>
+                <span class="danger-crystal" data-danger-segment="2"></span>
+                <span class="danger-crystal" data-danger-segment="3"></span>
+                <span class="danger-crystal" data-danger-segment="4"></span>
+                <span class="danger-crystal" data-danger-segment="5"></span>
+                <span class="danger-crystal" data-danger-segment="6"></span>
+              </div>
+            </div>
+            <p id="danger-status">扫描范围外</p>
+          </div>
+        </aside>
+
+        <aside class="game-hud game-hud--right" aria-label="试玩控制">
+          <button id="overview-button" type="button">全图扫描</button>
+          <button id="training-button" type="button">回到出生舱</button>
+          <p>WASD 移动<br />Shift 短冲<br />E 修复</p>
+        </aside>
+
+        <div class="map-caption">点击地图后开始移动</div>
+      </section>
+
+      <section class="control-bay" aria-label="角色装扮和试玩状态">
+        <section class="appearance-studio" aria-labelledby="appearance-title">
+          <div class="section-heading">
+            <p>CHARACTER BAY</p>
+            <h2 id="appearance-title">角色装扮</h2>
+            <span>每项都会同步到地图角色</span>
+          </div>
+
+          <div class="appearance-preview-frame">
+            <div
+              id="avatar-preview"
+              class="avatar-preview"
+              data-hat="cap"
+              data-mask="clear"
+              data-pack="utility"
+              data-expression="calm"
+              aria-label="角色外观预览"
+            >
+              <span class="avatar-preview__pack"></span>
+              <span class="avatar-preview__body"></span>
+              <span class="avatar-preview__visor"></span>
+              <span class="avatar-preview__mask"></span>
+              <span class="avatar-preview__hat"></span>
+              <span class="avatar-preview__expression"></span>
+              <span class="scan-line" aria-hidden="true"></span>
+            </div>
+          </div>
+
+          <div class="appearance-options">
+            <fieldset class="appearance-group">
+              <legend>颜色</legend>
+              <div class="swatches" aria-label="角色颜色">
+                <button
+                  class="swatch is-active"
+                  data-appearance-kind="color"
+                  data-appearance-value="#31d8c8"
+                  style="--swatch: #31d8c8"
+                  type="button"
+                  aria-label="青色"
+                ></button>
+                <button
+                  class="swatch"
+                  data-appearance-kind="color"
+                  data-appearance-value="#f4c05f"
+                  style="--swatch: #f4c05f"
+                  type="button"
+                  aria-label="琥珀色"
+                ></button>
+                <button
+                  class="swatch"
+                  data-appearance-kind="color"
+                  data-appearance-value="#ef5d75"
+                  style="--swatch: #ef5d75"
+                  type="button"
+                  aria-label="珊瑚红"
+                ></button>
+                <button
+                  class="swatch"
+                  data-appearance-kind="color"
+                  data-appearance-value="#7ed957"
+                  style="--swatch: #7ed957"
+                  type="button"
+                  aria-label="荧光绿"
+                ></button>
+                <button
+                  class="swatch"
+                  data-appearance-kind="color"
+                  data-appearance-value="#6c7dff"
+                  style="--swatch: #6c7dff"
+                  type="button"
+                  aria-label="轨道蓝"
+                ></button>
+                <button
+                  class="swatch"
+                  data-appearance-kind="color"
+                  data-appearance-value="#b876ef"
+                  style="--swatch: #b876ef"
+                  type="button"
+                  aria-label="紫罗兰"
+                ></button>
+                <button
+                  class="swatch"
+                  data-appearance-kind="color"
+                  data-appearance-value="#f6f2e8"
+                  style="--swatch: #f6f2e8"
+                  type="button"
+                  aria-label="象牙白"
+                ></button>
+                <button
+                  class="swatch"
+                  data-appearance-kind="color"
+                  data-appearance-value="#f18f39"
+                  style="--swatch: #f18f39"
+                  type="button"
+                  aria-label="橙色"
+                ></button>
+              </div>
+            </fieldset>
+
+            <fieldset class="appearance-group">
+              <legend>帽子</legend>
+              <div class="option-grid">
+                <button
+                  class="option-button is-active"
+                  data-appearance-kind="hat"
+                  data-appearance-value="cap"
+                  type="button"
+                >
+                  指挥帽
+                </button>
+                <button
+                  class="option-button"
+                  data-appearance-kind="hat"
+                  data-appearance-value="antenna"
+                  type="button"
+                >
+                  天线
+                </button>
+                <button
+                  class="option-button"
+                  data-appearance-kind="hat"
+                  data-appearance-value="halo"
+                  type="button"
+                >
+                  轨道环
+                </button>
+                <button
+                  class="option-button"
+                  data-appearance-kind="hat"
+                  data-appearance-value="visor"
+                  type="button"
+                >
+                  护目片
+                </button>
+                <button
+                  class="option-button"
+                  data-appearance-kind="hat"
+                  data-appearance-value="beacon"
+                  type="button"
+                >
+                  信标灯
+                </button>
+                <button
+                  class="option-button"
+                  data-appearance-kind="hat"
+                  data-appearance-value="none"
+                  type="button"
+                >
+                  无帽
+                </button>
+              </div>
+            </fieldset>
+
+            <fieldset class="appearance-group">
+              <legend>面罩</legend>
+              <div class="option-grid option-grid--three">
+                <button
+                  class="option-button is-active"
+                  data-appearance-kind="mask"
+                  data-appearance-value="clear"
+                  type="button"
+                >
+                  透明
+                </button>
+                <button
+                  class="option-button"
+                  data-appearance-kind="mask"
+                  data-appearance-value="grid"
+                  type="button"
+                >
+                  网格
+                </button>
+                <button
+                  class="option-button"
+                  data-appearance-kind="mask"
+                  data-appearance-value="pulse"
+                  type="button"
+                >
+                  脉冲
+                </button>
+              </div>
+            </fieldset>
+
+            <fieldset class="appearance-group">
+              <legend>背包</legend>
+              <div class="option-grid option-grid--four">
+                <button
+                  class="option-button is-active"
+                  data-appearance-kind="pack"
+                  data-appearance-value="utility"
+                  type="button"
+                >
+                  工具包
+                </button>
+                <button
+                  class="option-button"
+                  data-appearance-kind="pack"
+                  data-appearance-value="jet"
+                  type="button"
+                >
+                  喷射包
+                </button>
+                <button
+                  class="option-button"
+                  data-appearance-kind="pack"
+                  data-appearance-value="cargo"
+                  type="button"
+                >
+                  货舱包
+                </button>
+                <button
+                  class="option-button"
+                  data-appearance-kind="pack"
+                  data-appearance-value="signal"
+                  type="button"
+                >
+                  信号包
+                </button>
+              </div>
+            </fieldset>
+
+            <fieldset class="appearance-group">
+              <legend>表情动作</legend>
+              <div class="option-grid option-grid--five">
+                <button
+                  class="option-button is-active"
+                  data-appearance-kind="expression"
+                  data-appearance-value="calm"
+                  type="button"
+                >
+                  平静
+                </button>
+                <button
+                  class="option-button"
+                  data-appearance-kind="expression"
+                  data-appearance-value="wave"
+                  type="button"
+                >
+                  挥手
+                </button>
+                <button
+                  class="option-button"
+                  data-appearance-kind="expression"
+                  data-appearance-value="alert"
+                  type="button"
+                >
+                  警觉
+                </button>
+                <button
+                  class="option-button"
+                  data-appearance-kind="expression"
+                  data-appearance-value="bounce"
+                  type="button"
+                >
+                  弹跳
+                </button>
+                <button
+                  class="option-button"
+                  data-appearance-kind="expression"
+                  data-appearance-value="scan"
+                  type="button"
+                >
+                  扫描
+                </button>
+              </div>
+            </fieldset>
+          </div>
+        </section>
+
+        <aside class="playtest-panel" aria-label="试玩系统状态">
+          <div class="section-heading">
+            <p>LIVE SYSTEMS</p>
+            <h2>试玩状态</h2>
+          </div>
+          <dl>
+            <div>
+              <dt>地图</dt>
+              <dd>双层轨道前哨</dd>
+            </div>
+            <div>
+              <dt>可用区域</dt>
+              <dd>2600 × 1600</dd>
+            </div>
+            <div>
+              <dt>AI 船员</dt>
+              <dd>BOT-星尘、BOT-轨道</dd>
+            </div>
+            <div>
+              <dt>AI 猎手</dt>
+              <dd>BOT-棱镜巡逻中</dd>
+            </div>
+            <div>
+              <dt>HTTP</dt>
+              <dd id="http-status">检查中</dd>
+            </div>
+            <div>
+              <dt>Socket</dt>
+              <dd id="socket-status">试玩模式</dd>
+            </div>
+            <div>
+              <dt>阶段</dt>
+              <dd id="phase-status">hide</dd>
+            </div>
+            <div>
+              <dt>协议</dt>
+              <dd id="protocol-status">本地试玩</dd>
+            </div>
+          </dl>
+          <form class="launcher" id="launcher-form">
+            <label for="launch-url">本机游戏网址</label>
+            <div class="launcher__row">
+              <input id="launch-url" type="url" value="http://127.0.0.1:5173" />
+              <button id="open-url-button" type="submit">打开</button>
+            </div>
+            <p id="launcher-message" class="launcher__message">
+              多人服务器启动后，可从这里进入联机版本。
+            </p>
+          </form>
+          <button id="connect-button" class="connect-button" type="button">连接多人服务器</button>
+          <button id="match-button" type="button" disabled>快速匹配</button>
+        </aside>
+      </section>
+    </main>
+  </body>
 </html>

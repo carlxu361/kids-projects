@@ -5,7 +5,7 @@ import { BootScene } from "./scenes/BootScene";
 import { ClientNetwork } from "./network/ClientNetwork";
 import { bindHomeUi } from "./ui/homeUi";
 
-const network = new ClientNetwork(CLIENT_CONFIG.serverUrl);
+const network = new ClientNetwork(CLIENT_CONFIG.serverUrl, CLIENT_CONFIG.staticDemo);
 
 new Phaser.Game({
   type: Phaser.AUTO,

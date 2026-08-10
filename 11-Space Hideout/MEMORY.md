@@ -8,7 +8,7 @@
 - Project name: space-hideout
 - Created date: 2026-08-02
 - Main goal: 重建原创桌面网页 Hide n Seek 多人游戏
-- Current status: 彻底重建阶段 0 和阶段 1 已完成；随后按用户要求先做 AI，已新增 BOT 命名、船员/猎手有限状态机、效用评分和测试，但尚未接入房间、移动或地图
+- Current status: 彻底重建阶段 0 和阶段 1 已完成；随后按用户要求先做 AI，并新增启动大厅、2600 × 1600 可操作地图试玩、外观预览、AI 状态面板、Phaser 动画、macOS 双击启动器和可嵌入作品集的静态试玩版；多人服务器尚未接入完整房间和权威移动
 - Tech stack: pnpm workspace, TypeScript, Vite, Phaser 3, Socket.IO, Express, Vitest, Playwright, ESLint, Prettier
 
 ## User Preferences For This Project
@@ -31,6 +31,12 @@
   Reason: 用户要求以官方 Hide n Seek 模式信息逻辑为固定基线，删除旧版多人内鬼和任务胜利方向。
 - 2026-08-02: Decision: 在房间、移动和地图尚未完成前，先实现纯函数式 AI 决策核心，不接入实时对局。
   Reason: 用户要求先做 AI，但真正可运行的 AI 依赖房间、移动、地图和任务数据；纯决策核心可以先测试，后续再接入。
+- 2026-08-02: Decision: 先为静态作品集实现客户端可玩纵切，再接服务器权威对局。
+  Reason: 用户指出页面地图小且无法游玩；先验证大地图、移动、碰撞、终端互动和外观手感，后续再把同一输入与任务请求交给服务器验证。
+- 2026-08-10: Decision: 危险仪表和音乐使用原创 HUD 与 Web Audio 程序化节拍，不加入标明为官方的图片或音乐文件。
+  Reason: 保留危险程度的信息逻辑，同时避免未授权素材进入项目或作品集。
+- 2026-08-10: Decision: 静态试玩使用 90 秒普通躲藏与 25 秒 Final Hide，终端每次最多缩短 8 秒普通躲藏时间；被猎手贴近则失败，存活到零则胜利。
+  Reason: 让线上试玩拥有接近 Hide n Seek 的可完成回合，而不假装已经是完整多人对局。
 
 ## Architecture Notes
 
@@ -38,6 +44,9 @@
 - 2026-08-02: 第一轮服务器使用单个公开房间 `public-alpha`；客户端只发送 WASD 输入意图，服务器按共享碰撞工具计算最终位置并广播房间快照。
 - 2026-08-02: 重建阶段 1 改为 pnpm workspace；共享包只保留新协议、固定设置、阶段类型和危险值数学，客户端和服务器不再引用旧协议。
 - 2026-08-02: AI 地基位于 `apps/server/src/ai`，共享 AI 类型位于 `packages/shared/src/types/ai.ts`；船员 AI 只看危险值、任务数、通风次数和阶段，猎手 AI 只看可见目标、Final Hide Ping/Seek 线索，不读取隐藏玩家精确坐标。
+- 2026-08-02: 本机双击启动器位于 `/Users/xjc/Developer/games/启动 Space Hideout.command`；它会进入 `space-hideout`、必要时安装依赖、运行 `pnpm dev` 并打开 `http://127.0.0.1:5173`。
+- 2026-08-02: 作品集发布脚本会以 `VITE_STATIC_DEMO=1` 构建客户端，并把构建结果放到 `https://xxby.carlxu.cn/11-Space%20Hideout/`；静态试玩版不请求 Socket.IO 服务器，只展示可交互外观、AI 状态与 Phaser 动画。
+- 2026-08-02: 静态试玩地图位于 `apps/client/src/scenes/BootScene.ts`：世界尺寸 2600 × 1600，WASD/Shift/E、客户端碰撞、3 个终端、两名船员 BOT 与一名猎手 BOT；外观通过 `space-hideout:appearance` 浏览器事件同步到 Phaser 角色。
 
 ## Useful Commands
 
@@ -49,6 +58,9 @@ pnpm install
 
 # run client and server
 pnpm dev
+
+# macOS double-click launcher
+/Users/xjc/Developer/games/启动\ Space\ Hideout.command
 
 # test
 pnpm test
@@ -66,6 +78,10 @@ pnpm test
   Fix: 使用 `pnpm approve-builds esbuild` 批准 Vite 所需的 `esbuild` 构建脚本，然后重新运行 `pnpm install`。
 - 2026-08-02: Problem: 共享包 `tsconfig` 把 `tests` 纳入发布构建时触发 `rootDir` 错误。
   Fix: 构建 `tsconfig` 只包含 `src`，测试由 Vitest 单独运行。
+- 2026-08-02: Problem: 在作品集里直接打开 `11-Space Hideout/apps/client/` 会只显示未带样式的 HTML。
+  Fix: 该文件是 Vite 开发源入口，浏览器无法直接运行其 TypeScript；当它被 HTTP 静态站点直接访问时，自动跳回 `11-Space Hideout/` 的打包试玩入口。
+- 2026-08-10: Problem: 当前源码被误放到 `_archive/legacy-pre-rebuild`，项目根目录缺少 `apps/client/index.html`，启动时出现 `ERR_FILE_NOT_FOUND`。
+  Fix: 保留归档并将源码复制回根目录；归档已从 Git、Lint 和构建扫描中排除，启动器会先检查前端入口。
 
 ## External Resources
 
@@ -89,6 +105,13 @@ Format:
 - 2026-08-02: 执行 Hide n Seek 彻底重建：旧实现已保存到 Git 备份提交、备份分支和标签；工作树中删除旧业务实现并创建新的 pnpm 阶段 1 骨架。
 - 2026-08-02: 重建阶段 0/1 完成并验证：备份提交 `886357fd1765aa4ace2782500df84a4976ac5c4a`、分支 `backup/pre-hide-n-seek-rebuild`、标签 `pre-hide-n-seek-rebuild-v1`；`pnpm format:check`、`pnpm typecheck`、`pnpm lint`、`pnpm test`、`pnpm test:e2e`、`pnpm build` 均通过。
 - 2026-08-02: 按用户要求先做 AI：新增 `AiDecisionContext`、`AiDecision`、BOT 名称生成、船员/猎手 intent 决策和 AI 测试；`pnpm format:check`、`pnpm typecheck`、`pnpm lint`、`pnpm test`、`pnpm build`、`pnpm test:e2e` 均通过。
+- 2026-08-02: 按用户要求让网站更像可启动程序：客户端首页改为启动大厅，加入本地网址输入、外观颜色预览、AI 船员/猎手状态、Phaser 巡逻/扫描动画；新增 macOS 双击启动器。
+- 2026-08-02: 按用户要求改为在作品集直接载入：发布流程会自动构建静态试玩版，线上入口直接显示 Space Hideout 的外观、AI 状态和飞船动画，不再显示本机启动命令。
+- 2026-08-02: 根据“地图太小、玩不了、个性化和动画不够”的反馈，将静态试玩升级为大地图可玩纵切，并把外观扩展为颜色、帽子、面罩、背包和表情组合；类型、Lint、单元测试、移动/外观 Playwright 测试、构建和静态截图检查通过。
+- 2026-08-02: 修复作品集误开开发源入口导致的白页式 HTML：`apps/client/index.html` 在静态 HTTP 路径下会自动跳转到正确的 `11-Space Hideout/` 试玩入口。
+- 2026-08-10: 恢复被误归档的 Space Hideout 源码到项目根目录，保留 `_archive/legacy-pre-rebuild` 作为可恢复副本，并修正启动器的入口检查。
+- 2026-08-10: 将试玩 HUD 的普通进度条升级为原创六晶体威胁波形仪，并在第一次玩家点击后用 Web Audio 合成随危险值加快的警报节拍。
+- 2026-08-10: 将静态试玩升级为可胜负的躲藏回合：任务只缩短普通躲藏时间，Final Hide 关闭任务并加速猎手；程序化音乐叠加低沉底噪、节拍与高频扫描层。
 
 ## Do Not Store
 

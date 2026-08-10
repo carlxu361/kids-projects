@@ -67,7 +67,7 @@ project_icon() {
 
 project_description() {
   case "$1" in
-    space-hideout) printf "Hide n Seek 多人联机重建原型，包含 pnpm 前后端骨架和 AI 决策地基" ;;
+    space-hideout) printf "可直接游玩的原创太空躲藏试玩：逃离猎手、修复终端并存活到倒计时结束" ;;
     extraction-raid-prototype) printf "第一人称搜打撤原型，包含搜索、战斗、背包和撤离循环" ;;
     final-review-camp) printf "语文、数学、英语复习闯关工具，包含错题、草稿和宠物奖励" ;;
     picture-chinese-quest) printf "看图理解中文句子的语文练习小游戏" ;;
@@ -186,15 +186,17 @@ write_complex_project_landing() {
   <title>${escaped_title}</title>
   <style>
     :root {
-      color-scheme: light;
-      --bg: #f5f7fb;
-      --ink: #172033;
-      --muted: #617086;
-      --panel: #ffffff;
-      --line: #dbe3ef;
-      --blue: #246bfe;
-      --green: #12a875;
+      color-scheme: dark;
+      --bg: #061318;
+      --panel: rgba(11, 31, 39, .9);
+      --panel-soft: rgba(14, 42, 50, .72);
+      --ink: #eefaf8;
+      --muted: #9fc6c1;
+      --line: rgba(49, 216, 200, .28);
+      --blue: #31d8c8;
+      --green: #7ed957;
       --yellow: #f4b63d;
+      --red: #ef5d75;
     }
     * { box-sizing: border-box; }
     body {
@@ -202,22 +204,33 @@ write_complex_project_landing() {
       min-height: 100vh;
       color: var(--ink);
       background:
-        linear-gradient(135deg, rgba(36, 107, 254, .10), transparent 32%),
-        linear-gradient(315deg, rgba(18, 168, 117, .12), transparent 30%),
+        radial-gradient(circle at 16% 18%, rgba(49, 216, 200, .20), transparent 28%),
+        radial-gradient(circle at 86% 12%, rgba(244, 182, 61, .14), transparent 24%),
+        linear-gradient(90deg, rgba(49, 216, 200, .06) 1px, transparent 1px) 0 0 / 34px 34px,
+        linear-gradient(rgba(126, 217, 87, .05) 1px, transparent 1px) 0 0 / 34px 34px,
         var(--bg);
       font-family: ui-rounded, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
     }
     main {
-      width: min(880px, calc(100% - 32px));
+      width: min(1120px, calc(100% - 32px));
       margin: 0 auto;
-      padding: 56px 0;
+      padding: 38px 0;
     }
-    .panel {
-      padding: 28px;
+    .deck {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .panel,
+    .visual {
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: rgba(255, 255, 255, .88);
-      box-shadow: 0 18px 50px rgba(30, 45, 80, .12);
+      background: var(--panel);
+      box-shadow: 0 22px 60px rgba(0, 0, 0, .28);
+    }
+    .panel {
+      padding: 30px;
     }
     .mark {
       display: inline-flex;
@@ -226,14 +239,14 @@ write_complex_project_landing() {
       width: 58px;
       height: 58px;
       margin-bottom: 18px;
-      border-radius: 16px;
+      border-radius: 8px;
       background: var(--blue);
-      color: white;
+      color: #041114;
       font-size: 30px;
     }
     h1 {
       margin: 0;
-      font-size: clamp(34px, 6vw, 62px);
+      font-size: 62px;
       line-height: 1;
       letter-spacing: 0;
     }
@@ -246,23 +259,139 @@ write_complex_project_landing() {
       max-width: 660px;
       margin: 18px 0 0;
       color: var(--muted);
-      font-size: 18px;
+      font-size: 17px;
       line-height: 1.8;
+    }
+    .launcher {
+      display: grid;
+      gap: 10px;
+      margin-top: 28px;
+    }
+    label {
+      color: var(--yellow);
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .launcher-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 92px 112px;
+      gap: 10px;
+    }
+    input,
+    button {
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font: inherit;
+    }
+    input {
+      min-width: 0;
+      padding: 0 14px;
+      color: var(--ink);
+      background: rgba(2, 12, 16, .78);
+    }
+    button {
+      cursor: pointer;
+      color: #041114;
+      background: var(--blue);
+      font-weight: 900;
+    }
+    button.secondary {
+      color: var(--ink);
+      background: rgba(49, 216, 200, .12);
+    }
+    .message {
+      min-height: 24px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
     }
     .steps {
       display: grid;
-      gap: 12px;
-      margin-top: 28px;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .step {
+      padding: 14px 16px;
+      border: 1px solid rgba(159, 198, 193, .18);
+      border-radius: 8px;
+      background: var(--panel-soft);
+      color: var(--muted);
+      line-height: 1.6;
     }
     code {
       display: block;
-      padding: 14px 16px;
-      border: 1px solid var(--line);
+      margin-top: 8px;
+      padding: 12px 14px;
+      border: 1px solid rgba(49, 216, 200, .2);
       border-radius: 8px;
       background: #101828;
       color: #f5f8ff;
-      font-size: 15px;
+      font-size: 14px;
       overflow-x: auto;
+    }
+    .visual {
+      position: relative;
+      min-height: 520px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at center, rgba(49, 216, 200, .12), transparent 36%),
+        rgba(6, 19, 24, .92);
+    }
+    .orbit {
+      position: absolute;
+      inset: 58px 34px;
+      border: 1px solid rgba(49, 216, 200, .26);
+      border-radius: 50%;
+      animation: turn 14s linear infinite;
+    }
+    .orbit::before,
+    .orbit::after {
+      position: absolute;
+      content: "";
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--yellow);
+    }
+    .orbit::before { top: 20px; left: 64px; }
+    .orbit::after { right: 32px; bottom: 72px; background: var(--red); }
+    .crew {
+      position: absolute;
+      left: 142px;
+      top: 180px;
+      width: 58px;
+      height: 82px;
+      border-radius: 26px 26px 20px 20px;
+      background: var(--blue);
+      box-shadow: inset -12px -14px 0 rgba(0, 0, 0, .16);
+      animation: bob 2.6s ease-in-out infinite;
+    }
+    .crew::before {
+      position: absolute;
+      right: -8px;
+      top: 20px;
+      width: 34px;
+      height: 22px;
+      content: "";
+      border-radius: 12px;
+      background: linear-gradient(135deg, #d9fffb, #438fb0);
+    }
+    .chips {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 24px;
+      display: grid;
+      gap: 10px;
+    }
+    .chip {
+      padding: 12px 14px;
+      border: 1px solid rgba(159, 198, 193, .18);
+      border-radius: 8px;
+      background: rgba(2, 12, 16, .7);
+      color: var(--muted);
+      font-weight: 800;
     }
     a {
       display: inline-flex;
@@ -271,22 +400,202 @@ write_complex_project_landing() {
       font-weight: 800;
       text-decoration: none;
     }
+    @keyframes turn {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    @media (max-width: 820px) {
+      .deck { grid-template-columns: 1fr; }
+      h1 { font-size: 46px; }
+      .launcher-row { grid-template-columns: 1fr; }
+      .visual { min-height: 360px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
+    }
   </style>
 </head>
 <body>
   <main>
-    <section class="panel">
-      <div class="mark">${escaped_icon}</div>
-      <h1>${escaped_title}</h1>
-      <div class="category">${escaped_category}</div>
-      <p>${escaped_description}。这个作品是前后端联机工程，不能只靠静态网页完整运行；作品集先展示项目入口和本地启动方式。</p>
-      <div class="steps" aria-label="本地启动命令">
-        <code>cd /Users/xjc/Developer/games/projects/${escaped_source}</code>
-        <code>pnpm install</code>
-        <code>pnpm dev</code>
-      </div>
-      <a href="../">返回作品集</a>
-    </section>
+    <div class="deck">
+      <section class="panel">
+        <div class="mark">${escaped_icon}</div>
+        <h1>${escaped_title}</h1>
+        <div class="category">${escaped_category}</div>
+        <p>${escaped_description}。这是前后端联机工程：先启动本机程序，再用下面的网址进入游戏。</p>
+        <form class="launcher" id="launcher-form">
+          <label for="game-url">游戏网址</label>
+          <div class="launcher-row">
+            <input id="game-url" type="url" value="http://127.0.0.1:5173">
+            <button type="submit">打开</button>
+            <button class="secondary" id="check-button" type="button">检测</button>
+          </div>
+          <p class="message" id="message">如果页面打不开，先双击启动器。</p>
+        </form>
+        <div class="steps">
+          <div class="step">1. 双击启动器
+            <code>/Users/xjc/Developer/games/启动 Space Hideout.command</code>
+          </div>
+          <div class="step">2. 或者手动启动
+            <code>cd /Users/xjc/Developer/games/projects/${escaped_source}</code>
+            <code>pnpm dev</code>
+          </div>
+        </div>
+        <a href="../">返回作品集</a>
+      </section>
+      <aside class="visual" aria-label="游戏预览">
+        <div class="orbit"></div>
+        <div class="crew"></div>
+        <div class="chips">
+          <div class="chip">外观：颜色、帽子、面罩预览</div>
+          <div class="chip">AI：BOT 船员和猎手决策地基</div>
+          <div class="chip">动画：巡逻、扫描、启动反馈</div>
+        </div>
+      </aside>
+    </div>
+  </main>
+  <script>
+    const form = document.querySelector("#launcher-form");
+    const input = document.querySelector("#game-url");
+    const message = document.querySelector("#message");
+    const checkButton = document.querySelector("#check-button");
+
+    function currentUrl() {
+      try {
+        return new URL(input.value.trim()).toString();
+      } catch {
+        message.textContent = "网址格式不对，可以试试 http://127.0.0.1:5173";
+        return null;
+      }
+    }
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const url = currentUrl();
+      if (!url) return;
+      window.open(url, "_blank", "noopener,noreferrer");
+      message.textContent = "已尝试打开游戏网址。";
+    });
+
+    checkButton.addEventListener("click", async () => {
+      const url = currentUrl();
+      if (!url) return;
+      message.textContent = "正在检测本机游戏服务...";
+      try {
+        await fetch(url, { mode: "no-cors", cache: "no-store" });
+        message.textContent = "检测到游戏服务，可以点击打开。";
+      } catch {
+        message.textContent = "还没有检测到游戏服务，请先双击启动器。";
+      }
+    });
+  </script>
+</body>
+</html>
+EOF_LANDING
+}
+
+build_space_hideout_demo() {
+  local source_path="$1"
+  local target_dir="$2"
+  local dist_dir="$source_path/apps/client/dist"
+  local assets_dir="$target_dir/assets"
+
+  if ! command -v pnpm >/dev/null 2>&1; then
+    echo "无法发布 Space Hideout：没有找到 pnpm。"
+    return 1
+  fi
+
+  echo "正在构建 Space Hideout 在线试玩版..."
+  (
+    cd "$source_path"
+    pnpm --filter @space-hideout/shared build
+    VITE_STATIC_DEMO=1 pnpm --filter @space-hideout/client build
+  )
+
+  if [[ ! -f "$dist_dir/index.html" ]]; then
+    echo "无法发布 Space Hideout：前端构建没有生成 index.html。"
+    return 1
+  fi
+
+  mkdir -p "$assets_dir"
+  rsync -a --delete "$dist_dir/assets/" "$assets_dir/"
+  cp "$dist_dir/index.html" "$target_dir/index.html"
+}
+
+write_space_hideout_online_landing() {
+  local target_dir="$1"
+  local title="$2"
+  local description="$3"
+
+  local escaped_title escaped_description
+  escaped_title="$(printf "%s" "$title" | html_escape)"
+  escaped_description="$(printf "%s" "$description" | html_escape)"
+
+  cat > "$target_dir/index.html" <<EOF_LANDING
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escaped_title}</title>
+  <style>
+    :root { color-scheme: dark; --void: #061318; --line: #31d8c8; --ink: #eefaf8; --muted: #9fc6c1; }
+    * { box-sizing: border-box; }
+    body {
+      min-width: 960px;
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, rgba(49, 216, 200, .06) 1px, transparent 1px) 0 0 / 42px 42px,
+        linear-gradient(rgba(244, 192, 95, .04) 1px, transparent 1px) 0 0 / 42px 42px,
+        var(--void);
+      font-family: ui-rounded, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      min-height: 66px;
+      padding: 12px max(24px, calc((100% - 1180px) / 2));
+      border-bottom: 1px solid rgba(49, 216, 200, .22);
+      background: rgba(6, 19, 24, .86);
+    }
+    h1 { margin: 0; font-size: 22px; letter-spacing: 0; }
+    p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+    a {
+      flex: 0 0 auto;
+      color: #041114;
+      background: var(--line);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 900;
+      text-decoration: none;
+    }
+    main { height: calc(100vh - 66px); min-height: 720px; }
+    iframe { display: block; width: 100%; height: 100%; border: 0; background: var(--void); }
+    @media (max-width: 1080px) {
+      body { min-width: 0; }
+      header { align-items: flex-start; padding: 14px 18px; }
+      main { min-height: 760px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>${escaped_title} · 在线试玩</h1>
+      <p>${escaped_description}</p>
+    </div>
+    <a href="./online-demo/" target="_blank" rel="noopener">全屏打开</a>
+  </header>
+  <main>
+    <iframe src="./online-demo/" title="Space Hideout 在线试玩"></iframe>
   </main>
 </body>
 </html>
@@ -320,11 +629,15 @@ sync_projects() {
         --exclude 'test-results/' \
         --exclude 'playwright-report/' \
         --exclude '.turbo/' \
+        --exclude '_archive/' \
         --exclude '.DS_Store' \
         --exclude '.env' \
         --exclude '.env.*' \
         "$source_path/." "$target_dir/"
-      if [[ -f "$target_dir/index.html" ]]; then
+      if [[ "$source_file" == "space-hideout" ]]; then
+        build_space_hideout_demo "$source_path" "$target_dir"
+        has_root_index="yes"
+      elif [[ -f "$target_dir/index.html" ]]; then
         has_root_index="yes"
       else
         write_complex_project_landing "$target_dir" "$source_file" "$title" "$description" "$category" "$icon"
@@ -409,11 +722,22 @@ EOF_README
 
 大多数作品可以直接打开对应文件夹里的 `index.html`。
 
-像 `Space Hideout` 这样的联机工程需要在原项目目录运行：
+`Space Hideout` 可以在作品集中直接运行线上试玩版：
+
+```text
+https://xxby.carlxu.cn/11-Space%20Hideout/
+```
+
+完整多人联机仍可在本机用启动器运行：
+
+```text
+/Users/xjc/Developer/games/启动 Space Hideout.command
+```
+
+也可以在原项目目录手动运行：
 
 ```bash
 cd /Users/xjc/Developer/games/projects/space-hideout
-pnpm install
 pnpm dev
 ```
 
