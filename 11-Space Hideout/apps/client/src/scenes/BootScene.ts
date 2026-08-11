@@ -11,6 +11,8 @@ const TERMINAL_TIME_REDUCTION_MS = 8_000;
 const CAPTURE_DISTANCE = 48;
 const MAX_VENT_USES = 3;
 const BOT_RADIUS = 18;
+const HUNTER_SIGHT_RANGE = 520;
+const HUNTER_TRACK_REFRESH_MS = 1_250;
 
 type Appearance = {
   color: string;
@@ -55,6 +57,8 @@ type BotAgent = {
   preferredTaskOffset: number;
   taskStartedAt?: number;
   lastSeen?: Point;
+  nextTrackRefreshAt?: number;
+  trackedNodeId?: string;
   ventUses: number;
 };
 
@@ -655,7 +659,7 @@ export class BootScene extends Phaser.Scene {
     this.crewBots.forEach((bot) => this.updateCrewBot(bot, time, delta));
   }
 
-  private updateHunter(_time: number, delta: number): void {
+  private updateHunter(time: number, delta: number): void {
     const hunter = this.hunterBot;
     const distanceToPlayer = Phaser.Math.Distance.Between(
       hunter.position.x,
@@ -663,42 +667,51 @@ export class BootScene extends Phaser.Scene {
       this.player.x,
       this.player.y
     );
-    const canSeePlayer = distanceToPlayer < 390 && this.hasClearPath(hunter.position, this.player);
-    const speed = (canSeePlayer ? 205 : 142) * (this.isFinalHide() ? 1.25 : 1);
+    const canSeePlayer =
+      distanceToPlayer < HUNTER_SIGHT_RANGE && this.hasClearPath(hunter.position, this.player);
+    const finalHideMultiplier = this.isFinalHide() ? 1.25 : 1;
 
     if (canSeePlayer) {
       hunter.state = "chase";
       hunter.lastSeen = { ...this.player };
-      this.moveAgentToward(hunter, this.player, speed, delta);
+      hunter.trackedNodeId = nearestNavigationNode(
+        NAVIGATION_NODES,
+        this.player.x,
+        this.player.y
+      ).id;
+      this.moveAgentToward(hunter, this.player, 300 * finalHideMultiplier, delta);
       return;
     }
 
-    if (hunter.lastSeen) {
-      hunter.state = "search";
-      const target = nearestNavigationNode(
+    // The hunter only gets a coarse route ping. It must still follow corridors and
+    // regain line of sight before switching back to the fast direct pursuit.
+    if (!hunter.nextTrackRefreshAt || time >= hunter.nextTrackRefreshAt) {
+      hunter.trackedNodeId = nearestNavigationNode(
         NAVIGATION_NODES,
-        hunter.lastSeen.x,
-        hunter.lastSeen.y
+        this.player.x,
+        this.player.y
       ).id;
+      hunter.nextTrackRefreshAt = time + HUNTER_TRACK_REFRESH_MS;
+    }
+
+    if (hunter.trackedNodeId || hunter.lastSeen) {
+      hunter.state = "search";
+      const target =
+        hunter.trackedNodeId ??
+        nearestNavigationNode(
+          NAVIGATION_NODES,
+          hunter.lastSeen?.x ?? this.player.x,
+          hunter.lastSeen?.y ?? this.player.y
+        ).id;
       this.routeAgentTo(hunter, target);
-      this.moveAgentAlongRoute(hunter, 164 * (this.isFinalHide() ? 1.25 : 1), delta);
-      if (
-        Phaser.Math.Distance.Between(
-          hunter.position.x,
-          hunter.position.y,
-          hunter.lastSeen.x,
-          hunter.lastSeen.y
-        ) < 72
-      ) {
-        hunter.lastSeen = undefined;
-      }
+      this.moveAgentAlongRoute(hunter, 212 * finalHideMultiplier, delta);
       return;
     }
 
     hunter.state = "patrol";
     const target = hunter.patrolNodes[hunter.patrolIndex] ?? "reactor";
     this.routeAgentTo(hunter, target);
-    this.moveAgentAlongRoute(hunter, speed, delta);
+    this.moveAgentAlongRoute(hunter, 180 * finalHideMultiplier, delta);
     if (this.isAtNavigationNode(hunter, target)) {
       hunter.patrolIndex = (hunter.patrolIndex + 1) % hunter.patrolNodes.length;
       hunter.routeTarget = undefined;
@@ -792,11 +805,17 @@ export class BootScene extends Phaser.Scene {
       target.y
     );
     if (distance < 1) return;
-    const step = Math.min(distance, (speed * delta) / 1000);
-    const nextX = agent.position.x + ((target.x - agent.position.x) / distance) * step;
-    const nextY = agent.position.y + ((target.y - agent.position.y) / distance) * step;
-    if (!this.isBlocked(nextX, agent.position.y, BOT_RADIUS)) agent.position.x = nextX;
-    if (!this.isBlocked(agent.position.x, nextY, BOT_RADIUS)) agent.position.y = nextY;
+    const step = Math.min(distance, (speed * Math.min(delta, 70)) / 1000);
+    agent.position = moveCircleWithCollision(
+      agent.position,
+      {
+        x: ((target.x - agent.position.x) / distance) * step,
+        y: ((target.y - agent.position.y) / distance) * step
+      },
+      BOT_RADIUS,
+      WALLS,
+      { minX: 0, minY: 0, maxX: MAP_WIDTH, maxY: MAP_HEIGHT }
+    );
   }
 
   private isAtNavigationNode(agent: BotAgent, nodeId: string): boolean {
@@ -1181,6 +1200,8 @@ export class BootScene extends Phaser.Scene {
       route: [],
       routeTarget: undefined,
       lastSeen: undefined,
+      nextTrackRefreshAt: undefined,
+      trackedNodeId: undefined,
       patrolIndex: 0
     };
     this.terminals.forEach((terminal) => {

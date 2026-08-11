@@ -1,6 +1,7 @@
 # MEMORY.md
 
 - 2026-08-11: Space Hideout 线上试玩扩大到 3500 x 2200、12 个任务，使用分段防穿墙碰撞；删除梯子，滑索改为双向，跃迁管支持多出口选择或躲藏 10 秒。
+- 2026-08-11: 猎手改为近距离直追，并在丢失视野后每 1.25 秒刷新一次通路追踪目标；机器人移动使用同一套防穿墙碰撞。
 
 > This file stores project memory.
 > It should help future Codex sessions continue correctly without rereading everything.
