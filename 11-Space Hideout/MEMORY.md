@@ -1,5 +1,7 @@
 # MEMORY.md
 
+- 2026-08-11: Space Hideout 线上试玩扩大到 3500 x 2200、12 个任务，使用分段防穿墙碰撞；删除梯子，滑索改为双向，跃迁管支持多出口选择或躲藏 10 秒。
+
 > This file stores project memory.
 > It should help future Codex sessions continue correctly without rereading everything.
 
@@ -119,6 +121,7 @@ Format:
 - 2026-08-10: 修复误开开发源入口导致的裸页面：`apps/client/index.html` 会自动导向可运行的构建版本。
 - 2026-08-10: 静态试玩 AI 改为导航驱动，加入三组原创跃迁管网络；玩家与船员可用，猎手不能用。
 - 2026-08-10: 静态试玩加入准备舱猎手信号播报，点击“开始躲藏”后才启动倒计时和 AI；新增三组梯子、两条单向滑索、原创能量失效标记，以及梯子/滑索 Playwright 回归测试。
+- 2026-08-11: 静态试玩地图扩大为 3500 × 2200，终端增加到 12 个；玩家移动使用分段圆形碰撞，移除梯子，滑索改为双向，跃迁管改为可选出口或最多躲藏 10 秒。
 
 ## Do Not Store
 

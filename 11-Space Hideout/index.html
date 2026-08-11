@@ -14,8 +14,8 @@
         window.location.replace(destination);
       }
     </script>
-    <script type="module" crossorigin src="./assets/index-BEd6WXwM.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-pLU1xKZA.css">
+    <script type="module" crossorigin src="./assets/index-xC10yy9N.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-pdw8wM9X.css">
   </head>
   <body>
     <main id="app">
@@ -60,13 +60,13 @@
         <aside class="game-hud game-hud--left" aria-label="任务和操作">
           <div class="hud-block">
             <span class="hud-label">修复终端</span>
-            <strong id="task-status">0 / 3</strong>
+            <strong id="task-status">0 / 12</strong>
             <p>靠近发光终端后按 E，可缩短猎手搜索时间</p>
           </div>
           <div class="hud-block">
             <span class="hud-label">跃迁管电量</span>
             <strong id="vent-status">3 次</strong>
-            <p>靠近蓝绿环形入口后按 E，猎手无法使用</p>
+            <p>选择出口，或在管内躲藏最多 10 秒</p>
           </div>
           <div class="hud-block danger-readout">
             <span class="hud-label">威胁波形仪</span>
@@ -102,7 +102,13 @@
           <p>WASD 移动<br />Shift 短冲<br />E 设施互动</p>
         </aside>
 
-        <div class="map-caption">蓝绿环是跃迁管 · 黄黑梯可跨层 · 橙色滑索单向冲刺</div>
+        <section id="vent-selector" class="vent-selector" aria-label="跃迁管出口选择" hidden>
+          <p>跃迁管已接通</p>
+          <strong>选择出口</strong>
+          <div id="vent-options" class="vent-selector__options"></div>
+        </section>
+
+        <div class="map-caption">蓝绿环可选出口或躲 10 秒 · 橙色双端滑索可来回使用</div>
       </section>
 
       <section class="control-bay" aria-label="角色装扮和试玩状态">
@@ -386,7 +392,7 @@
             </div>
             <div>
               <dt>可用区域</dt>
-              <dd>2600 × 1600</dd>
+              <dd>3500 × 2200</dd>
             </div>
             <div>
               <dt>AI 船员</dt>

@@ -1,8 +1,9 @@
 import Phaser from "phaser";
 import { findNavigationPath, nearestNavigationNode, type NavigationNode } from "../game/navigation";
+import { isCircleBlocked, moveCircleWithCollision } from "../game/collision";
 
-const MAP_WIDTH = 2600;
-const MAP_HEIGHT = 1600;
+const MAP_WIDTH = 3500;
+const MAP_HEIGHT = 2200;
 const PLAYER_RADIUS = 22;
 const ROUND_HIDE_MS = 90_000;
 const FINAL_HIDE_MS = 25_000;
@@ -31,11 +32,10 @@ type KeySet = {
 };
 
 type Terminal = Point & { id: string; label: string; done: boolean };
-type Vent = Point & { id: string; exitId: string };
-type Ladder = Point & { id: string; exitId: string };
-type Zipline = Point & { id: string; exit: Point };
+type Vent = Point & { id: string; label: string; networkId: string };
+type ZiplinePair = { id: string; a: Point; b: Point };
 type Transit = {
-  kind: "ladder" | "zipline";
+  kind: "zipline";
   from: Point;
   to: Point;
   startedAt: number;
@@ -74,46 +74,59 @@ const WALLS: Wall[] = [
   { x: 2070, y: 860, width: 230, height: 90 },
   { x: 340, y: 490, width: 180, height: 80 },
   { x: 990, y: 1280, width: 110, height: 190 },
-  { x: 2280, y: 1220, width: 120, height: 170 }
+  { x: 2280, y: 1220, width: 120, height: 170 },
+  { x: 2540, y: 820, width: 340, height: 86 },
+  { x: 2930, y: 350, width: 110, height: 280 },
+  { x: 3050, y: 1130, width: 160, height: 250 },
+  { x: 2460, y: 1690, width: 360, height: 90 },
+  { x: 1450, y: 1670, width: 420, height: 100 },
+  { x: 560, y: 1710, width: 270, height: 80 }
 ];
 
 const NAVIGATION_NODES: NavigationNode[] = [
-  { id: "spawn", x: 285, y: 1180, links: ["cargo", "observation"] },
+  { id: "spawn", x: 285, y: 1180, links: ["cargo", "observation", "south-west"] },
   { id: "cargo", x: 500, y: 1160, links: ["spawn", "lower-west"] },
-  { id: "lower-west", x: 790, y: 1190, links: ["cargo", "maintenance"] },
+  { id: "lower-west", x: 790, y: 1190, links: ["cargo", "maintenance", "south-west"] },
   { id: "maintenance", x: 940, y: 1160, links: ["lower-west", "central-south"] },
-  { id: "central-south", x: 1260, y: 980, links: ["maintenance", "comms", "engine"] },
+  { id: "central-south", x: 1260, y: 980, links: ["maintenance", "comms", "engine", "south-loop"] },
   { id: "comms", x: 1470, y: 680, links: ["central-south", "upper-mid", "reactor-entry"] },
-  { id: "engine", x: 1980, y: 1110, links: ["central-south", "engine-east"] },
-  { id: "engine-east", x: 2220, y: 1100, links: ["engine", "reactor-entry"] },
+  { id: "engine", x: 1980, y: 1110, links: ["central-south", "engine-east", "south-loop"] },
+  { id: "engine-east", x: 2220, y: 1100, links: ["engine", "reactor-entry", "docking"] },
   { id: "observation", x: 430, y: 760, links: ["spawn", "upper-west"] },
   { id: "upper-west", x: 720, y: 650, links: ["observation", "upper-mid"] },
   { id: "upper-mid", x: 1100, y: 660, links: ["upper-west", "comms"] },
-  { id: "reactor-entry", x: 2040, y: 660, links: ["comms", "engine-east", "reactor"] },
-  { id: "reactor", x: 2180, y: 390, links: ["reactor-entry"] }
+  { id: "reactor-entry", x: 2040, y: 660, links: ["comms", "engine-east", "reactor", "science"] },
+  { id: "reactor", x: 2180, y: 390, links: ["reactor-entry"] },
+  { id: "science", x: 2680, y: 520, links: ["reactor-entry", "relay"] },
+  { id: "relay", x: 2920, y: 760, links: ["science", "docking"] },
+  { id: "docking", x: 3180, y: 1220, links: ["relay", "engine-east", "archive"] },
+  { id: "archive", x: 2790, y: 1510, links: ["docking", "coolant"] },
+  { id: "coolant", x: 2260, y: 1680, links: ["archive", "south-loop"] },
+  {
+    id: "south-loop",
+    x: 1550,
+    y: 1740,
+    links: ["coolant", "central-south", "engine", "south-west"]
+  },
+  { id: "south-west", x: 680, y: 1780, links: ["south-loop", "spawn", "lower-west"] }
 ];
 
 const VENTS: Vent[] = [
-  { id: "cargo-duct", x: 310, y: 1280, exitId: "observation-duct" },
-  { id: "observation-duct", x: 420, y: 700, exitId: "cargo-duct" },
-  { id: "comms-duct", x: 1360, y: 840, exitId: "engine-duct" },
-  { id: "engine-duct", x: 1950, y: 1160, exitId: "comms-duct" },
-  { id: "reactor-duct", x: 2260, y: 580, exitId: "maintenance-duct" },
-  { id: "maintenance-duct", x: 900, y: 1150, exitId: "reactor-duct" }
+  { id: "cargo-duct", label: "货运出口", x: 650, y: 1360, networkId: "aqua" },
+  { id: "observation-duct", label: "观察出口", x: 420, y: 700, networkId: "aqua" },
+  { id: "south-duct", label: "南环出口", x: 680, y: 1770, networkId: "aqua" },
+  { id: "comms-duct", label: "通讯出口", x: 1360, y: 840, networkId: "pulse" },
+  { id: "engine-duct", label: "引擎出口", x: 1950, y: 1160, networkId: "pulse" },
+  { id: "science-duct", label: "阵列出口", x: 2680, y: 580, networkId: "pulse" },
+  { id: "reactor-duct", label: "反应堆出口", x: 2260, y: 580, networkId: "ion" },
+  { id: "maintenance-duct", label: "维修出口", x: 900, y: 1150, networkId: "ion" },
+  { id: "archive-duct", label: "档案出口", x: 2800, y: 1460, networkId: "ion" }
 ];
 
-const LADDERS: Ladder[] = [
-  { id: "cargo-lower", x: 330, y: 1200, exitId: "cargo-upper" },
-  { id: "cargo-upper", x: 720, y: 730, exitId: "cargo-lower" },
-  { id: "control-lower", x: 1210, y: 1020, exitId: "control-upper" },
-  { id: "control-upper", x: 1210, y: 630, exitId: "control-lower" },
-  { id: "reactor-lower", x: 1800, y: 870, exitId: "reactor-upper" },
-  { id: "reactor-upper", x: 1800, y: 590, exitId: "reactor-lower" }
-];
-
-const ZIPLINES: Zipline[] = [
-  { id: "observation-slide", x: 700, y: 720, exit: { x: 1130, y: 690 } },
-  { id: "engine-slide", x: 1670, y: 900, exit: { x: 2020, y: 1080 } }
+const ZIPLINES: ZiplinePair[] = [
+  { id: "cargo-pulse", a: { x: 320, y: 1150 }, b: { x: 650, y: 1360 } },
+  { id: "observation-pulse", a: { x: 720, y: 720 }, b: { x: 1130, y: 690 } },
+  { id: "engine-pulse", a: { x: 1670, y: 900 }, b: { x: 2020, y: 1080 } }
 ];
 
 export class BootScene extends Phaser.Scene {
@@ -126,8 +139,17 @@ export class BootScene extends Phaser.Scene {
   private appearance: Appearance = { ...DEFAULT_APPEARANCE };
   private terminals: Terminal[] = [
     { id: "cargo", label: "货舱继电器", x: 500, y: 1160, done: false },
+    { id: "observation", label: "观察镜阵", x: 430, y: 760, done: false },
+    { id: "upper-west", label: "医护净化器", x: 720, y: 650, done: false },
+    { id: "upper-mid", label: "导航陀螺仪", x: 1100, y: 660, done: false },
+    { id: "maintenance", label: "维修矩阵", x: 940, y: 1160, done: false },
+    { id: "central-south", label: "核心分流器", x: 1260, y: 980, done: false },
     { id: "comms", label: "通讯阵列", x: 1470, y: 680, done: false },
-    { id: "reactor", label: "反应堆调相器", x: 2180, y: 390, done: false }
+    { id: "reactor", label: "反应堆调相器", x: 2180, y: 390, done: false },
+    { id: "engine", label: "引擎矢量器", x: 1980, y: 1110, done: false },
+    { id: "science", label: "星图校准台", x: 2680, y: 520, done: false },
+    { id: "docking", label: "停泊引导器", x: 3180, y: 1220, done: false },
+    { id: "archive", label: "冷库索引台", x: 2790, y: 1510, done: false }
   ];
   private crewBots: BotAgent[] = [
     {
@@ -173,6 +195,9 @@ export class BootScene extends Phaser.Scene {
   private playerVentUses = MAX_VENT_USES;
   private deathMarker?: Point;
   private transit?: Transit;
+  private activeVentId?: string;
+  private ventHideOrigin?: Point;
+  private ventHiddenUntil?: number;
   private readonly onAppearance = (event: Event): void => {
     const customEvent = event as CustomEvent<Partial<Appearance>>;
     this.appearance = { ...this.appearance, ...customEvent.detail };
@@ -190,10 +215,15 @@ export class BootScene extends Phaser.Scene {
     this.publishStatus("猎手信号已激活：BOT-棱镜正在开始搜索");
     window.dispatchEvent(new Event("space-hideout:round-started"));
   };
+  private readonly onVentChoice = (event: Event): void => {
+    const targetId = (event as CustomEvent<{ targetId?: string }>).detail?.targetId;
+    if (!targetId) return;
+    this.resolveVentChoice(targetId);
+  };
   private readonly onOverview = (): void => {
     const camera = this.cameras.main;
-    camera.zoomTo(0.42, 380);
-    this.time.delayedCall(1700, () => camera.zoomTo(1.05, 480));
+    camera.zoomTo(0.29, 380);
+    this.time.delayedCall(2400, () => camera.zoomTo(1.05, 480));
   };
 
   constructor() {
@@ -230,16 +260,26 @@ export class BootScene extends Phaser.Scene {
     window.addEventListener("space-hideout:appearance", this.onAppearance);
     window.addEventListener("space-hideout:reset", this.onReset);
     window.addEventListener("space-hideout:start", this.onStart);
+    window.addEventListener("space-hideout:vent-choice", this.onVentChoice);
     window.addEventListener("space-hideout:overview", this.onOverview);
+    document.body.dataset.sceneReady = "true";
+    window.dispatchEvent(new Event("space-hideout:scene-ready"));
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       window.removeEventListener("space-hideout:appearance", this.onAppearance);
       window.removeEventListener("space-hideout:reset", this.onReset);
       window.removeEventListener("space-hideout:start", this.onStart);
+      window.removeEventListener("space-hideout:vent-choice", this.onVentChoice);
       window.removeEventListener("space-hideout:overview", this.onOverview);
+      delete document.body.dataset.sceneReady;
     });
 
     this.publishStatus("准备舱待命：确认猎手信号后开始躲藏");
     this.publishTelemetry(0, 0);
+    window.dispatchEvent(
+      new CustomEvent("space-hideout:task", {
+        detail: { completed: 0, total: this.terminals.length }
+      })
+    );
   }
 
   update(time: number, delta: number): void {
@@ -248,13 +288,15 @@ export class BootScene extends Phaser.Scene {
     }
 
     if (this.roundStarted && !this.roundOver) {
-      if (this.transit) this.updateTransit(time);
+      if (this.ventHiddenUntil) this.updateVentHide(time);
+      else if (this.transit) this.updateTransit(time);
       else this.updatePlayer(delta);
     }
     if (
       this.roundStarted &&
       !this.roundOver &&
       !this.transit &&
+      !this.ventHiddenUntil &&
       this.keys &&
       Phaser.Input.Keyboard.JustDown(this.keys.interact)
     ) {
@@ -274,7 +316,6 @@ export class BootScene extends Phaser.Scene {
     this.drawFacilityMotion(this.dynamicGraphics, time);
     this.drawTerminals(this.dynamicGraphics, time);
     this.drawVents(this.dynamicGraphics, time);
-    this.drawLadders(this.dynamicGraphics, time);
     this.drawZiplines(this.dynamicGraphics, time);
     this.drawBots(this.dynamicGraphics, positions, time);
     this.drawPlayer(this.dynamicGraphics, time);
@@ -282,15 +323,18 @@ export class BootScene extends Phaser.Scene {
     this.positionLabels(positions);
 
     const hunter = positions.hunter;
-    const danger = Phaser.Math.Clamp(
-      1 - Phaser.Math.Distance.Between(this.player.x, this.player.y, hunter.x, hunter.y) / 680,
-      0,
-      1
-    );
+    const danger = this.ventHiddenUntil
+      ? 0
+      : Phaser.Math.Clamp(
+          1 - Phaser.Math.Distance.Between(this.player.x, this.player.y, hunter.x, hunter.y) / 780,
+          0,
+          1
+        );
     if (
       this.roundStarted &&
       !this.roundOver &&
       !this.transit &&
+      !this.ventHiddenUntil &&
       Phaser.Math.Distance.Between(this.player.x, this.player.y, hunter.x, hunter.y) <=
         CAPTURE_DISTANCE
     ) {
@@ -329,6 +373,11 @@ export class BootScene extends Phaser.Scene {
     this.drawRoom(g, 1870, 160, 520, 530, "反应堆穹舱", 0xf7c65b);
     this.drawRoom(g, 1850, 980, 520, 320, "引擎回路", 0xf0647c);
     this.drawRoom(g, 210, 260, 560, 490, "观察与医疗区", 0x8be16c);
+    this.drawRoom(g, 2450, 260, 620, 470, "远端星图阵列", 0x6c7dff);
+    this.drawRoom(g, 2970, 1030, 310, 420, "停泊闸门", 0xf7c65b);
+    this.drawRoom(g, 2460, 1370, 620, 420, "冷藏档案库", 0x8be16c);
+    this.drawRoom(g, 1100, 1540, 1120, 370, "下层循环道", 0x35d9c7);
+    this.drawRoom(g, 170, 1510, 720, 420, "外环货运带", 0xf0647c);
 
     g.lineStyle(34, 0x173d3f, 0.96);
     g.lineBetween(700, 1200, 990, 1180);
@@ -336,12 +385,26 @@ export class BootScene extends Phaser.Scene {
     g.lineBetween(1730, 690, 1900, 470);
     g.lineBetween(1700, 900, 1990, 1110);
     g.lineBetween(760, 620, 1240, 660);
+    g.lineBetween(2390, 490, 2680, 520);
+    g.lineBetween(2850, 690, 3020, 940);
+    g.lineBetween(2380, 1180, 3120, 1220);
+    g.lineBetween(2800, 1450, 2260, 1680);
+    g.lineBetween(2200, 1740, 1550, 1740);
+    g.lineBetween(1550, 1740, 680, 1780);
+    g.lineBetween(680, 1780, 500, 1400);
     g.lineStyle(3, 0x35d9c7, 0.33);
     g.lineBetween(700, 1200, 990, 1180);
     g.lineBetween(1200, 1030, 1470, 900);
     g.lineBetween(1730, 690, 1900, 470);
     g.lineBetween(1700, 900, 1990, 1110);
     g.lineBetween(760, 620, 1240, 660);
+    g.lineBetween(2390, 490, 2680, 520);
+    g.lineBetween(2850, 690, 3020, 940);
+    g.lineBetween(2380, 1180, 3120, 1220);
+    g.lineBetween(2800, 1450, 2260, 1680);
+    g.lineBetween(2200, 1740, 1550, 1740);
+    g.lineBetween(1550, 1740, 680, 1780);
+    g.lineBetween(680, 1780, 500, 1400);
 
     for (const wall of WALLS) {
       g.fillStyle(0x122f33, 1);
@@ -353,7 +416,7 @@ export class BootScene extends Phaser.Scene {
     }
 
     this.add
-      .text(205, 1325, "SPAWN BAY", {
+      .text(205, 1325, "SPAWN BAY / OUTER DECK", {
         color: "#9fc6c1",
         fontFamily: "Courier New, monospace",
         fontSize: "14px"
@@ -405,39 +468,31 @@ export class BootScene extends Phaser.Scene {
     directionY /= length;
     this.facing = Math.atan2(directionY, directionX);
     const speed = this.keys.sprint.isDown ? 285 : 178;
-    const step = (speed * delta) / 1000;
-    const nextX = this.player.x + directionX * step;
-    const nextY = this.player.y + directionY * step;
-
-    if (!this.isBlocked(nextX, this.player.y)) this.player.x = nextX;
-    if (!this.isBlocked(this.player.x, nextY)) this.player.y = nextY;
+    const step = (speed * Math.min(delta, 70)) / 1000;
+    this.player = moveCircleWithCollision(
+      this.player,
+      { x: directionX * step, y: directionY * step },
+      PLAYER_RADIUS,
+      WALLS,
+      { minX: 115, minY: 115, maxX: MAP_WIDTH - 115, maxY: MAP_HEIGHT - 115 }
+    );
     this.playerAnchor.setPosition(this.player.x, this.player.y);
   }
 
   private isBlocked(x: number, y: number, radius = PLAYER_RADIUS): boolean {
-    if (
-      x < 115 + radius ||
-      y < 115 + radius ||
-      x > MAP_WIDTH - 115 - radius ||
-      y > MAP_HEIGHT - 115 - radius
-    ) {
-      return true;
-    }
-    return WALLS.some(
-      (wall) =>
-        x + radius > wall.x &&
-        x - radius < wall.x + wall.width &&
-        y + radius > wall.y &&
-        y - radius < wall.y + wall.height
-    );
+    return isCircleBlocked({ x, y }, radius, WALLS, {
+      minX: 115,
+      minY: 115,
+      maxX: MAP_WIDTH - 115,
+      maxY: MAP_HEIGHT - 115
+    });
   }
 
   private tryInteract(): void {
     if (this.tryRepairTerminal()) return;
     if (this.tryUseVent()) return;
     if (this.tryUseZipline()) return;
-    if (this.tryUseLadder()) return;
-    this.publishStatus("附近没有终端、跃迁管、梯子或滑索");
+    this.publishStatus("附近没有终端、跃迁管或双向滑索");
   }
 
   private tryRepairTerminal(): boolean {
@@ -467,7 +522,9 @@ export class BootScene extends Phaser.Scene {
     this.publishStatus(
       `${operator}修复了${terminal.label}，猎手搜索时间减少 ${Math.ceil(reduction / 1000)} 秒`
     );
-    window.dispatchEvent(new CustomEvent("space-hideout:task", { detail: { completed } }));
+    window.dispatchEvent(
+      new CustomEvent("space-hideout:task", { detail: { completed, total: this.terminals.length } })
+    );
   }
 
   private tryUseVent(): boolean {
@@ -479,42 +536,81 @@ export class BootScene extends Phaser.Scene {
       this.publishStatus("跃迁管电量已耗尽");
       return true;
     }
-    const exit = VENTS.find((item) => item.id === vent.exitId);
-    if (!exit) return true;
-    this.player = { x: exit.x, y: exit.y };
-    this.playerAnchor?.setPosition(this.player.x, this.player.y);
-    this.playerVentUses -= 1;
+    const exits = VENTS.filter((item) => item.networkId === vent.networkId && item.id !== vent.id);
+    if (exits.length === 0) return true;
+    this.activeVentId = vent.id;
     window.dispatchEvent(
-      new CustomEvent("space-hideout:vent", { detail: { uses: this.playerVentUses } })
+      new CustomEvent("space-hideout:vent-select", {
+        detail: {
+          exits: exits.map((exit) => ({ id: exit.id, label: exit.label })),
+          hideSeconds: 10
+        }
+      })
     );
-    this.publishStatus("你通过跃迁管甩开了追踪");
-    return true;
-  }
-
-  private tryUseLadder(): boolean {
-    const ladder = LADDERS.find(
-      (item) => Phaser.Math.Distance.Between(this.player.x, this.player.y, item.x, item.y) < 72
-    );
-    if (!ladder) return false;
-    const exit = LADDERS.find((item) => item.id === ladder.exitId);
-    if (!exit) return true;
-    this.startTransit(
-      "ladder",
-      { x: ladder.x, y: ladder.y },
-      { x: exit.x, y: exit.y },
-      1_150,
-      "攀爬升降梯"
-    );
+    this.publishStatus("跃迁管已接通：选择出口，或在管内躲 10 秒");
     return true;
   }
 
   private tryUseZipline(): boolean {
-    const zipline = ZIPLINES.find(
-      (item) => Phaser.Math.Distance.Between(this.player.x, this.player.y, item.x, item.y) < 72
-    );
+    const zipline = ZIPLINES.find((item) => {
+      const nearA =
+        Phaser.Math.Distance.Between(this.player.x, this.player.y, item.a.x, item.a.y) < 72;
+      const nearB =
+        Phaser.Math.Distance.Between(this.player.x, this.player.y, item.b.x, item.b.y) < 72;
+      return nearA || nearB;
+    });
     if (!zipline) return false;
-    this.startTransit("zipline", { x: zipline.x, y: zipline.y }, zipline.exit, 780, "滑索加速中");
+    const nearA =
+      Phaser.Math.Distance.Between(this.player.x, this.player.y, zipline.a.x, zipline.a.y) < 72;
+    const from = nearA ? zipline.a : zipline.b;
+    const to = nearA ? zipline.b : zipline.a;
+    this.startTransit("zipline", from, to, 780, "双向滑索加速中");
     return true;
+  }
+
+  private resolveVentChoice(targetId: string): void {
+    const source = this.activeVentId
+      ? VENTS.find((item) => item.id === this.activeVentId)
+      : undefined;
+    if (!source || this.playerVentUses <= 0 || this.roundOver || !this.roundStarted) return;
+
+    if (targetId === "hide") {
+      this.playerVentUses -= 1;
+      this.ventHideOrigin = { x: source.x, y: source.y };
+      this.ventHiddenUntil = this.time.now + 10_000;
+      this.activeVentId = undefined;
+      window.dispatchEvent(
+        new CustomEvent("space-hideout:vent", { detail: { uses: this.playerVentUses } })
+      );
+      window.dispatchEvent(new Event("space-hideout:vent-close"));
+      this.publishStatus("已藏入跃迁管，10 秒后自动弹出");
+      return;
+    }
+
+    const target = VENTS.find(
+      (item) => item.id === targetId && item.networkId === source.networkId
+    );
+    if (!target || target.id === source.id) return;
+    this.playerVentUses -= 1;
+    this.player = { x: target.x, y: target.y };
+    this.playerAnchor?.setPosition(this.player.x, this.player.y);
+    this.activeVentId = undefined;
+    window.dispatchEvent(
+      new CustomEvent("space-hideout:vent", { detail: { uses: this.playerVentUses } })
+    );
+    window.dispatchEvent(new Event("space-hideout:vent-close"));
+    this.publishStatus(`你从${target.label}甩开了追踪`);
+  }
+
+  private updateVentHide(time: number): void {
+    if (!this.ventHiddenUntil || time < this.ventHiddenUntil) return;
+    if (this.ventHideOrigin) {
+      this.player = { ...this.ventHideOrigin };
+      this.playerAnchor?.setPosition(this.player.x, this.player.y);
+    }
+    this.ventHideOrigin = undefined;
+    this.ventHiddenUntil = undefined;
+    this.publishStatus("跃迁管超时，已自动弹出");
   }
 
   private startTransit(
@@ -534,7 +630,7 @@ export class BootScene extends Phaser.Scene {
     const transit = this.transit;
     if (!transit) return;
     const progress = Phaser.Math.Clamp((time - transit.startedAt) / transit.durationMs, 0, 1);
-    const eased = transit.kind === "zipline" ? 1 - (1 - progress) * (1 - progress) : progress;
+    const eased = 1 - (1 - progress) * (1 - progress);
     this.player = {
       x: Phaser.Math.Linear(transit.from.x, transit.to.x, eased),
       y: Phaser.Math.Linear(transit.from.y, transit.to.y, eased)
@@ -542,7 +638,7 @@ export class BootScene extends Phaser.Scene {
     this.playerAnchor?.setPosition(this.player.x, this.player.y);
     if (progress >= 1) {
       this.transit = undefined;
-      this.publishStatus(transit.kind === "zipline" ? "滑索落地，继续躲藏" : "已到达另一层");
+      this.publishStatus("滑索落地，继续躲藏");
     }
   }
 
@@ -733,7 +829,23 @@ export class BootScene extends Phaser.Scene {
     const vent = VENTS.find(
       (item) => Phaser.Math.Distance.Between(bot.position.x, bot.position.y, item.x, item.y) < 92
     );
-    const exit = vent ? VENTS.find((item) => item.id === vent.exitId) : undefined;
+    const exit = vent
+      ? VENTS.filter((item) => item.networkId === vent.networkId && item.id !== vent.id).sort(
+          (first, second) =>
+            Phaser.Math.Distance.Between(
+              second.x,
+              second.y,
+              this.hunterBot.position.x,
+              this.hunterBot.position.y
+            ) -
+            Phaser.Math.Distance.Between(
+              first.x,
+              first.y,
+              this.hunterBot.position.x,
+              this.hunterBot.position.y
+            )
+        )[0]
+      : undefined;
     if (!exit) return false;
     bot.position = { x: exit.x, y: exit.y };
     bot.ventUses -= 1;
@@ -810,48 +922,18 @@ export class BootScene extends Phaser.Scene {
     }
   }
 
-  private drawLadders(g: Phaser.GameObjects.Graphics, time: number): void {
-    for (const ladder of LADDERS) {
-      const pulse = 0.5 + Math.sin(time / 260 + ladder.y) * 0.18;
-      g.fillStyle(0x17282b, 0.94);
-      g.fillRoundedRect(ladder.x - 16, ladder.y - 25, 32, 50, 6);
-      g.lineStyle(3, 0xf7c65b, 0.86);
-      g.lineBetween(ladder.x - 10, ladder.y - 19, ladder.x - 10, ladder.y + 19);
-      g.lineBetween(ladder.x + 10, ladder.y - 19, ladder.x + 10, ladder.y + 19);
-      g.lineStyle(2, 0xf7c65b, pulse);
-      for (let rung = -12; rung <= 12; rung += 8) {
-        g.lineBetween(ladder.x - 10, ladder.y + rung, ladder.x + 10, ladder.y + rung);
-      }
-      g.fillStyle(0xf7c65b, pulse);
-      g.fillTriangle(
-        ladder.x,
-        ladder.y - 38,
-        ladder.x - 6,
-        ladder.y - 28,
-        ladder.x + 6,
-        ladder.y - 28
-      );
-    }
-  }
-
   private drawZiplines(g: Phaser.GameObjects.Graphics, time: number): void {
     for (const zipline of ZIPLINES) {
       g.lineStyle(3, 0xf0647c, 0.72);
-      g.lineBetween(zipline.x, zipline.y, zipline.exit.x, zipline.exit.y);
-      g.fillStyle(0x251e24, 1);
-      g.fillCircle(zipline.x, zipline.y, 18);
-      g.lineStyle(3, 0xf0647c, 0.9);
-      g.strokeCircle(zipline.x, zipline.y, 18 + Math.sin(time / 150) * 2);
-      const angle = Phaser.Math.Angle.Between(zipline.x, zipline.y, zipline.exit.x, zipline.exit.y);
-      g.fillStyle(0xf7c65b, 0.9);
-      g.fillTriangle(
-        zipline.x + Math.cos(angle) * 26,
-        zipline.y + Math.sin(angle) * 26,
-        zipline.x + Math.cos(angle + 2.5) * 14,
-        zipline.y + Math.sin(angle + 2.5) * 14,
-        zipline.x + Math.cos(angle - 2.5) * 14,
-        zipline.y + Math.sin(angle - 2.5) * 14
-      );
+      g.lineBetween(zipline.a.x, zipline.a.y, zipline.b.x, zipline.b.y);
+      for (const endpoint of [zipline.a, zipline.b]) {
+        g.fillStyle(0x251e24, 1);
+        g.fillCircle(endpoint.x, endpoint.y, 18);
+        g.lineStyle(3, 0xf0647c, 0.9);
+        g.strokeCircle(endpoint.x, endpoint.y, 18 + Math.sin(time / 150 + endpoint.x) * 2);
+        g.fillStyle(0xf7c65b, 0.9);
+        g.fillCircle(endpoint.x, endpoint.y, 6);
+      }
     }
   }
 
@@ -882,7 +964,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   private drawPlayer(g: Phaser.GameObjects.Graphics, time: number): void {
-    if (this.deathMarker) return;
+    if (this.deathMarker || this.ventHiddenUntil) return;
     const spread = Phaser.Math.DegToRad(28);
     const range = 235;
     g.fillStyle(0xeffbf8, 0.1);
@@ -1066,6 +1148,9 @@ export class BootScene extends Phaser.Scene {
     this.announcedFinalHide = false;
     this.deathMarker = undefined;
     this.transit = undefined;
+    this.activeVentId = undefined;
+    this.ventHideOrigin = undefined;
+    this.ventHiddenUntil = undefined;
     this.playerVentUses = MAX_VENT_USES;
     this.crewBots = [
       {
@@ -1101,10 +1186,15 @@ export class BootScene extends Phaser.Scene {
     this.terminals.forEach((terminal) => {
       terminal.done = false;
     });
-    window.dispatchEvent(new CustomEvent("space-hideout:task", { detail: { completed: 0 } }));
+    window.dispatchEvent(
+      new CustomEvent("space-hideout:task", {
+        detail: { completed: 0, total: this.terminals.length }
+      })
+    );
     window.dispatchEvent(
       new CustomEvent("space-hideout:vent", { detail: { uses: this.playerVentUses } })
     );
+    window.dispatchEvent(new Event("space-hideout:vent-close"));
     this.publishStatus("已回到出生舱，新的躲藏回合开始");
   }
 

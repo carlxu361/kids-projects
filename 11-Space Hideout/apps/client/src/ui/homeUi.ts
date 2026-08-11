@@ -23,6 +23,8 @@ export function bindHomeUi(network: ClientNetwork): void {
   const startRoundButton = document.querySelector<HTMLButtonElement>("#start-round-button");
   const matchButton = document.querySelector<HTMLButtonElement>("#match-button");
   const launcherForm = document.querySelector<HTMLFormElement>("#launcher-form");
+  let sceneReady = document.body.dataset.sceneReady === "true";
+  let startQueued = false;
 
   bindPlaytestTelemetry();
   bindAppearanceControls();
@@ -58,7 +60,17 @@ export function bindHomeUi(network: ClientNetwork): void {
     window.dispatchEvent(new Event("space-hideout:overview"));
   });
   startRoundButton?.addEventListener("click", () => {
-    window.dispatchEvent(new Event("space-hideout:start"));
+    if (sceneReady) {
+      window.dispatchEvent(new Event("space-hideout:start"));
+      return;
+    }
+    startQueued = true;
+    setText("#game-status", "正在唤醒飞船控制系统");
+  });
+  window.addEventListener("space-hideout:scene-ready", () => {
+    sceneReady = true;
+    if (startQueued) window.dispatchEvent(new Event("space-hideout:start"));
+    startQueued = false;
   });
   window.addEventListener("space-hideout:round-started", () => {
     document.querySelector<HTMLElement>("#mission-briefing")?.setAttribute("hidden", "");
@@ -66,6 +78,7 @@ export function bindHomeUi(network: ClientNetwork): void {
   window.addEventListener("space-hideout:round-reset", () => {
     document.querySelector<HTMLElement>("#mission-briefing")?.removeAttribute("hidden");
   });
+  bindVentSelector();
 }
 
 async function refreshHealth(network: ClientNetwork): Promise<void> {
@@ -105,8 +118,8 @@ function bindPlaytestTelemetry(): void {
   });
 
   window.addEventListener("space-hideout:task", (event) => {
-    const detail = (event as CustomEvent<{ completed: number }>).detail;
-    if (detail) setText("#task-status", `${detail.completed} / 3`);
+    const detail = (event as CustomEvent<{ completed: number; total?: number }>).detail;
+    if (detail) setText("#task-status", `${detail.completed} / ${detail.total ?? 12}`);
   });
 
   window.addEventListener("space-hideout:vent", (event) => {
@@ -118,6 +131,42 @@ function bindPlaytestTelemetry(): void {
     const detail = (event as CustomEvent<{ message: string }>).detail;
     if (detail) setText("#game-status", detail.message);
   });
+}
+
+function bindVentSelector(): void {
+  const selector = document.querySelector<HTMLElement>("#vent-selector");
+  const options = document.querySelector<HTMLElement>("#vent-options");
+  if (!selector || !options) return;
+
+  window.addEventListener("space-hideout:vent-select", (event) => {
+    const detail = (
+      event as CustomEvent<{ exits: Array<{ id: string; label: string }>; hideSeconds: number }>
+    ).detail;
+    if (!detail) return;
+    options.replaceChildren();
+    for (const exit of detail.exits) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = exit.label;
+      button.addEventListener("click", () => chooseVentExit(exit.id));
+      options.append(button);
+    }
+    const hideButton = document.createElement("button");
+    hideButton.type = "button";
+    hideButton.className = "vent-selector__hide";
+    hideButton.textContent = `藏入管道（${detail.hideSeconds}秒）`;
+    hideButton.addEventListener("click", () => chooseVentExit("hide"));
+    options.append(hideButton);
+    selector.removeAttribute("hidden");
+  });
+
+  window.addEventListener("space-hideout:vent-close", () => {
+    selector.setAttribute("hidden", "");
+  });
+}
+
+function chooseVentExit(targetId: string): void {
+  window.dispatchEvent(new CustomEvent("space-hideout:vent-choice", { detail: { targetId } }));
 }
 
 function formatRoundTime(seconds: number): string {
