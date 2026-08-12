@@ -75,12 +75,64 @@
       --muted: #dbcce6;
     }
 
+    body[data-theme="asara"] {
+      --bg-a: #6b5831;
+      --bg-b: #111814;
+      --panel: rgba(18, 24, 18, .9);
+      --gold: #ff9f2d;
+      --muted: #d8d0b6;
+      --line: rgba(255, 159, 45, .28);
+      --card: #e6dfc9;
+      --card-line: #aa7d38;
+    }
+
+    body[data-theme="asara"]::before {
+      opacity: .23;
+      background-image:
+        linear-gradient(rgba(255,159,45,.2) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,159,45,.15) 1px, transparent 1px),
+        radial-gradient(circle at 22% 22%, transparent 0 42px, rgba(255,159,45,.35) 43px, transparent 45px),
+        repeating-linear-gradient(135deg, transparent 0 18px, rgba(0,0,0,.28) 19px, transparent 20px 38px);
+      background-size: 52px 52px, 52px 52px, 180px 180px, 38px 38px;
+      mix-blend-mode: screen;
+    }
+
+    body[data-theme="havoc"] {
+      --bg-a: #20252b;
+      --bg-b: #05070a;
+      --panel: rgba(8, 12, 17, .92);
+      --gold: #d7e4f5;
+      --muted: #aeb9c6;
+      --line: rgba(170, 205, 255, .28);
+      --card: #dce2ea;
+      --card-line: #6d7784;
+    }
+
+    body[data-theme="havoc"]::before {
+      opacity: .24;
+      background-image:
+        linear-gradient(rgba(169,203,255,.13) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(169,203,255,.1) 1px, transparent 1px),
+        radial-gradient(circle at 76% 18%, transparent 0 50px, rgba(180,210,255,.22) 51px, transparent 53px),
+        repeating-linear-gradient(115deg, transparent 0 20px, rgba(255,255,255,.13) 21px, transparent 22px 42px);
+      background-size: 46px 46px, 46px 46px, 190px 190px, 42px 42px;
+      mix-blend-mode: screen;
+    }
+
     body[data-back="blue"] { --back-a: #2469c9; --back-b: #102d63; }
     body[data-back="green"] { --back-a: #1f8b5d; --back-b: #0e422e; }
     body[data-back="gold"] { --back-a: #d8a43d; --back-b: #6d4116; }
+    body[data-back="asara"] { --back-a: #a76722; --back-b: #141b16; }
+    body[data-back="havoc"] { --back-a: #8f9aa8; --back-b: #05070a; }
 
-    body[data-effects="on"] .card {
+    body[data-effects="on"] .card.deal-in {
       animation: deal .22s cubic-bezier(.2,.8,.2,1);
+    }
+
+    body[data-effects="on"] .card.flip-in {
+      animation: flipCard .32s cubic-bezier(.2,.8,.2,1);
+      transform-origin: center;
+      backface-visibility: hidden;
     }
 
     main {
@@ -114,41 +166,146 @@
     }
 
     .customizer {
+      position: relative;
+      justify-self: end;
+      z-index: 30;
+      width: max-content;
+    }
+
+    .customize-toggle {
+      width: auto;
+      min-height: 40px;
+      padding: 8px 12px;
+      border-color: rgba(255,255,255,.13);
+      border-radius: 6px;
+      color: var(--ink);
+      background: rgba(104, 86, 68, .86);
+      box-shadow: 0 12px 28px rgba(0,0,0,.28);
+    }
+
+    .customizer-panel {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      width: min(390px, calc(100vw - 24px));
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      padding: 14px;
-      background: rgba(0,0,0,.22);
-      box-shadow: 0 18px 46px var(--shadow);
+      padding: 12px;
+      background: rgba(5, 15, 14, .96);
+      box-shadow: 0 22px 52px rgba(0,0,0,.45);
+    }
+
+    .customizer-panel[hidden] {
+      display: none;
     }
 
     .customizer h2 {
-      margin: 0 0 12px;
-      font-size: 18px;
+      margin: 0 0 9px;
+      font-size: 17px;
       color: var(--ink);
     }
 
     .control-row {
       display: grid;
-      grid-template-columns: 72px 1fr;
-      gap: 8px;
+      grid-template-columns: 66px 1fr;
+      gap: 6px;
       align-items: center;
-      margin-top: 9px;
+      margin-top: 6px;
     }
 
     .control-row span {
       color: var(--muted);
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 800;
     }
 
     .seg {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 5px;
+      gap: 4px;
     }
 
     .seg[data-options="3"] { grid-template-columns: repeat(3, 1fr); }
     .seg[data-options="2"] { grid-template-columns: repeat(2, 1fr); }
+    .seg[data-options="5"] { grid-template-columns: repeat(3, 1fr); }
+
+    .customizer button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      min-height: 30px;
+      padding: 4px 6px;
+      font-size: 13px;
+      line-height: 1.12;
+    }
+
+    .style-preview {
+      width: 18px;
+      height: 22px;
+      flex: 0 0 auto;
+      border: 1px solid rgba(255,255,255,.38);
+      border-radius: 6px 6px 3px 3px;
+      background: #123f31;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.28);
+    }
+
+    .style-preview.suit {
+      display: grid;
+      place-items: center;
+      color: #f3ca62;
+      font-size: 11px;
+      font-family: Georgia, serif;
+      font-weight: 950;
+    }
+
+    .style-preview.joker {
+      position: relative;
+      border-radius: 9px 9px 3px 3px;
+      background: linear-gradient(180deg, #2a1b10, #080605);
+    }
+
+    .style-preview.joker::before {
+      content: "J";
+      position: absolute;
+      inset: 4px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #12100a;
+      background: linear-gradient(135deg, #ffe18a, #b87b20);
+      font-size: 9px;
+      font-weight: 950;
+    }
+
+    .style-preview.classic { background: linear-gradient(145deg, #fff8e7, #c73333); }
+    .style-preview.asara { background: linear-gradient(180deg, #4d120e, #100706); border-color: #d33d2e; }
+    .style-preview.asara::before { background: linear-gradient(135deg, #ffb08a, #c7271e); color: #240804; }
+    .style-preview.havoc { background: linear-gradient(180deg, #1f2630, #05070a); border-color: #aeb8c8; }
+    .style-preview.havoc::before { background: linear-gradient(135deg, #ffe7a6, #a57926); }
+    .style-preview.felt { background: linear-gradient(135deg, #0d5a43, #062a22); }
+    .style-preview.night { background: linear-gradient(135deg, #19233d, #080d18); }
+    .style-preview.wood { background: linear-gradient(135deg, #794726, #28140b); }
+    .style-preview.violet { background: linear-gradient(135deg, #3d315c, #171126); }
+    .style-preview.red { background: repeating-linear-gradient(45deg, #b8273d 0 4px, #681927 4px 8px); }
+    .style-preview.blue { background: repeating-linear-gradient(45deg, #2469c9 0 4px, #102d63 4px 8px); }
+    .style-preview.green { background: repeating-linear-gradient(45deg, #1f8b5d 0 4px, #0e422e 4px 8px); }
+    .style-preview.gold { background: repeating-linear-gradient(45deg, #d8a43d 0 4px, #6d4116 4px 8px); }
+    .style-preview.jumbo { font-size: 13px; background: #fffdf7; color: #171717; }
+    .style-preview.minimal { background: linear-gradient(180deg, #f3eee3, #d9cdb8); color: #20252c; }
+
+    .customizer .preset {
+      min-height: 34px;
+      white-space: nowrap;
+    }
+
+    .customizer .customize-toggle {
+      width: auto;
+      min-height: 40px;
+      padding: 8px 12px;
+      font-size: 14px;
+      line-height: 1;
+    }
 
     .choice, .tab, button {
       min-height: 40px;
@@ -385,6 +542,122 @@
       line-height: 1;
     }
 
+    .card.joker .joker-corner span:first-child {
+      font-size: 9px;
+      letter-spacing: 0;
+    }
+
+    .card.joker .joker-corner span:last-child {
+      font-size: 13px;
+      letter-spacing: 0;
+    }
+
+    .card.joker-big:not(.back) {
+      color: #7a520d;
+      border-color: #d7ab45;
+      background:
+        radial-gradient(ellipse at 50% 34%, rgba(255,225,145,.24) 0 32%, transparent 33%),
+        repeating-linear-gradient(135deg, rgba(255,215,110,.18) 0 2px, transparent 2px 10px),
+        linear-gradient(180deg, #fff3c8, #d6a83c 58%, #5c3a09);
+    }
+
+    .card.joker-small:not(.back) {
+      color: #3f4850;
+      border-color: #b8c2cb;
+      background:
+        radial-gradient(ellipse at 50% 34%, rgba(245,248,252,.28) 0 32%, transparent 33%),
+        repeating-linear-gradient(135deg, rgba(235,240,248,.2) 0 2px, transparent 2px 10px),
+        linear-gradient(180deg, #f1f4f8, #aeb7c1 58%, #3e454c);
+    }
+
+    .asara-portrait {
+      position: absolute;
+      inset: 19px 13px 18px;
+      display: none;
+      border: 2px solid rgba(255, 185, 83, .72);
+      border-radius: 44px 44px 9px 9px;
+      background:
+        radial-gradient(circle at 50% 27%, rgba(245,245,235,.92) 0 12%, transparent 13%),
+        radial-gradient(circle at 49% 38%, rgba(28,31,29,.9) 0 15%, transparent 16%),
+        linear-gradient(108deg, transparent 0 38%, rgba(248,248,238,.72) 39% 47%, transparent 48%),
+        linear-gradient(68deg, transparent 0 47%, rgba(18,22,20,.95) 48% 57%, transparent 58%),
+        radial-gradient(circle at 50% 42%, transparent 0 31%, rgba(255,168,52,.58) 32%, transparent 34%),
+        repeating-linear-gradient(90deg, rgba(255,185,83,.17) 0 2px, transparent 2px 8px),
+        linear-gradient(180deg, #292d28, #0d1210);
+      box-shadow: inset 0 0 0 4px rgba(12,15,13,.62), inset 0 0 18px rgba(255,160,48,.24);
+      overflow: hidden;
+    }
+
+    .asara-portrait::before {
+      content: "";
+      position: absolute;
+      width: 38%;
+      height: 46%;
+      left: 31%;
+      top: 27%;
+      border-radius: 48% 48% 14% 14%;
+      background:
+        radial-gradient(circle at 50% 9%, #f4f2df 0 16%, transparent 17%),
+        linear-gradient(105deg, transparent 0 40%, #e8e6d7 41% 52%, transparent 53%),
+        linear-gradient(90deg, transparent 0 18%, #101412 19% 82%, transparent 83%);
+      filter: drop-shadow(0 2px 2px rgba(0,0,0,.55));
+      transform: rotate(-7deg);
+    }
+
+    .asara-portrait::after {
+      content: "";
+      position: absolute;
+      inset: 10px;
+      border: 1px solid rgba(255,185,83,.46);
+      border-radius: 50%;
+      border-left-color: transparent;
+      border-bottom-color: transparent;
+      transform: rotate(-22deg);
+    }
+
+    .asara-rank-portrait {
+      position: absolute;
+      inset: 18px 13px 19px;
+      display: none;
+      border: 2px solid rgba(255,185,83,.7);
+      border-radius: 42px 42px 9px 9px;
+      background:
+        radial-gradient(circle at 50% 24%, rgba(241,238,220,.9) 0 11%, transparent 12%),
+        radial-gradient(circle at 50% 37%, rgba(26,30,27,.92) 0 16%, transparent 17%),
+        linear-gradient(106deg, transparent 0 39%, rgba(238,232,210,.78) 40% 48%, transparent 49%),
+        linear-gradient(66deg, transparent 0 46%, rgba(18,22,20,.95) 47% 58%, transparent 59%),
+        radial-gradient(circle at 50% 43%, transparent 0 31%, rgba(255,168,52,.5) 32%, transparent 34%),
+        repeating-linear-gradient(90deg, rgba(255,185,83,.15) 0 2px, transparent 2px 8px),
+        linear-gradient(180deg, #283029, #0e1311);
+      box-shadow: inset 0 0 0 4px rgba(10,13,12,.58), inset 0 0 18px rgba(255,160,48,.2);
+      overflow: hidden;
+    }
+
+    .asara-rank-portrait::before {
+      content: "";
+      position: absolute;
+      width: 34%;
+      height: 45%;
+      left: 33%;
+      top: 28%;
+      border-radius: 48% 48% 16% 16%;
+      background:
+        radial-gradient(circle at 50% 8%, #f4eed2 0 17%, transparent 18%),
+        linear-gradient(103deg, transparent 0 36%, #ece2c3 37% 50%, transparent 51%),
+        linear-gradient(90deg, transparent 0 17%, #111512 18% 83%, transparent 84%);
+      filter: drop-shadow(0 2px 2px rgba(0,0,0,.55));
+    }
+
+    .asara-rank-portrait::after {
+      content: "";
+      position: absolute;
+      inset: 11px;
+      border: 1px solid rgba(255,185,83,.46);
+      border-radius: 50%;
+      border-left-color: transparent;
+      transform: rotate(-24deg);
+    }
+
     body[data-face="jumbo"] .card {
       border-width: 2px;
       background: #fffdf7;
@@ -411,6 +684,656 @@
       text-align: center;
     }
 
+    body[data-face="asara"] .card:not(.back) {
+      color: #161b18;
+      border: 2px solid #c69239;
+      border-radius: 34px 34px 10px 10px;
+      background:
+        linear-gradient(90deg, rgba(255,159,45,.34) 0 5px, transparent 5px calc(100% - 5px), rgba(255,159,45,.34) calc(100% - 5px)),
+        radial-gradient(ellipse at 50% 36%, rgba(26,31,27,.12) 0 37%, transparent 38%),
+        radial-gradient(circle at 50% 52%, rgba(255,159,45,.13), transparent 36%),
+        repeating-linear-gradient(135deg, rgba(0,0,0,.045) 0 2px, transparent 2px 12px),
+        #e3dac2;
+      box-shadow: 0 13px 22px rgba(0,0,0,.32), inset 0 0 0 2px rgba(20,27,22,.14);
+    }
+
+    body[data-face="asara"] .card:not(.back):not(.joker) {
+      --asara-suit: #ff4d37;
+      color: #ffcab6;
+      border-color: #d8492e;
+      background:
+        linear-gradient(90deg, rgba(255,63,42,.52) 0 6px, transparent 6px calc(100% - 6px), rgba(255,63,42,.52) calc(100% - 6px)),
+        radial-gradient(ellipse at 50% 38%, rgba(118,20,16,.62) 0 35%, transparent 36%),
+        repeating-linear-gradient(135deg, rgba(255,214,106,.12) 0 2px, transparent 2px 10px),
+        linear-gradient(180deg, #451712, #110908);
+      box-shadow: 0 13px 22px rgba(0,0,0,.34), inset 0 0 0 2px rgba(255,168,62,.12);
+    }
+
+    body[data-face="asara"] .card.asara-spade:not(.back) {
+      --asara-suit: #ffb238;
+      background:
+        linear-gradient(90deg, rgba(255,63,42,.52) 0 6px, transparent 6px calc(100% - 6px), rgba(255,63,42,.52) calc(100% - 6px)),
+        radial-gradient(ellipse at 50% 39%, rgba(92,22,15,.62) 0 34%, transparent 35%),
+        repeating-linear-gradient(135deg, rgba(255,178,56,.13) 0 2px, transparent 2px 10px),
+        linear-gradient(180deg, #421a13, #120908);
+      color: #ffb238;
+    }
+
+    body[data-face="asara"] .card.asara-heart:not(.back) {
+      --asara-suit: #ffb238;
+      background:
+        linear-gradient(90deg, rgba(255,75,50,.56) 0 6px, transparent 6px calc(100% - 6px), rgba(255,75,50,.56) calc(100% - 6px)),
+        radial-gradient(ellipse at 50% 39%, rgba(135,25,20,.62) 0 34%, transparent 35%),
+        repeating-linear-gradient(120deg, rgba(255,130,70,.16) 0 2px, transparent 2px 10px),
+        linear-gradient(180deg, #541710, #160807);
+      color: #ffb238;
+    }
+
+    body[data-face="asara"] .card.asara-diamond:not(.back) {
+      --asara-suit: #ffb238;
+      background:
+        linear-gradient(90deg, rgba(255,63,42,.52) 0 6px, transparent 6px calc(100% - 6px), rgba(255,63,42,.52) calc(100% - 6px)),
+        radial-gradient(ellipse at 50% 39%, rgba(128,42,18,.58) 0 34%, transparent 35%),
+        repeating-linear-gradient(45deg, rgba(255,205,90,.18) 0 2px, transparent 2px 10px),
+        linear-gradient(180deg, #4f2112, #150907);
+      color: #ffb238;
+    }
+
+    body[data-face="asara"] .card.asara-club:not(.back) {
+      --asara-suit: #ffb238;
+      background:
+        linear-gradient(90deg, rgba(255,63,42,.52) 0 6px, transparent 6px calc(100% - 6px), rgba(255,63,42,.52) calc(100% - 6px)),
+        radial-gradient(ellipse at 50% 39%, rgba(98,28,20,.58) 0 34%, transparent 35%),
+        repeating-linear-gradient(90deg, rgba(255,160,100,.16) 0 2px, transparent 2px 10px),
+        linear-gradient(180deg, #421915, #120807);
+      color: #ffb238;
+    }
+
+    body[data-face="asara"] .card.red:not(.back) { color: #a83f1e; }
+
+    body[data-face="asara"] .card.asara-spade:not(.back),
+    body[data-face="asara"] .card.asara-heart:not(.back),
+    body[data-face="asara"] .card.asara-diamond:not(.back),
+    body[data-face="asara"] .card.asara-club:not(.back) {
+      color: var(--asara-suit);
+    }
+
+    body[data-face="asara"] .card:not(.back)::after {
+      content: "AHSARAH";
+      position: absolute;
+      right: 7px;
+      bottom: 7px;
+      color: rgba(22,27,24,.42);
+      font-size: 9px;
+      font-weight: 950;
+      letter-spacing: .08em;
+    }
+
+    body[data-face="asara"] .card.joker:not(.back)::after {
+      right: 0;
+      left: 0;
+      text-align: center;
+      color: rgba(255, 176, 79, .88);
+      text-shadow: 0 1px 2px rgba(0,0,0,.55);
+    }
+
+    body[data-face="asara"] .card.asara-honor:not(.back)::after {
+      right: 0;
+      left: 0;
+      text-align: center;
+      color: rgba(255, 176, 79, .84);
+      text-shadow: 0 1px 2px rgba(0,0,0,.5);
+    }
+
+    body[data-face="asara"] .corner {
+      top: 5px;
+      left: 5px;
+      min-width: 24px;
+      min-height: 36px;
+      place-items: center;
+      padding: 3px 4px;
+      border: 1px solid rgba(255, 185, 83, .9);
+      border-left: 4px solid #ff9f2d;
+      border-radius: 6px 6px 4px 4px;
+      color: var(--asara-suit, #ffb04f);
+      background: rgba(7, 12, 10, .82);
+      font-family: "Avenir Next", "PingFang SC", sans-serif;
+      box-shadow: 0 3px 8px rgba(0,0,0,.42), inset 0 0 0 1px rgba(255,255,255,.08);
+      text-shadow: 0 1px 2px rgba(0,0,0,.75);
+      z-index: 3;
+    }
+
+    body[data-face="asara"] .corner span:first-child {
+      font-size: 13px;
+      line-height: .9;
+      font-weight: 950;
+    }
+
+    body[data-face="asara"] .corner span:last-child {
+      font-size: 20px;
+      line-height: .9;
+      font-family: Georgia, serif;
+      filter: drop-shadow(0 0 5px rgba(255,159,45,.4));
+    }
+
+    body[data-face="asara"] .pip-grid span,
+    body[data-face="asara"] .joker-mark strong {
+      text-shadow: 0 0 8px rgba(255,159,45,.45);
+    }
+
+    body[data-face="asara"] .pip-grid {
+      position: relative;
+      z-index: 1;
+      width: 68%;
+      height: 70%;
+      display: grid;
+      place-items: center;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px 7px;
+      font-size: 22px;
+      border: 1px solid rgba(255,99,65,.68);
+      border-radius: 30px 30px 8px 8px;
+      background:
+        radial-gradient(circle at 50% 45%, rgba(255,83,54,.18), transparent 42%),
+        rgba(10,5,5,.43);
+      box-shadow: inset 0 0 0 3px rgba(0,0,0,.16);
+    }
+
+    body[data-face="asara"] .pip-grid span:not(:first-child) {
+      display: inline;
+    }
+
+    body[data-face="asara"] .pip-grid.one {
+      grid-template-columns: 1fr;
+      font-size: 44px;
+    }
+
+    body[data-face="asara"] .pip-grid.ten {
+      font-size: 17px;
+      gap: 0 5px;
+    }
+
+    body[data-face="asara"] .pip-grid::before {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border: 1px solid rgba(255,185,83,.36);
+      border-radius: 50%;
+      border-left-color: transparent;
+      transform: rotate(-20deg);
+    }
+
+    body[data-face="asara"] .pip-grid::after {
+      content: attr(data-count);
+      position: absolute;
+      right: -7px;
+      bottom: -8px;
+      min-width: 18px;
+      min-height: 18px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(255,185,83,.58);
+      border-radius: 999px;
+      color: #111713;
+      background: var(--asara-suit, #ffb04f);
+      font-size: 10px;
+      font-weight: 950;
+      box-shadow: 0 2px 5px rgba(0,0,0,.32);
+    }
+
+    body[data-face="asara"] .pip-grid.face {
+      color: #151a16;
+      border: 1px solid rgba(20,27,22,.24);
+      background: rgba(255,159,45,.16);
+      padding: 4px;
+      border-radius: 6px;
+    }
+
+    body[data-face="asara"] .pip-grid.face {
+      border-radius: 28px 28px 7px 7px;
+      color: var(--asara-suit, #ffb04f);
+      background: rgba(8,13,11,.42);
+    }
+
+    body[data-face="asara"] .card.asara-honor:not(.back) .pip-grid {
+      display: none;
+    }
+
+    body[data-face="asara"] .card.asara-honor:not(.back) .asara-rank-portrait {
+      display: block;
+    }
+
+    body[data-face="asara"] .card.rank-a:not(.back) .asara-rank-portrait {
+      background:
+        radial-gradient(circle at 50% 24%, rgba(250,240,200,.95) 0 11%, transparent 12%),
+        radial-gradient(circle at 50% 37%, rgba(32,31,23,.92) 0 16%, transparent 17%),
+        linear-gradient(106deg, transparent 0 39%, rgba(248,235,190,.82) 40% 48%, transparent 49%),
+        linear-gradient(66deg, transparent 0 46%, rgba(20,20,16,.95) 47% 58%, transparent 59%),
+        radial-gradient(circle at 50% 43%, transparent 0 31%, rgba(255,196,67,.6) 32%, transparent 34%),
+        linear-gradient(180deg, #39321f, #11110d);
+    }
+
+    body[data-face="asara"] .card.rank-j:not(.back) .asara-rank-portrait {
+      background:
+        radial-gradient(circle at 50% 24%, rgba(232,236,218,.92) 0 11%, transparent 12%),
+        radial-gradient(circle at 50% 37%, rgba(22,42,31,.94) 0 16%, transparent 17%),
+        linear-gradient(106deg, transparent 0 39%, rgba(220,232,198,.76) 40% 48%, transparent 49%),
+        linear-gradient(66deg, transparent 0 46%, rgba(13,28,20,.95) 47% 58%, transparent 59%),
+        radial-gradient(circle at 50% 43%, transparent 0 31%, rgba(139,180,112,.56) 32%, transparent 34%),
+        linear-gradient(180deg, #263c2c, #0d1510);
+    }
+
+    body[data-face="asara"] .card.rank-q:not(.back) .asara-rank-portrait {
+      background:
+        radial-gradient(circle at 50% 24%, rgba(255,232,210,.94) 0 11%, transparent 12%),
+        radial-gradient(circle at 50% 37%, rgba(70,25,22,.94) 0 16%, transparent 17%),
+        linear-gradient(106deg, transparent 0 39%, rgba(255,225,198,.8) 40% 48%, transparent 49%),
+        linear-gradient(66deg, transparent 0 46%, rgba(40,16,16,.95) 47% 58%, transparent 59%),
+        radial-gradient(circle at 50% 43%, transparent 0 31%, rgba(221,68,42,.62) 32%, transparent 34%),
+        linear-gradient(180deg, #4a2a24, #14100f);
+    }
+
+    body[data-face="asara"] .card.rank-k:not(.back) .asara-rank-portrait {
+      background:
+        radial-gradient(circle at 50% 24%, rgba(246,235,200,.95) 0 11%, transparent 12%),
+        radial-gradient(circle at 50% 37%, rgba(20,21,19,.96) 0 16%, transparent 17%),
+        linear-gradient(106deg, transparent 0 39%, rgba(243,226,178,.82) 40% 48%, transparent 49%),
+        linear-gradient(66deg, transparent 0 46%, rgba(12,14,13,.97) 47% 58%, transparent 59%),
+        radial-gradient(circle at 50% 43%, transparent 0 31%, rgba(232,174,62,.62) 32%, transparent 34%),
+        linear-gradient(180deg, #2b2e25, #0d100e);
+    }
+
+    body[data-face="asara"] .card.joker:not(.back) {
+      color: #f2ecd6;
+      background:
+        linear-gradient(90deg, rgba(255,177,64,.32) 0 5px, transparent 5px calc(100% - 5px), rgba(255,177,64,.32) calc(100% - 5px)),
+        linear-gradient(180deg, #202720, #0c1110);
+    }
+
+    body[data-face="asara"] .card.joker-big:not(.back) {
+      color: #ffd1b8;
+      border-color: #e0563b;
+      background:
+        linear-gradient(90deg, rgba(255,90,58,.46) 0 6px, transparent 6px calc(100% - 6px), rgba(255,90,58,.46) calc(100% - 6px)),
+        radial-gradient(ellipse at 50% 31%, rgba(214,44,28,.62) 0 30%, transparent 31%),
+        repeating-linear-gradient(45deg, rgba(255,116,70,.18) 0 2px, transparent 2px 9px),
+        linear-gradient(180deg, #5c1b14, #150807);
+    }
+
+    body[data-face="asara"] .card.joker-small:not(.back) {
+      color: #e0f1c8;
+      border-color: #8ebc74;
+      background:
+        linear-gradient(90deg, rgba(145,184,116,.42) 0 6px, transparent 6px calc(100% - 6px), rgba(145,184,116,.42) calc(100% - 6px)),
+        radial-gradient(ellipse at 50% 31%, rgba(59,99,58,.58) 0 30%, transparent 31%),
+        repeating-linear-gradient(45deg, rgba(168,214,124,.16) 0 2px, transparent 2px 9px),
+        linear-gradient(180deg, #253d27, #0c130d);
+    }
+
+    body[data-face="asara"] .card.joker-big:not(.back) .asara-portrait {
+      border-color: rgba(255, 203, 91, .9);
+      background:
+        radial-gradient(circle at 50% 27%, rgba(255,235,196,.95) 0 12%, transparent 13%),
+        radial-gradient(circle at 49% 38%, rgba(60,24,18,.94) 0 15%, transparent 16%),
+        linear-gradient(108deg, transparent 0 38%, rgba(255,238,200,.82) 39% 47%, transparent 48%),
+        linear-gradient(68deg, transparent 0 47%, rgba(36,17,14,.96) 48% 57%, transparent 58%),
+        radial-gradient(circle at 50% 42%, transparent 0 31%, rgba(255,68,36,.7) 32%, transparent 34%),
+        repeating-linear-gradient(90deg, rgba(255,213,98,.2) 0 2px, transparent 2px 8px),
+        linear-gradient(180deg, #52352a, #120f0d);
+    }
+
+    body[data-face="asara"] .card.joker-small:not(.back) .asara-portrait {
+      border-color: rgba(160, 212, 122, .82);
+      background:
+        radial-gradient(circle at 50% 27%, rgba(235,248,210,.92) 0 12%, transparent 13%),
+        radial-gradient(circle at 49% 38%, rgba(30,54,34,.94) 0 15%, transparent 16%),
+        linear-gradient(108deg, transparent 0 38%, rgba(224,244,198,.72) 39% 47%, transparent 48%),
+        linear-gradient(68deg, transparent 0 47%, rgba(16,36,22,.96) 48% 57%, transparent 58%),
+        radial-gradient(circle at 50% 42%, transparent 0 31%, rgba(136,194,92,.62) 32%, transparent 34%),
+        repeating-linear-gradient(90deg, rgba(155,210,110,.18) 0 2px, transparent 2px 8px),
+        linear-gradient(180deg, #2e432f, #0c110d);
+    }
+
+    body[data-face="asara"] .card.joker-big:not(.back)::before {
+      content: "";
+      position: absolute;
+      right: 7px;
+      bottom: 23px;
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      background: linear-gradient(135deg, #ffcf67, #d33121);
+      box-shadow: -51px -3px 0 -3px #d33121, 0 0 10px rgba(255,90,40,.45);
+      transform: rotate(45deg);
+    }
+
+    body[data-face="asara"] .card.joker-small:not(.back)::before {
+      content: "";
+      position: absolute;
+      right: 7px;
+      bottom: 23px;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #f2d67f, #2f3b32);
+      box-shadow: -51px -3px 0 -3px #f2d67f, 0 0 10px rgba(255,185,83,.35);
+    }
+
+    body[data-face="asara"] .card.joker:not(.back) .joker-mark {
+      display: none;
+    }
+
+    body[data-face="asara"] .card.joker:not(.back) .asara-portrait {
+      display: block;
+    }
+
+    body[data-back="asara"] .card.back,
+    body[data-face="asara"] .card.back {
+      border-color: rgba(145, 148, 142, .62);
+      border-radius: 34px 34px 10px 10px;
+      background:
+        radial-gradient(circle at 50% 26%, rgba(238,238,230,.08) 0 20%, transparent 21%),
+        linear-gradient(180deg, #050505, #090909 55%, #030303);
+      box-shadow:
+        0 13px 22px rgba(0,0,0,.42),
+        inset 0 0 0 1px rgba(235,235,225,.18),
+        inset 0 0 0 4px rgba(0,0,0,.82);
+    }
+
+    body[data-back="asara"] .card.back::after,
+    body[data-face="asara"] .card.back::after {
+      content: "AHSARAH GUARD";
+      position: absolute;
+      inset: auto 4px 18px;
+      color: #e9e9e5;
+      text-align: center;
+      font-size: 9px;
+      font-weight: 950;
+      letter-spacing: .04em;
+      line-height: 1;
+      transform: skew(-8deg);
+      text-shadow: 1px 0 #6f6f6f, -1px 1px #151515, 0 0 7px rgba(255,255,255,.26);
+    }
+
+    body[data-back="asara"] .card.back::before,
+    body[data-face="asara"] .card.back::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 15px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      transform: translateX(-50%);
+      background:
+        radial-gradient(circle, #d7d7d2 0 4px, #070707 5px 7px, transparent 8px),
+        radial-gradient(circle, transparent 0 12px, #d7d7d2 13px 16px, transparent 17px),
+        conic-gradient(
+          from 8deg,
+          transparent 0 7deg,
+          #d7d7d2 7deg 14deg,
+          transparent 14deg 37deg,
+          #d7d7d2 37deg 44deg,
+          transparent 44deg 67deg,
+          #d7d7d2 67deg 74deg,
+          transparent 74deg 97deg,
+          #d7d7d2 97deg 104deg,
+          transparent 104deg 127deg,
+          #d7d7d2 127deg 134deg,
+          transparent 134deg 157deg,
+          #d7d7d2 157deg 164deg,
+          transparent 164deg 187deg,
+          #d7d7d2 187deg 194deg,
+          transparent 194deg 217deg,
+          #d7d7d2 217deg 224deg,
+          transparent 224deg 247deg,
+          #d7d7d2 247deg 254deg,
+          transparent 254deg 277deg,
+          #d7d7d2 277deg 284deg,
+          transparent 284deg 307deg,
+          #d7d7d2 307deg 314deg,
+          transparent 314deg 337deg,
+          #d7d7d2 337deg 344deg,
+          transparent 344deg 360deg
+        );
+      filter: drop-shadow(1px 1px 0 #777) drop-shadow(-1px 1px 0 #151515) drop-shadow(0 0 5px rgba(255,255,255,.2));
+    }
+
+    body[data-face="havoc"] .card:not(.back) {
+      --asara-suit: #d7e4f5;
+      color: #d7e4f5;
+      border: 2px solid #a5afbc;
+      border-radius: 34px 34px 10px 10px;
+      background:
+        linear-gradient(90deg, rgba(185,205,232,.28) 0 6px, transparent 6px calc(100% - 6px), rgba(185,205,232,.28) calc(100% - 6px)),
+        radial-gradient(ellipse at 50% 36%, rgba(208,224,245,.13) 0 34%, transparent 35%),
+        repeating-linear-gradient(135deg, rgba(185,205,232,.12) 0 2px, transparent 2px 11px),
+        linear-gradient(180deg, #232932, #07090d);
+      box-shadow: 0 13px 22px rgba(0,0,0,.38), inset 0 0 0 2px rgba(255,255,255,.08);
+    }
+
+    body[data-face="havoc"] .card.asara-spade:not(.back),
+    body[data-face="havoc"] .card.asara-heart:not(.back),
+    body[data-face="havoc"] .card.asara-diamond:not(.back),
+    body[data-face="havoc"] .card.asara-club:not(.back) {
+      --asara-suit: #d7e4f5;
+      color: var(--asara-suit);
+    }
+
+    body[data-face="havoc"] .card:not(.back)::after {
+      content: "HAVVK";
+      position: absolute;
+      right: 0;
+      left: 0;
+      bottom: 7px;
+      color: rgba(225,235,248,.88);
+      text-align: center;
+      font-size: 9px;
+      font-weight: 950;
+      letter-spacing: .04em;
+      text-shadow: 0 1px 2px rgba(0,0,0,.72), 0 0 7px rgba(170,205,255,.22);
+    }
+
+    body[data-face="havoc"] .corner {
+      top: 5px;
+      left: 5px;
+      min-width: 24px;
+      min-height: 36px;
+      place-items: center;
+      padding: 3px 4px;
+      border: 1px solid rgba(215,228,245,.72);
+      border-left: 4px solid #8ea4bd;
+      border-radius: 6px 6px 4px 4px;
+      color: var(--asara-suit, #d7e4f5);
+      background: rgba(3, 6, 10, .84);
+      font-family: "Avenir Next", "PingFang SC", sans-serif;
+      box-shadow: 0 3px 8px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+      text-shadow: 0 1px 2px rgba(0,0,0,.75);
+      z-index: 3;
+    }
+
+    body[data-face="havoc"] .corner span:first-child {
+      font-size: 13px;
+      line-height: .9;
+      font-weight: 950;
+    }
+
+    body[data-face="havoc"] .corner span:last-child {
+      font-size: 20px;
+      line-height: .9;
+      font-family: Georgia, serif;
+      filter: drop-shadow(0 0 5px rgba(170,205,255,.45));
+    }
+
+    body[data-face="havoc"] .pip-grid {
+      position: relative;
+      z-index: 1;
+      width: 68%;
+      height: 70%;
+      display: grid;
+      place-items: center;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px 7px;
+      font-size: 22px;
+      border: 1px solid rgba(174,194,220,.62);
+      border-radius: 30px 30px 8px 8px;
+      background:
+        linear-gradient(135deg, transparent 0 45%, rgba(200,220,245,.13) 46% 52%, transparent 53%),
+        radial-gradient(circle at 50% 45%, rgba(170,205,255,.16), transparent 42%),
+        rgba(3,6,10,.52);
+      box-shadow: inset 0 0 0 3px rgba(0,0,0,.18);
+      text-shadow: 0 0 8px rgba(170,205,255,.45);
+    }
+
+    body[data-face="havoc"] .pip-grid.one {
+      grid-template-columns: 1fr;
+      font-size: 44px;
+    }
+
+    body[data-face="havoc"] .pip-grid.ten {
+      font-size: 17px;
+      gap: 0 5px;
+    }
+
+    body[data-face="havoc"] .pip-grid::before {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border: 1px solid rgba(215,228,245,.3);
+      clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+    }
+
+    body[data-face="havoc"] .pip-grid::after {
+      content: attr(data-count);
+      position: absolute;
+      right: -7px;
+      bottom: -8px;
+      min-width: 18px;
+      min-height: 18px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(235,240,248,.58);
+      border-radius: 999px;
+      color: #05070a;
+      background: var(--asara-suit, #d7e4f5);
+      font-size: 10px;
+      font-weight: 950;
+      box-shadow: 0 2px 5px rgba(0,0,0,.32);
+    }
+
+    body[data-face="havoc"] .card.asara-honor:not(.back) .pip-grid {
+      display: none;
+    }
+
+    body[data-face="havoc"] .card.asara-honor:not(.back) .asara-rank-portrait,
+    body[data-face="havoc"] .card.joker:not(.back) .asara-portrait {
+      display: block;
+      border-color: rgba(215,228,245,.72);
+      background:
+        radial-gradient(circle at 50% 24%, rgba(240,244,250,.9) 0 11%, transparent 12%),
+        radial-gradient(circle at 50% 37%, rgba(40,45,52,.94) 0 16%, transparent 17%),
+        linear-gradient(108deg, transparent 0 38%, rgba(225,232,242,.78) 39% 47%, transparent 48%),
+        linear-gradient(68deg, transparent 0 47%, rgba(10,13,18,.96) 48% 57%, transparent 58%),
+        radial-gradient(circle at 50% 43%, transparent 0 31%, rgba(180,210,255,.5) 32%, transparent 34%),
+        repeating-linear-gradient(90deg, rgba(180,210,255,.13) 0 2px, transparent 2px 8px),
+        linear-gradient(180deg, #2b313b, #0a0d12);
+    }
+
+    body[data-face="havoc"] .card.joker-big:not(.back) .asara-portrait {
+      border-color: rgba(238, 193, 88, .82);
+      background:
+        radial-gradient(circle at 50% 24%, rgba(255,238,182,.92) 0 11%, transparent 12%),
+        radial-gradient(circle at 50% 37%, rgba(60,48,28,.94) 0 16%, transparent 17%),
+        linear-gradient(108deg, transparent 0 38%, rgba(250,225,160,.76) 39% 47%, transparent 48%),
+        linear-gradient(68deg, transparent 0 47%, rgba(28,22,14,.96) 48% 57%, transparent 58%),
+        radial-gradient(circle at 50% 43%, transparent 0 31%, rgba(230,170,64,.56) 32%, transparent 34%),
+        repeating-linear-gradient(90deg, rgba(230,190,100,.14) 0 2px, transparent 2px 8px),
+        linear-gradient(180deg, #39301d, #0d0b08);
+    }
+
+    body[data-face="havoc"] .card.joker:not(.back) .joker-mark {
+      display: none;
+    }
+
+    body[data-face="havoc"] .card.joker-big:not(.back) {
+      color: #ffe7a6;
+      border-color: #d2ac53;
+      background:
+        linear-gradient(90deg, rgba(232,190,93,.34) 0 6px, transparent 6px calc(100% - 6px), rgba(232,190,93,.34) calc(100% - 6px)),
+        radial-gradient(ellipse at 50% 31%, rgba(185,135,45,.34) 0 30%, transparent 31%),
+        repeating-linear-gradient(45deg, rgba(255,222,128,.16) 0 2px, transparent 2px 9px),
+        linear-gradient(180deg, #302a1c, #080705);
+    }
+
+    body[data-face="havoc"] .card.joker-small:not(.back) {
+      color: #e4e9f1;
+      border-color: #c4cfdb;
+      background:
+        linear-gradient(90deg, rgba(215,228,245,.34) 0 6px, transparent 6px calc(100% - 6px), rgba(215,228,245,.34) calc(100% - 6px)),
+        radial-gradient(ellipse at 50% 31%, rgba(120,146,178,.32) 0 30%, transparent 31%),
+        repeating-linear-gradient(45deg, rgba(215,228,245,.16) 0 2px, transparent 2px 9px),
+        linear-gradient(180deg, #2a3038, #07090d);
+    }
+
+    body[data-face="havoc"] .card.joker-big:not(.back)::before,
+    body[data-face="havoc"] .card.joker-small:not(.back)::before {
+      content: "";
+      position: absolute;
+      right: 7px;
+      bottom: 23px;
+      width: 14px;
+      height: 14px;
+      background: linear-gradient(135deg, #f1f4f8, #596775);
+      clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+      box-shadow: -51px -3px 0 -3px #aab8c8, 0 0 10px rgba(170,205,255,.38);
+    }
+
+    body[data-face="havoc"] .card.joker-big:not(.back)::before {
+      background: linear-gradient(135deg, #ffe8a3, #a66f1d);
+      box-shadow: -51px -3px 0 -3px #d4a64a, 0 0 10px rgba(255,210,110,.42);
+    }
+
+    body[data-back="havoc"] .card.back,
+    body[data-face="havoc"] .card.back {
+      border-color: rgba(180, 188, 198, .64);
+      border-radius: 34px 34px 10px 10px;
+      background:
+        radial-gradient(circle at 50% 27%, rgba(220,230,244,.11) 0 21%, transparent 22%),
+        linear-gradient(180deg, #080a0e, #10141a 55%, #030405);
+      box-shadow:
+        0 13px 22px rgba(0,0,0,.44),
+        inset 0 0 0 1px rgba(235,240,248,.16),
+        inset 0 0 0 4px rgba(0,0,0,.8);
+    }
+
+    body[data-back="havoc"] .card.back::after,
+    body[data-face="havoc"] .card.back::after {
+      content: "HAVVK";
+      position: absolute;
+      inset: auto 0 17px;
+      color: #e4e9f1;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 950;
+      letter-spacing: .04em;
+      line-height: 1;
+      text-shadow: 1px 0 #687383, -1px 1px #05070a, 0 0 8px rgba(170,205,255,.22);
+    }
+
+    body[data-back="havoc"] .card.back::before,
+    body[data-face="havoc"] .card.back::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 18px;
+      width: 48px;
+      height: 47px;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #f0f3f8, #434b56 58%, #11151b);
+      clip-path: polygon(9% 54%, 34% 25%, 34% 75%, 48% 92%, 48% 8%, 69% 29%, 69% 55%, 91% 31%, 91% 69%, 69% 47%, 69% 75%, 52% 94%, 52% 70%, 34% 91%, 34% 66%);
+      filter: drop-shadow(1px 1px 0 #6d7683) drop-shadow(0 0 8px rgba(170,205,255,.18));
+    }
+
     .small-card {
       width: 58px;
       height: 82px;
@@ -419,6 +1342,40 @@
 
     .small-card .corner { font-size: 12px; }
     .small-card .pip { font-size: 25px; }
+
+    body[data-face="asara"] .small-card,
+    body[data-back="asara"] .small-card,
+    body[data-face="havoc"] .small-card,
+    body[data-back="havoc"] .small-card {
+      width: 64px;
+      height: 92px;
+    }
+
+    body[data-face="asara"] .small-card .pip-grid,
+    body[data-face="havoc"] .small-card .pip-grid {
+      width: 66%;
+      height: 68%;
+      font-size: 16px;
+      gap: 0 5px;
+    }
+
+    body[data-face="asara"] .small-card .pip-grid.one { font-size: 34px; }
+    body[data-face="asara"] .small-card .pip-grid.ten { font-size: 12px; }
+    body[data-face="havoc"] .small-card .pip-grid.one { font-size: 34px; }
+    body[data-face="havoc"] .small-card .pip-grid.ten { font-size: 12px; }
+
+    body[data-face="asara"] .small-card .corner,
+    body[data-face="havoc"] .small-card .corner {
+      transform: scale(.88);
+      transform-origin: top left;
+    }
+
+    body[data-face="asara"] .small-card .asara-rank-portrait,
+    body[data-face="asara"] .small-card .asara-portrait,
+    body[data-face="havoc"] .small-card .asara-rank-portrait,
+    body[data-face="havoc"] .small-card .asara-portrait {
+      inset: 15px 9px 17px;
+    }
 
     .memory-board, .ten-board, .target-board {
       display: grid;
@@ -600,6 +1557,12 @@
       to { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
     }
 
+    @keyframes flipCard {
+      0% { transform: perspective(520px) rotateY(90deg) scale(.98); filter: brightness(.78); }
+      58% { transform: perspective(520px) rotateY(-7deg) scale(1.02); filter: brightness(1.12); }
+      100% { transform: perspective(520px) rotateY(0) scale(1); filter: brightness(1); }
+    }
+
     @keyframes spark {
       from { opacity: 1; transform: translate(0, 0) scale(1); }
       to { opacity: 0; transform: translate(var(--x), var(--y)) scale(.25); }
@@ -626,7 +1589,15 @@
       .control-row { grid-template-columns: 1fr; }
       .seg { grid-template-columns: repeat(2, 1fr); }
       .seg[data-options="3"], .seg[data-options="2"] { grid-template-columns: 1fr; }
+      .customizer { justify-self: start; }
+      .customizer-panel { left: 0; right: auto; width: min(390px, calc(100vw - 16px)); padding: 10px; }
+      .customizer .control-row { grid-template-columns: 54px 1fr; }
+      .customizer .seg[data-options="3"],
+      .customizer .seg[data-options="5"] { grid-template-columns: repeat(3, 1fr); }
+      .customizer .seg[data-options="2"] { grid-template-columns: repeat(2, 1fr); }
+      .customizer button { min-height: 29px; padding: 3px 5px; font-size: 12px; }
       button { width: 100%; }
+      .customizer .customize-toggle { width: auto; min-height: 38px; padding: 7px 11px; font-size: 13px; }
       .memory-board, .ten-board, .target-board, .pair-board { grid-template-columns: repeat(4, 1fr); gap: 7px; }
       .run-track { grid-template-columns: repeat(4, 1fr); }
       .highlow-stage { grid-template-columns: 1fr; }
@@ -653,34 +1624,50 @@
     <header>
       <div>
         <h1>王牌牌室</h1>
-        <p>牌面会按点数铺满图标，牌堆加入大小王；还能开声音和发牌特效。小游戏保留轻松玩法，并新增多人 21 点。</p>
+        <p>牌面会按点数铺满图标，牌堆加入大小王；新增阿萨拉和哈夫克风格套装、声音和发牌特效，小游戏保留轻松玩法，并支持多人 21 点。</p>
       </div>
       <section class="customizer" aria-label="个性化设置">
+        <button class="customize-toggle" id="customizeToggle" type="button" aria-expanded="false" aria-controls="customizerPanel"><span aria-hidden="true">🎨</span>个性化</button>
+        <div class="customizer-panel" id="customizerPanel" hidden>
         <h2>个性化牌桌</h2>
         <div class="control-row">
+          <span>套装</span>
+          <div class="seg" data-options="3">
+            <button class="preset" data-preset="asara"><span class="style-preview joker asara" aria-hidden="true"></span>阿萨拉</button>
+            <button class="preset" data-preset="havoc"><span class="style-preview joker havoc" aria-hidden="true"></span>哈夫克</button>
+            <button class="preset secondary" data-preset="classic"><span class="style-preview joker classic" aria-hidden="true"></span>经典</button>
+          </div>
+        </div>
+        <div class="control-row">
           <span>背景</span>
-          <div class="seg">
-            <button class="choice active" data-kind="theme" data-value="felt">绿毡</button>
-            <button class="choice" data-kind="theme" data-value="night">夜场</button>
-            <button class="choice" data-kind="theme" data-value="wood">木桌</button>
-            <button class="choice" data-kind="theme" data-value="violet">紫雾</button>
+          <div class="seg" data-options="5">
+            <button class="choice active" data-kind="theme" data-value="felt"><span class="style-preview felt" aria-hidden="true"></span>绿毡</button>
+            <button class="choice" data-kind="theme" data-value="night"><span class="style-preview night" aria-hidden="true"></span>夜场</button>
+            <button class="choice" data-kind="theme" data-value="wood"><span class="style-preview wood" aria-hidden="true"></span>木桌</button>
+            <button class="choice" data-kind="theme" data-value="violet"><span class="style-preview violet" aria-hidden="true"></span>紫雾</button>
+            <button class="choice" data-kind="theme" data-value="asara"><span class="style-preview asara" aria-hidden="true"></span>阿萨拉</button>
+            <button class="choice" data-kind="theme" data-value="havoc"><span class="style-preview havoc" aria-hidden="true"></span>哈夫克</button>
           </div>
         </div>
         <div class="control-row">
           <span>牌背</span>
-          <div class="seg">
-            <button class="choice active" data-kind="back" data-value="red">酒红</button>
-            <button class="choice" data-kind="back" data-value="blue">蓝纹</button>
-            <button class="choice" data-kind="back" data-value="green">松绿</button>
-            <button class="choice" data-kind="back" data-value="gold">金棕</button>
+          <div class="seg" data-options="5">
+            <button class="choice active" data-kind="back" data-value="red"><span class="style-preview red" aria-hidden="true"></span>酒红</button>
+            <button class="choice" data-kind="back" data-value="blue"><span class="style-preview blue" aria-hidden="true"></span>蓝纹</button>
+            <button class="choice" data-kind="back" data-value="green"><span class="style-preview green" aria-hidden="true"></span>松绿</button>
+            <button class="choice" data-kind="back" data-value="gold"><span class="style-preview gold" aria-hidden="true"></span>金棕</button>
+            <button class="choice" data-kind="back" data-value="asara"><span class="style-preview asara" aria-hidden="true"></span>阿萨拉</button>
+            <button class="choice" data-kind="back" data-value="havoc"><span class="style-preview havoc" aria-hidden="true"></span>哈夫克</button>
           </div>
         </div>
         <div class="control-row">
           <span>牌面</span>
-          <div class="seg" data-options="3">
-            <button class="choice active" data-kind="face" data-value="classic">经典</button>
-            <button class="choice" data-kind="face" data-value="jumbo">大字</button>
-            <button class="choice" data-kind="face" data-value="minimal">极简</button>
+          <div class="seg" data-options="5">
+            <button class="choice active" data-kind="face" data-value="classic"><span class="style-preview suit classic" aria-hidden="true">A</span>经典</button>
+            <button class="choice" data-kind="face" data-value="jumbo"><span class="style-preview suit jumbo" aria-hidden="true">A</span>大字</button>
+            <button class="choice" data-kind="face" data-value="minimal"><span class="style-preview suit minimal" aria-hidden="true">A</span>极简</button>
+            <button class="choice" data-kind="face" data-value="asara"><span class="style-preview joker asara" aria-hidden="true"></span>阿萨拉</button>
+            <button class="choice" data-kind="face" data-value="havoc"><span class="style-preview joker havoc" aria-hidden="true"></span>哈夫克</button>
           </div>
         </div>
         <div class="control-row">
@@ -696,6 +1683,7 @@
             <button class="choice active" data-kind="effects" data-value="on">开启</button>
             <button class="choice" data-kind="effects" data-value="off">关闭</button>
           </div>
+        </div>
         </div>
       </section>
     </header>
@@ -726,10 +1714,10 @@
     <section class="table" id="blackjack">
       <aside>
         <h2>多人21点</h2>
-        <p>最多 4 名玩家轮流挑战庄家。A 可算 1 或 11，大小王算 11 点。</p>
+        <p>最多 4 名玩家轮流挑战庄家。21 点只用 52 张标准牌，A 可算 1 或 11。</p>
         <div class="stat-grid">
           <div class="stat"><b id="bjRound">未开始</b><span>当前轮到</span></div>
-          <div class="stat"><b id="bjDeck">54</b><span>牌堆</span></div>
+          <div class="stat"><b id="bjDeck">52</b><span>牌堆</span></div>
         </div>
         <h3>玩家人数</h3>
         <div class="player-count">
@@ -808,7 +1796,7 @@
     <section class="table" id="run">
       <aside>
         <h2>猜高低</h2>
-        <p>看当前牌，猜下一张更大还是更小。A 最小，大小王最大，相同算猜错。</p>
+        <p>看当前牌，猜下一张更大还是更小。A 最小，大小王最大；同点数不算输，继续猜。</p>
         <div class="stat-grid">
           <div class="stat"><b id="runNeed">0</b><span>连胜</span></div>
           <div class="stat"><b id="runStock">51</b><span>剩余</span></div>
@@ -859,8 +1847,8 @@
       { label: "K", value: 13 }
     ];
     const jokers = [
-      { label: "小王", value: 14, suit: "☆", color: "black", joker: "small", id: "小王" },
-      { label: "大王", value: 15, suit: "★", color: "red", joker: "big", id: "大王" }
+      { label: "JOKER", value: 14, suit: "", color: "black", joker: "small", id: "小王" },
+      { label: "JOKER", value: 15, suit: "", color: "red", joker: "big", id: "大王" }
     ];
     const $ = (selector) => document.querySelector(selector);
     let audioContext = null;
@@ -884,22 +1872,43 @@
       return shuffle([...normalCards, ...jokers]);
     }
 
+    function makeStandardDeck() {
+      return shuffle(suits.flatMap((suit) => ranks.map((rank) => ({
+        ...rank,
+        suit: suit.symbol,
+        color: suit.color,
+        id: `${rank.label}${suit.symbol}`
+      }))));
+    }
+
     function cardEl(card, options = {}) {
       const div = document.createElement("div");
-      div.className = `card ${card.color === "red" ? "red" : ""} ${card.joker ? "joker" : ""} ${options.small ? "small-card" : ""}`;
+      const suitClass = card.joker ? `joker-${card.joker}` : `asara-${suitName(card.suit)}`;
+      const honorClass = !card.joker && isHonorCard(card) ? `asara-honor rank-${card.label.toLowerCase()}` : "";
+      div.className = `card ${card.color === "red" ? "red" : ""} ${card.joker ? "joker" : ""} ${suitClass} ${honorClass} ${options.small ? "small-card" : ""}`;
+      if (options.flip || card.flip) div.classList.add("flip-in");
       if (options.clickable) div.classList.add("clickable");
       if (card.joker) {
-        div.innerHTML = `<span class="corner"><span>${card.joker === "big" ? "大" : "小"}</span><span>${card.suit}</span></span><span class="joker-mark"><strong>${card.suit}</strong>${card.label}</span>`;
+        const jokerName = card.joker === "big" ? "大王" : "小王";
+        div.innerHTML = `<span class="corner joker-corner"><span>JOKER</span><span>${jokerName}</span></span><span class="asara-portrait" aria-hidden="true"></span><span class="joker-mark"><strong>JOKER</strong><span>${jokerName}</span></span>`;
       } else {
-        div.innerHTML = `<span class="corner"><span>${card.label}</span><span>${card.suit}</span></span>${pipMarkup(card)}`;
+        div.innerHTML = `<span class="corner"><span>${card.label}</span><span>${card.suit}</span></span>${isHonorCard(card) ? '<span class="asara-rank-portrait" aria-hidden="true"></span>' : ""}${pipMarkup(card)}`;
       }
       return div;
     }
 
     function pipMarkup(card) {
-      if (card.value === 1) return `<span class="pip-grid one"><span>${card.suit}</span></span>`;
-      if (card.value > 10) return `<span class="pip-grid face"><span>${card.label}</span><span>${card.suit}</span><span>${card.suit}</span></span>`;
-      return `<span class="pip-grid ${card.value === 10 ? "ten" : ""}">${Array.from({ length: card.value }, () => `<span>${card.suit}</span>`).join("")}</span>`;
+      if (card.value === 1) return `<span class="pip-grid one" data-count="A"><span>${card.suit}</span></span>`;
+      if (card.value > 10) return `<span class="pip-grid face" data-count="${card.label}"><span>${card.label}</span><span>${card.suit}</span><span>${card.suit}</span></span>`;
+      return `<span class="pip-grid ${card.value === 10 ? "ten" : ""}" data-count="${card.value}">${Array.from({ length: card.value }, () => `<span>${card.suit}</span>`).join("")}</span>`;
+    }
+
+    function suitName(suit) {
+      return { "♠": "spade", "♥": "heart", "♦": "diamond", "♣": "club" }[suit] || "spade";
+    }
+
+    function isHonorCard(card) {
+      return card.value === 1 || card.value > 10;
     }
 
     function backCard(options = {}) {
@@ -961,17 +1970,34 @@
       });
     });
 
+    const customizer = $(".customizer");
+    const customizeToggle = $("#customizeToggle");
+    const customizerPanel = $("#customizerPanel");
+
+    function setCustomizerOpen(open) {
+      customizerPanel.hidden = !open;
+      customizeToggle.setAttribute("aria-expanded", String(open));
+    }
+
+    customizeToggle.addEventListener("click", () => {
+      setCustomizerOpen(customizeToggle.getAttribute("aria-expanded") !== "true");
+      playTone("tap");
+    });
+
+    document.addEventListener("click", (event) => {
+      if (customizerPanel.hidden || customizer.contains(event.target)) return;
+      setCustomizerOpen(false);
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") setCustomizerOpen(false);
+    });
+
     document.querySelectorAll(".choice").forEach((button) => {
       button.addEventListener("click", () => {
         const kind = button.dataset.kind;
         document.body.dataset[kind] = button.dataset.value;
-        localStorage.setItem("pokerRoomStyle", JSON.stringify({
-          theme: document.body.dataset.theme,
-          back: document.body.dataset.back,
-          face: document.body.dataset.face,
-          sound: document.body.dataset.sound,
-          effects: document.body.dataset.effects
-        }));
+        saveStyle();
         document.querySelectorAll(`.choice[data-kind="${kind}"]`).forEach((item) => item.classList.remove("active"));
         button.classList.add("active");
         playTone("tap");
@@ -981,6 +2007,37 @@
     document.querySelectorAll(".choice").forEach((button) => {
       button.classList.toggle("active", document.body.dataset[button.dataset.kind] === button.dataset.value);
     });
+
+    document.querySelectorAll(".preset").forEach((button) => {
+      button.addEventListener("click", () => {
+        const presets = {
+          asara: { theme: "asara", back: "asara", face: "asara" },
+          havoc: { theme: "havoc", back: "havoc", face: "havoc" },
+          classic: { theme: "felt", back: "red", face: "classic" }
+        };
+        const style = presets[button.dataset.preset] || presets.classic;
+        Object.assign(document.body.dataset, style);
+        saveStyle();
+        syncStyleButtons();
+        playTone("tap");
+      });
+    });
+
+    function saveStyle() {
+      localStorage.setItem("pokerRoomStyle", JSON.stringify({
+        theme: document.body.dataset.theme,
+        back: document.body.dataset.back,
+        face: document.body.dataset.face,
+        sound: document.body.dataset.sound,
+        effects: document.body.dataset.effects
+      }));
+    }
+
+    function syncStyleButtons() {
+      document.querySelectorAll(".choice").forEach((button) => {
+        button.classList.toggle("active", document.body.dataset[button.dataset.kind] === button.dataset.value);
+      });
+    }
 
     const blackjack = {
       playerCount: 1,
@@ -1005,7 +2062,6 @@
     });
 
     function blackjackValue(card) {
-      if (card.joker) return 11;
       if (card.value > 10) return 10;
       if (card.value === 1) return 11;
       return card.value;
@@ -1022,7 +2078,7 @@
     }
 
     function bjStart() {
-      blackjack.deck = makeDeck();
+      blackjack.deck = makeStandardDeck();
       blackjack.players = Array.from({ length: blackjack.playerCount }, (_, index) => ({
         name: `玩家${index + 1}`,
         hand: [],
@@ -1045,7 +2101,14 @@
     function bjHit() {
       if (blackjack.phase !== "players") return;
       const player = blackjack.players[blackjack.current];
-      player.hand.push(blackjack.deck.pop());
+      const card = blackjack.deck.pop();
+      if (!card) {
+        $("#bjMsg").textContent = "牌堆空了，不能继续要牌。";
+        bjRender();
+        return;
+      }
+      card.flip = true;
+      player.hand.push(card);
       playTone("deal");
       if (blackjackScore(player.hand) > 21) {
         player.status = "bust";
@@ -1082,7 +2145,8 @@
     function finishDealer() {
       blackjack.phase = "dealer";
       blackjack.revealDealer = true;
-      while (blackjackScore(blackjack.dealer) < 17) blackjack.dealer.push(blackjack.deck.pop());
+      if (blackjack.dealer[1]) blackjack.dealer[1].flip = true;
+      while (blackjackScore(blackjack.dealer) < 17 && blackjack.deck.length) blackjack.dealer.push(blackjack.deck.pop());
       const dealerScore = blackjackScore(blackjack.dealer);
       blackjack.players.forEach((player) => {
         const score = blackjackScore(player.hand);
@@ -1109,13 +2173,15 @@
       seat.innerHTML = `<div class="seat-header"><span>${name}</span><span>${score} 点</span>${options.result ? `<span class="result-pill">${options.result}</span>` : ""}</div><div class="hand"></div>`;
       const handNode = seat.querySelector(".hand");
       hand.forEach((card, index) => {
-        handNode.appendChild(options.hidden && index === 1 ? backCard() : cardEl(card));
+        const el = options.hidden && index === 1 ? backCard() : cardEl(card);
+        handNode.appendChild(el);
+        if (!options.hidden || index !== 1) delete card.flip;
       });
       return seat;
     }
 
     function bjRender() {
-      $("#bjDeck").textContent = blackjack.deck.length || 54;
+      $("#bjDeck").textContent = blackjack.phase === "idle" ? 52 : blackjack.deck.length;
       const activePlayer = blackjack.players[blackjack.current];
       $("#bjRound").textContent = blackjack.phase === "players" && activePlayer ? activePlayer.name : blackjack.phase === "done" ? "结束" : "未开始";
       $("#bjHit").disabled = blackjack.phase !== "players";
@@ -1170,6 +2236,7 @@
         if (card.matched) el.classList.add("good");
         el.addEventListener("click", () => memoryFlip(index));
         board.appendChild(el);
+        delete card.flip;
       });
     }
 
@@ -1177,6 +2244,7 @@
       const card = memory.cards[index];
       if (memory.locked || card.open || card.matched) return;
       card.open = true;
+      card.flip = true;
       memory.open.push(index);
       if (memory.open.length === 2) {
         memory.moves++;
@@ -1447,8 +2515,15 @@
       if (run.over || !run.deck.length) return;
       const previous = run.current;
       const next = run.deck.pop();
+      next.flip = true;
       run.current = next;
       run.history.push(next);
+      if (next.value === previous.value) {
+        $("#runMsg").textContent = `同点数：${next.label}。不算输，继续猜。`;
+        playTone("deal");
+        runRender();
+        return;
+      }
       const right = direction === "higher" ? next.value > previous.value : next.value < previous.value;
       if (right) {
         run.streak++;
@@ -1472,7 +2547,10 @@
       $("#runLower").disabled = run.over || run.deck.length === 0;
       const track = $("#runTrack");
       track.innerHTML = "";
-      if (run.current) track.appendChild(cardEl(run.current));
+      if (run.current) {
+        track.appendChild(cardEl(run.current));
+        delete run.current.flip;
+      }
       const market = $("#runMarket");
       market.innerHTML = "";
       run.history.slice(-8).reverse().forEach((card) => market.appendChild(cardEl(card, { small: true })));

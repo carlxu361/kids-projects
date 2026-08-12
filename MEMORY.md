@@ -31,6 +31,8 @@
 - 2026-08-02: 发布脚本位于 `/Users/xjc/Documents/kids-projects/scripts/publish-games.sh`，项目映射表位于 `/Users/xjc/Documents/kids-projects/scripts/publish-map.tsv`。
 - 2026-08-02: `publish-map.tsv` 采用 6 列：源文件/目录、作品集目录、标题、简介、类型、图标；首页按类型分组生成。
 - 2026-08-02: 发布脚本支持根目录 `index.html` 的静态游戏，也支持根目录 `package.json` 的工程项目；工程项目会排除 `node_modules`、`dist`、测试报告等目录，并生成作品集入口页。
+- 2026-08-12: 发布脚本会扫描 `/Users/xjc/Developer/games/projects` 和 `/Users/xjc/Developer/games` 两个位置；普通 `.html`、带 `index.html` 的文件夹、带 `package.json` 的工程文件夹都可自动发现。
+- 2026-08-12: 发布脚本同步项目前会清理发布目录内的 `node_modules`、`dist`、`test-results`、`playwright-report`、`AGENTS.md` 和 `MEMORY.md`，避免把开发依赖或内部记忆发布到作品墙。
 - 2026-08-02: `Space Hideout` 作品集入口页是启动台：默认填写 `http://127.0.0.1:5173`，可以检测/打开本地游戏，并提示双击 `/Users/xjc/Developer/games/启动 Space Hideout.command`。
 - 2026-08-02: `space-hideout` 是特殊发布项目：脚本会用 `VITE_STATIC_DEMO=1` 构建 Phaser 客户端，并把构建产物直接发布到 `11-Space Hideout/`，因此 Vercel 静态站点可以直接打开试玩版。
 - 2026-08-10: `11-Space Hideout/` 的根入口直接使用 Vite 构建产物，不再嵌套在线试玩 iframe；发布脚本会将构建后的 `index.html` 和 `assets/` 放到该目录根部。
@@ -60,6 +62,10 @@ Format:
   Fix: 原因是它没有登记在 `publish-map.tsv`，并且根目录没有 `index.html`；已补充映射，并让脚本识别 `package.json` 工程项目。
 - 2026-08-02: Problem: 自动发布脚本会提交并推送远程仓库，工具安全审查不允许本次直接代推。
   Fix: 增加 `PUBLISH_SKIP_GIT=1` 本地验证模式；用户双击原 command 时仍会走正常提交和推送流程。
+- 2026-08-12: Problem: `blast-grid-arena` 已在映射表登记但作品墙没有生成入口，原因是发布流程在 `space-hideout` 构建阶段可能中断，后面的项目不会继续同步。
+  Fix: Space Hideout 现在构建失败时会保留上一次成功发布版本或生成工程入口页，不再阻断后续游戏同步。
+- 2026-08-12: Problem: 发布目录里残留过 `node_modules` 和内部 `AGENTS.md`/`MEMORY.md`。
+  Fix: 已在发布脚本中加入发布前清理和 rsync 排除规则。
 
 ## External Resources
 
@@ -86,6 +92,7 @@ Format:
 - 2026-08-10: Space Hideout 线上入口改为直接进入可完成的原创躲藏试玩回合，不再显示本机启动说明或 iframe 包装页。
 - 2026-08-10: 作品集内误开 `11-Space Hideout/apps/client/index.html` 时会自动回到根游戏页，避免显示无样式开发源码。
 - 2026-08-10: Space Hideout 线上试玩同步了准备舱猎手信号播报、原创能量失效标记、导航驱动 AI、跃迁管、梯子和单向滑索；仍不包含任何现有游戏的地图或素材。
+- 2026-08-12: 修复发布脚本：支持扫描 `games` 根目录和 `projects` 目录，恢复并同步 `roof-piano-camp`，发布 `blast-grid-arena` 为 `12-Blast Grid Arena · 爆格竞技场`，清理发布目录里的依赖和内部记忆文件。
 
 ## Do Not Store
 

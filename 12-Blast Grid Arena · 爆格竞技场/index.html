@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blast Grid Arena | 爆格竞技场</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body data-theme="arcade">
+    <main class="app-shell">
+      <header class="topbar" aria-label="game status">
+        <div class="brand-mark">
+          <span class="brand-sigil" aria-hidden="true">BG</span>
+          <div>
+            <h1>爆格竞技场</h1>
+            <p>Blast Grid Arena</p>
+          </div>
+        </div>
+        <div class="round-strip" aria-label="round summary">
+          <div>
+            <span>时间</span>
+            <strong id="timeLabel">3:00</strong>
+          </div>
+          <div>
+            <span>出口</span>
+            <strong id="gateLabel">封锁</strong>
+          </div>
+          <div>
+            <span>目标</span>
+            <strong>生存 / 宝石 / 逃离</strong>
+          </div>
+        </div>
+        <button id="settingsButton" class="gear-button" type="button" aria-label="打开设置">⚙</button>
+      </header>
+
+      <section class="game-layout">
+        <section class="arena-wrap" aria-label="game arena">
+          <canvas id="gameCanvas" width="836" height="572"></canvas>
+          <div id="messageOverlay" class="message-overlay">
+            <h2>准备进场</h2>
+            <p>点右上角设置，调好人数、操作和角色，然后开始一局 3 分钟的爆格赛。</p>
+          </div>
+        </section>
+      </section>
+
+      <section id="settingsPanel" class="settings-panel" aria-hidden="true">
+        <div class="settings-backdrop" data-close-settings="true"></div>
+        <div class="settings-sheet" role="dialog" aria-modal="true" aria-label="游戏设置">
+          <div class="settings-head">
+            <div>
+              <h2>设置</h2>
+              <p>人数、角色、风格、计分和键位都在这里。</p>
+            </div>
+            <button id="closeSettings" class="icon-button" type="button" aria-label="关闭设置">×</button>
+          </div>
+
+          <div class="settings-grid">
+            <aside class="setup-panel" aria-label="game setup">
+              <div class="panel-section">
+                <div class="section-title">
+                  <span>比赛设置</span>
+                  <button id="startButton" class="primary-button" type="button">开始</button>
+                </div>
+                <label class="field-row">
+                  <span>总人数</span>
+                  <select id="totalPlayers">
+                    <option value="2">2 人</option>
+                    <option value="3">3 人</option>
+                    <option value="4" selected>4 人</option>
+                  </select>
+                </label>
+                <label class="field-row">
+                  <span>真人数</span>
+                  <select id="humanPlayers">
+                    <option value="1">1 人 + AI</option>
+                    <option value="2" selected>2 人 + AI</option>
+                    <option value="3">3 人 + AI</option>
+                    <option value="4">4 人</option>
+                  </select>
+                </label>
+                <label class="field-row">
+                  <span>操作</span>
+                  <select id="controlMode">
+                    <option value="keyboard" selected>键盘</option>
+                    <option value="touch">触控</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="panel-section">
+                <div class="section-title">
+                  <span>视觉风格</span>
+                </div>
+                <div class="theme-grid" id="themeButtons">
+                  <button class="theme-chip is-active" type="button" data-theme="arcade">
+                    <span class="swatch arcade"></span>
+                    电光机房
+                  </button>
+                  <button class="theme-chip" type="button" data-theme="garden">
+                    <span class="swatch garden"></span>
+                    苔原庭院
+                  </button>
+                  <button class="theme-chip" type="button" data-theme="forge">
+                    <span class="swatch forge"></span>
+                    铜轨工坊
+                  </button>
+                </div>
+                <label class="field-row skin-row">
+                  <span>皮肤</span>
+                  <select id="skinMode">
+                    <option value="ai" selected>AI 徽章</option>
+                    <option value="armor">原创装甲</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="panel-section">
+                <div class="section-title">
+                  <span>角色配置</span>
+                </div>
+                <div class="roster" id="roster"></div>
+              </div>
+            </aside>
+
+            <aside class="score-panel" aria-label="scoreboard">
+              <div class="panel-section">
+                <div class="section-title">
+                  <span>计分板</span>
+                  <button id="muteButton" class="icon-button" type="button" aria-label="sound on">声</button>
+                </div>
+                <div class="score-list" id="scoreList"></div>
+              </div>
+              <div class="panel-section item-guide">
+                <div class="section-title">
+                  <span>道具图鉴</span>
+                </div>
+                <div class="item-legend" id="itemLegend"></div>
+              </div>
+              <div class="panel-section control-hints">
+                <div class="section-title">
+                  <span>键盘位</span>
+                </div>
+                <div class="hint-grid">
+                  <span>P1 WASD / Space / Shift</span>
+                  <span>P2 Arrows / Enter / /</span>
+                  <span>P3 IJKL / O / U</span>
+                  <span>P4 TFGH / Y / R</span>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="touch-dock" id="touchDock" aria-label="touch controls"></section>
+    </main>
+
+    <script src="game.js"></script>
+  </body>
+</html>

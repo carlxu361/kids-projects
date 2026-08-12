@@ -2,6 +2,10 @@
 set -euo pipefail
 
 SOURCE_DIR="/Users/xjc/Developer/games/projects"
+SOURCE_ROOTS=(
+  "/Users/xjc/Developer/games/projects"
+  "/Users/xjc/Developer/games"
+)
 TARGET_REPO="/Users/xjc/Documents/kids-projects"
 MAP_FILE="$TARGET_REPO/scripts/publish-map.tsv"
 PUBLISH_SKIP_GIT="${PUBLISH_SKIP_GIT:-0}"
@@ -29,11 +33,11 @@ html_escape() {
 }
 
 next_number() {
-  find "$TARGET_REPO" -maxdepth 1 -type d -name '[0-9][0-9]-*' -print \
-    | sed -E 's#.*/([0-9][0-9])-.*#\1#' \
-    | sort -n \
-    | tail -1 \
-    | awk '{ printf "%02d", $1 + 1 }'
+  {
+    find "$TARGET_REPO" -maxdepth 1 -type d -name '[0-9][0-9]-*' -print \
+      | sed -E 's#.*/([0-9][0-9])-.*#\1#'
+    awk -F '\t' 'NF { split($2, parts, "-"); if (parts[1] ~ /^[0-9][0-9]$/) print parts[1] }' "$MAP_FILE"
+  } | sort -n | tail -1 | awk '{ printf "%02d", $1 + 1 }'
 }
 
 project_category() {
@@ -67,6 +71,7 @@ project_icon() {
 
 project_description() {
   case "$1" in
+    blast-grid-arena) printf "原创炸弹迷宫派对竞技场，支持本地多人、AI 补位、道具和手机摇杆" ;;
     space-hideout) printf "可直接游玩的原创太空躲藏试玩：逃离猎手、修复终端并存活到倒计时结束" ;;
     extraction-raid-prototype) printf "第一人称搜打撤原型，包含搜索、战斗、背包和撤离循环" ;;
     final-review-camp) printf "语文、数学、英语复习闯关工具，包含错题、草稿和宠物奖励" ;;
@@ -100,10 +105,63 @@ source_is_publishable() {
   return 1
 }
 
+find_source_path() {
+  local source_file="$1"
+  local root candidate
+
+  for root in "${SOURCE_ROOTS[@]}"; do
+    candidate="$root/$source_file"
+    if [[ -e "$candidate" ]]; then
+      printf "%s" "$candidate"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+is_source_root_project_candidate() {
+  local source_path="$1"
+  local source_file
+  source_file="$(basename "$source_path")"
+
+  case "$source_file" in
+    projects|resources|scripts|node_modules|.git|.codex|.agents)
+      return 1
+      ;;
+    *.command|AGENTS.md|MEMORY.md|README.md|.DS_Store)
+      return 1
+      ;;
+  esac
+
+  return 0
+}
+
+clean_generated_junk() {
+  local target_dir="$1"
+
+  rm -rf \
+    "$target_dir/AGENTS.md" \
+    "$target_dir/MEMORY.md" \
+    "$target_dir/node_modules" \
+    "$target_dir/dist" \
+    "$target_dir/coverage" \
+    "$target_dir/test-results" \
+    "$target_dir/playwright-report" \
+    "$target_dir/.turbo"
+}
+
 append_new_projects_to_map() {
-  find "$SOURCE_DIR" -mindepth 1 -maxdepth 1 \( -type f -name '*.html' -o -type d \) -print | sort | while read -r source_path; do
+  for root in "${SOURCE_ROOTS[@]}"; do
+    [[ -d "$root" ]] || continue
+    find "$root" -mindepth 1 -maxdepth 1 \( -type f -name '*.html' -o -type d \) -print | sort
+  done | while read -r source_path; do
     local source_file title number folder description category icon
     source_file="$(basename "$source_path")"
+
+    if ! is_source_root_project_candidate "$source_path"; then
+      continue
+    fi
 
     if source_has_entry "$source_file"; then
       continue
@@ -123,6 +181,7 @@ append_new_projects_to_map() {
     if [[ -z "$title" ]]; then
       title="${source_file%.html}"
     fi
+    title="${title//|/·}"
 
     number="$(next_number)"
     folder="$number-$title"
@@ -609,18 +668,32 @@ sync_projects() {
     icon="${icon:-$(project_icon "$category")}"
 
     local source_path target_dir has_root_index
-    source_path="$SOURCE_DIR/$source_file"
-    target_dir="$TARGET_REPO/$folder"
-
-    if [[ ! -e "$source_path" ]]; then
-      echo "跳过：找不到 $source_path"
+    if ! source_path="$(find_source_path "$source_file")"; then
+      echo "跳过：找不到 $source_file。请确认源项目没有被移动或删除。"
       continue
     fi
+    target_dir="$TARGET_REPO/$folder"
 
     mkdir -p "$target_dir"
     has_root_index="no"
 
     if [[ -d "$source_path" ]]; then
+      if [[ "$source_file" == "space-hideout" ]]; then
+        clean_generated_junk "$target_dir"
+        if build_space_hideout_demo "$source_path" "$target_dir"; then
+          has_root_index="yes"
+        elif [[ -f "$target_dir/index.html" ]]; then
+          echo "保留 Space Hideout 上一次成功发布的在线试玩版。"
+          has_root_index="yes"
+        else
+          write_complex_project_landing "$target_dir" "$source_file" "$title" "$description" "$category" "$icon"
+        fi
+        write_project_readme "$target_dir" "$title" "$description" "$category" "$has_root_index"
+        echo "已同步：$source_file -> $folder"
+        continue
+      fi
+
+      clean_generated_junk "$target_dir"
       rsync -a --delete \
         --exclude '.git/' \
         --exclude 'node_modules/' \
@@ -631,13 +704,12 @@ sync_projects() {
         --exclude '.turbo/' \
         --exclude '_archive/' \
         --exclude '.DS_Store' \
+        --exclude 'AGENTS.md' \
+        --exclude 'MEMORY.md' \
         --exclude '.env' \
         --exclude '.env.*' \
         "$source_path/." "$target_dir/"
-      if [[ "$source_file" == "space-hideout" ]]; then
-        build_space_hideout_demo "$source_path" "$target_dir"
-        has_root_index="yes"
-      elif [[ -f "$target_dir/index.html" ]]; then
+      if [[ -f "$target_dir/index.html" ]]; then
         has_root_index="yes"
       else
         write_complex_project_landing "$target_dir" "$source_file" "$title" "$description" "$category" "$icon"
