@@ -59,6 +59,22 @@ If both `AGENTS.md` and `MEMORY.md` are missing, do not change project files or 
 - Add comments only when they explain something non-obvious.
 - Run a simple check after changes when possible.
 
+## Child Project Workflow
+
+- Treat `projects/` as the working area for all new creations made with Codex in this repository.
+- When the child asks to start a new game or small project, create it under `projects/<english-slug>/` unless a different location is explicitly requested.
+- Give each new project its own `AGENTS.md` and `MEMORY.md`. Copy the relevant learning style and preferences from this root project, then add only project-specific decisions.
+- New projects are private drafts by default: track them with Git, but do not add them to the public portfolio until the child explicitly asks to publish.
+- Interpret “存档”, “保存”, “提交”, or similar wording as: check the current project, stage only relevant files, and create a local Git commit. Do not push and do not publish it on the portfolio.
+- Interpret “发布”, “发布到作品墙”, “上线”, or similar explicit wording as: check the project, run `scripts/publish-games.sh`, commit the generated portfolio changes, and push `main` to `origin`.
+- If the child says “存档但不要发布” or “不公开”, commit locally only. Never treat “存档” as permission to publish.
+- Before publishing, make sure the project has a usable browser entry point and does not expose secrets, admin controls, debug-only controls, `AGENTS.md`, or `MEMORY.md`.
+- After creating or meaningfully changing a child project, record stable preferences and important decisions in that project's `MEMORY.md`; update the root `MEMORY.md` only for preferences shared by future projects.
+- Use `scripts/project-control.sh save` for a manual local save and `scripts/project-control.sh publish <project-slug>` for an explicit new-project portfolio release.
+- New projects require a `projects/<project-slug>/.publish` marker before the publishing script may add them to the portfolio. Add this marker only for the project explicitly selected by the user.
+- An hourly task creates local Git commits. A daily task pushes committed work to GitHub but does not add drafts to the portfolio page.
+- Never stage deletions during automatic saves. Existing numbered game folders must remain intact unless the user explicitly requests a particular deletion.
+
 ## Learning Review
 
 At the end of a meaningful task, include:
@@ -81,10 +97,16 @@ python3 -m http.server 8787
 
 # test
 手动打开 index.html 或运行本地静态服务器检查
+
+# project management
+./scripts/project-control.sh help
+./scripts/project-control.sh status
+./scripts/project-control.sh save
+./scripts/project-control.sh publish
 ```
 
 ## Project Notes
 
 - Tech stack: HTML, CSS, JavaScript, static files
-- Important folders: `/Users/xjc/Documents/kids-projects`, `/Users/xjc/Documents/kids-projects/scripts`
+- Important folders: repository root, `projects/`, and `scripts/`. Do not depend on a specific macOS username or absolute home-directory path.
 - Things to avoid: Do not delete published game folders. Do not expose admin-only/debug-only controls in the public portfolio.

@@ -20,13 +20,25 @@
 - Do not flatter.
 - Point out problems directly.
 - Prefer small learning steps over doing everything silently.
+- The child normally starts new creations directly with Codex inside this repository.
+- New creations should inherit the child's shared preferences, while keeping project-specific memory inside that project's own `MEMORY.md`.
+- “存档/保存/提交” means create a local Git commit without publishing or pushing.
+- Only explicit wording such as “发布/上线/发布到作品墙” authorizes adding the project to the public portfolio and pushing it to GitHub.
 
 ## Decisions
 
 - 2026-08-02: Decision: 作品集首页按游戏类型合并展示，并为每个游戏提供图标和简介。
   Reason: 用户要求优化展示面板、增加图标和简介、把同类游戏合并。
+- 2026-08-24: Decision: 新作品统一在仓库的 `projects/` 目录创作，默认只用 Git 跟踪，不自动公开。
+  Reason: 孩子习惯直接在 Codex 的这个项目下开始创作，并且需要把“存档”和“发布到作品墙”分开。
+- 2026-08-24: Decision: 每小时自动创建本地 Git 存档，每天 21:00 自动推送 GitHub；定时推送不等于加入作品墙。
+  Reason: 既要频繁保留创作历史，也要把公开展示控制在明确的“发布”命令之后。
 
 ## Architecture Notes
+
+- 2026-08-24: `projects/` 是新作品的源代码创作区；编号目录是作品墙的公开版本。发布脚本使用相对自身位置计算仓库路径，不再依赖旧电脑用户名。
+- 2026-08-24: `scripts/project-control.sh` 是统一入口，支持 `status`、`save`、`push`、`publish`、`hourly`、`daily` 和 `help`。自动存档不暂存删除，避免误删已有游戏。
+- 2026-08-24: `projects/` 中的新项目只有存在 `.publish` 标记才会首次加入作品墙；`publish <project-slug>` 只标记选中的项目，其他草稿继续保持不公开。
 
 - 2026-08-02: 发布脚本位于 `/Users/xjc/Documents/kids-projects/scripts/publish-games.sh`，项目映射表位于 `/Users/xjc/Documents/kids-projects/scripts/publish-map.tsv`。
 - 2026-08-02: `publish-map.tsv` 采用 6 列：源文件/目录、作品集目录、标题、简介、类型、图标；首页按类型分组生成。
@@ -43,7 +55,11 @@ Record commands that are useful but not obvious.
 
 ```bash
 python3 -m http.server 8787
-PUBLISH_SKIP_GIT=1 /Users/xjc/Documents/kids-projects/scripts/publish-games.sh
+PUBLISH_SKIP_GIT=1 ./scripts/publish-games.sh
+./scripts/publish-games.sh
+./scripts/project-control.sh help
+./scripts/project-control.sh save
+./scripts/project-control.sh publish
 /Users/xjc/Developer/games/启动\ Space\ Hideout.command
 ```
 
@@ -93,6 +109,8 @@ Format:
 - 2026-08-10: 作品集内误开 `11-Space Hideout/apps/client/index.html` 时会自动回到根游戏页，避免显示无样式开发源码。
 - 2026-08-10: Space Hideout 线上试玩同步了准备舱猎手信号播报、原创能量失效标记、导航驱动 AI、跃迁管、梯子和单向滑索；仍不包含任何现有游戏的地图或素材。
 - 2026-08-12: 修复发布脚本：支持扫描 `games` 根目录和 `projects` 目录，恢复并同步 `roof-piano-camp`，发布 `blast-grid-arena` 为 `12-Blast Grid Arena · 爆格竞技场`，清理发布目录里的依赖和内部记忆文件。
+- 2026-08-24: 固定新工作流：新项目在 `projects/` 中建立并继承共享偏好；“存档”只做本地 Git 提交，“发布”才生成作品墙并推送 GitHub。
+- 2026-08-24: 增加统一项目管理脚本，配置每小时本地存档和每天 21:00 推送；自动存档不会提交文件删除，保护现有作品。
 
 ## Do Not Store
 

@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SOURCE_DIR="/Users/xjc/Developer/games/projects"
-SOURCE_ROOTS=(
-  "/Users/xjc/Developer/games/projects"
-  "/Users/xjc/Developer/games"
-)
-TARGET_REPO="/Users/xjc/Documents/kids-projects"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TARGET_REPO="$(cd "$SCRIPT_DIR/.." && pwd)"
+SOURCE_DIR="$TARGET_REPO/projects"
+SOURCE_ROOTS=("$SOURCE_DIR")
+
+# Keep compatibility with projects that may still exist in the old computer layout.
+for legacy_root in "/Users/xjc/Developer/games/projects" "/Users/xjc/Developer/games"; do
+  if [[ -d "$legacy_root" ]]; then
+    SOURCE_ROOTS+=("$legacy_root")
+  fi
+done
 MAP_FILE="$TARGET_REPO/scripts/publish-map.tsv"
 PUBLISH_SKIP_GIT="${PUBLISH_SKIP_GIT:-0}"
 
@@ -158,6 +163,17 @@ append_new_projects_to_map() {
   done | while read -r source_path; do
     local source_file title number folder description category icon
     source_file="$(basename "$source_path")"
+
+    # Drafts created inside this repository stay out of the public portfolio
+    # until project-control.sh adds an explicit publish marker.
+    if [[ "$source_path" == "$SOURCE_DIR"/* ]]; then
+      if [[ -d "$source_path" && ! -f "$source_path/.publish" ]]; then
+        continue
+      fi
+      if [[ -f "$source_path" && ! -f "$source_path.publish" ]]; then
+        continue
+      fi
+    fi
 
     if ! is_source_root_project_candidate "$source_path"; then
       continue
@@ -708,6 +724,7 @@ sync_projects() {
         --exclude 'MEMORY.md' \
         --exclude '.env' \
         --exclude '.env.*' \
+        --exclude '.publish' \
         "$source_path/." "$target_dir/"
       if [[ -f "$target_dir/index.html" ]]; then
         has_root_index="yes"
@@ -1181,7 +1198,7 @@ if [[ "$PUBLISH_SKIP_GIT" == "1" ]]; then
   exit 0
 fi
 
-git add .gitignore AGENTS.md MEMORY.md README.md index.html scripts/publish-games.sh scripts/publish-map.tsv [0-9][0-9]-*
+git add .gitignore AGENTS.md MEMORY.md README.md index.html projects scripts/publish-games.sh scripts/publish-map.tsv [0-9][0-9]-*
 
 if git diff --cached --quiet; then
   echo "没有新的变化需要提交，继续检查是否有未推送内容。"
