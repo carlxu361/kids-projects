@@ -122,6 +122,13 @@ find_source_path() {
     fi
   done
 
+  # Numbered projects may live at the repository root as published source.
+  candidate="$TARGET_REPO/$source_file"
+  if [[ -e "$candidate" ]]; then
+    printf "%s" "$candidate"
+    return 0
+  fi
+
   return 1
 }
 
@@ -685,7 +692,7 @@ sync_projects() {
 
     local source_path target_dir has_root_index
     if ! source_path="$(find_source_path "$source_file")"; then
-      echo "跳过：找不到 $source_file。请确认源项目没有被移动或删除。"
+      echo "跳过：找不到 ${source_file:-未知项目}。请确认源项目没有被移动或删除。"
       continue
     fi
     target_dir="$TARGET_REPO/$folder"
