@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#17324d">
+  <meta name="description" content="一至六年级语文、数学、英语学习训练游戏">
+  <title>学习探险手册</title>
+  <link rel="stylesheet" href="styles.css?v=4">
+</head>
+<body>
+  <div class="paper-noise" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <button class="brand" id="homeButton" type="button" aria-label="回到首页">
+      <span class="brand-mark" aria-hidden="true">✦</span>
+      <span><strong>学习探险手册</strong><small id="brandGrade">五年级 · 全册复习</small></span>
+    </button>
+    <div class="header-actions">
+      <button class="energy-wallet" id="shopButton" type="button" aria-label="打开能量补给站">
+        <span aria-hidden="true">⚡</span><strong id="headerEnergy">0</strong><small>去使用</small>
+      </button>
+      <button class="quiet-button game-menu-button" id="gameMenuButton" type="button">小游戏</button>
+      <button class="quiet-button" id="petButton" type="button">宠物</button>
+      <label class="theme-picker">
+        <span>手册主题</span>
+        <select id="themeSelect" aria-label="选择手册主题">
+          <option value="classroom">蓝墨课堂</option>
+          <option value="forest">森林考察</option>
+          <option value="space">星际夜航</option>
+        </select>
+      </label>
+      <button class="quiet-button" id="wrongBookButton" type="button">错题本 <span id="wrongCountBadge">0</span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="screen active" id="homeScreen" aria-labelledby="homeTitle">
+      <section class="grade-bar" aria-labelledby="gradeTitle">
+        <div><span>当前训练年级</span><strong id="gradeTitle">五年级</strong></div>
+        <div class="grade-switcher" role="group" aria-label="切换年级">
+          <button type="button" data-grade="1">一</button>
+          <button type="button" data-grade="2">二</button>
+          <button type="button" data-grade="3">三</button>
+          <button type="button" data-grade="4">四</button>
+          <button class="active" type="button" data-grade="5">五</button>
+          <button type="button" data-grade="6">六</button>
+        </div>
+        <p id="gradeStatus">完整教材题库 · 人教版语文数学、湘少版英语</p>
+      </section>
+
+      <div class="hero notebook-panel">
+        <div class="hero-copy">
+          <p class="eyebrow" id="heroEyebrow">五年级 · 全册能力训练</p>
+          <h1 id="homeTitle">先找漏洞，<br><em>再稳稳拿分。</em></h1>
+          <p class="hero-intro">每次选一科完成一轮训练。答错不可怕：马上看懂原因，再做一道举一反三。</p>
+          <p class="active-title" id="activeTitle" hidden></p>
+          <div class="hero-actions">
+            <button class="primary-button" id="quickStartButton" type="button">开始今日训练</button>
+            <button class="text-button" id="howToButton" type="button">怎么玩？</button>
+          </div>
+        </div>
+        <div class="route-map" aria-label="三科学习路线图">
+          <p class="route-map-heading">选择一条路线出发</p>
+          <div class="route-line" aria-hidden="true"></div>
+          <button class="route-stop chinese" type="button" data-route-subject="chinese"><span>语</span><strong>读懂与表达</strong><small>语文路线</small></button>
+          <button class="route-stop math" type="button" data-route-subject="math"><span>数</span><strong>算对与想清</strong><small>数学路线</small></button>
+          <button class="route-stop english" type="button" data-route-subject="english"><span>英</span><strong>词句与运用</strong><small>英语路线</small></button>
+          <div class="finish-flag"><span aria-hidden="true">⚑</span><strong>完成训练</strong><small>抵达今日营地</small></div>
+        </div>
+      </div>
+
+      <section class="stats-strip" aria-label="学习数据">
+        <div><span>知识能量</span><strong id="totalPoints">0</strong></div>
+        <div><span>完成训练</span><strong id="sessionCount">0</strong></div>
+        <div><span>总正确率</span><strong id="accuracyValue">—</strong></div>
+        <div><span>连续答对</span><strong id="bestStreak">0</strong></div>
+      </section>
+
+      <section class="subject-section" aria-labelledby="subjectTitle">
+        <div class="section-heading">
+          <div><p class="eyebrow">选择今天的路线</p><h2 id="subjectTitle">三科分开练，薄弱处重点练</h2></div>
+          <p>每轮约 5–10 分钟 · 不倒计时</p>
+        </div>
+        <div class="subject-grid">
+          <article class="subject-card chinese-card">
+            <div class="subject-tab" id="chineseEdition">语文 · 人教版</div>
+            <div class="subject-icon" aria-hidden="true">文</div>
+            <h3>语文寻踪</h3>
+            <p id="chineseDescription">古诗、汉字、名著、人物描写与阅读方法。</p>
+            <div class="subject-progress"><span><i id="chineseProgress"></i></span><small id="chineseStats">还未训练</small></div>
+            <button class="subject-button" type="button" data-subject="chinese">进入语文路线</button>
+          </article>
+          <article class="subject-card math-card">
+            <div class="subject-tab" id="mathEdition">数学 · 人教版</div>
+            <div class="subject-icon" aria-hidden="true">π</div>
+            <h3>数学解谜</h3>
+            <p id="mathDescription">因数倍数、长方体、分数、图形与统计。</p>
+            <div class="subject-progress"><span><i id="mathProgress"></i></span><small id="mathStats">还未训练</small></div>
+            <button class="subject-button" type="button" data-subject="math">进入数学路线</button>
+          </article>
+          <article class="subject-card english-card">
+            <div class="subject-tab" id="englishEdition">英语 · 湘少版</div>
+            <div class="subject-icon subject-icon-en" aria-hidden="true">Aa</div>
+            <h3>English Trip</h3>
+            <p id="englishDescription">Unit 1–12 词汇、句型、方向与过去时。</p>
+            <div class="subject-progress"><span><i id="englishProgress"></i></span><small id="englishStats">还未训练</small></div>
+            <button class="subject-button" type="button" data-subject="english">进入英语路线</button>
+          </article>
+        </div>
+      </section>
+
+      <section class="review-grid">
+        <article class="review-card wrong-card">
+          <div><p class="eyebrow">复习不是重复做会的题</p><h2>错题急救站</h2><p id="wrongBookSummary">答错的题会自动来到这里。</p></div>
+          <button class="secondary-button" id="reviewWrongButton" type="button">复习错题</button>
+        </article>
+        <article class="review-card method-card">
+          <p class="eyebrow">今天的训练方法</p>
+          <ol>
+            <li><span>1</span>先独立作答</li>
+            <li><span>2</span>错了读懂原因</li>
+            <li><span>3</span>用新题证明学会</li>
+          </ol>
+        </article>
+      </section>
+
+      <section class="play-section" aria-labelledby="playTitle">
+        <div class="section-heading">
+          <div><p class="eyebrow">能量不只是一个数字</p><h2 id="playTitle">补给、小游戏和收集</h2></div>
+          <p>训练获得能量，小游戏也能赚；能量可以换实用道具、主题和宠物用品。</p>
+        </div>
+        <div class="play-grid">
+          <article class="play-card supply-card">
+            <div class="play-card-mark" aria-hidden="true">⚡</div>
+            <p class="eyebrow">能量补给站</p>
+            <h3>把努力换成装备</h3>
+            <p>购买提示卡、双倍券、保护章、宠物食物和功能称号。</p>
+            <button class="secondary-button" id="openShopButton" type="button">打开补给站</button>
+          </article>
+          <article class="play-card factor-card">
+            <div class="play-card-mark" aria-hidden="true">×</div>
+            <p class="eyebrow">数学小游戏</p>
+            <h3>因数捕手</h3>
+            <p>找齐目标数的全部因数，别被“差一点能整除”骗了。</p>
+            <button class="secondary-button mini-game-button" type="button" data-game="factor">开始捕捉</button>
+          </article>
+          <article class="play-card word-card">
+            <div class="play-card-mark" aria-hidden="true">Aa</div>
+            <p class="eyebrow">英语小游戏</p>
+            <h3>单词翻翻乐</h3>
+            <p>翻开并配对 3 组英文与中文，完成可得能量。</p>
+            <button class="secondary-button mini-game-button" type="button" data-game="memory">开始配对</button>
+          </article>
+          <article class="play-card pet-card">
+            <div class="play-card-mark" id="homePetIcon" aria-hidden="true">◇</div>
+            <p class="eyebrow">学习伙伴</p>
+            <h3 id="homePetName">还没有出战宠物</h3>
+            <p id="homePetSummary">领养宠物后，答对应学科可获得额外能量。</p>
+            <button class="secondary-button" id="openPetButton" type="button">打开宠物营地</button>
+          </article>
+        </div>
+      </section>
+    </section>
+
+    <section class="screen" id="quizScreen" aria-labelledby="questionTitle">
+      <div class="quiz-shell">
+        <div class="quiz-toolbar">
+          <button class="back-button" id="exitQuizButton" type="button">← 暂停并返回</button>
+          <div class="quiz-meta">
+            <span id="quizSubject">语文</span>
+            <span id="difficultyLabel">基础</span>
+            <span id="questionCounter">第 1 / 10 题</span>
+          </div>
+        </div>
+        <div class="progress-track" aria-label="本轮进度"><i id="quizProgress"></i></div>
+
+        <div class="quiz-workspace">
+          <article class="question-paper">
+            <div class="paper-margin" aria-hidden="true"></div>
+            <div class="question-topline">
+              <span id="topicLabel">知识点</span>
+              <span id="typeLabel">选择题</span>
+            </div>
+            <h2 id="questionTitle">题目加载中……</h2>
+            <p class="question-note" id="questionNote"></p>
+            <form id="answerForm">
+              <div id="answerArea"></div>
+              <p class="form-message" id="formMessage" role="alert"></p>
+              <div class="answer-actions">
+                <button class="primary-button submit-button" id="submitAnswerButton" type="submit">检查答案</button>
+                <button class="hint-button" id="useHintButton" type="button">使用提示卡 <span id="hintCount">0</span></button>
+                <button class="scan-button" id="conditionScanButton" type="button" hidden>条件扫描 <span>1</span></button>
+              </div>
+              <p class="hint-message" id="hintMessage" aria-live="polite"></p>
+            </form>
+          </article>
+
+          <aside class="scratch-panel" aria-labelledby="scratchTitle">
+            <div class="scratch-heading">
+              <div><span>随手算一算</span><h2 id="scratchTitle">草稿区</h2></div>
+              <span class="pencil-mark" aria-hidden="true">✎</span>
+            </div>
+            <canvas id="scratchCanvas" aria-label="可用鼠标或手指书写的草稿纸"></canvas>
+            <div class="scratch-actions">
+              <button id="undoScratchButton" type="button">撤销一笔</button>
+              <button id="clearScratchButton" type="button">清空</button>
+            </div>
+            <p>鼠标按住写，手机用手指写。换题后自动清空。</p>
+          </aside>
+        </div>
+
+        <aside class="quiz-side-note">
+          <p>本轮记录</p>
+          <strong><span id="roundCorrect">0</span> 题答对</strong>
+          <span>当前连续：<b id="roundStreak">0</b></span>
+          <span>获得能量：<b id="roundPoints">0</b></span>
+        </aside>
+      </div>
+    </section>
+
+    <section class="screen" id="summaryScreen" aria-labelledby="summaryTitle">
+      <div class="summary-card notebook-panel">
+        <p class="eyebrow">本轮考察报告</p>
+        <div class="summary-stamp" id="summaryStamp">完成</div>
+        <h1 id="summaryTitle">路线完成！</h1>
+        <p id="summaryMessage">你已经找到了今天最值得复习的地方。</p>
+        <div class="summary-numbers">
+          <div><strong id="summaryCorrect">0/10</strong><span>答对题数</span></div>
+          <div><strong id="summaryPoints">+0</strong><span>知识能量</span></div>
+          <div><strong id="summaryLevel">基础</strong><span>结束难度</span></div>
+        </div>
+        <div class="weak-topics">
+          <h2>下一步重点</h2>
+          <div id="weakTopicList"></div>
+        </div>
+        <div class="summary-actions">
+          <button class="primary-button" id="retryButton" type="button">再练这一科</button>
+          <button class="secondary-button" id="summaryHomeButton" type="button">返回路线图</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="wrongBookScreen" aria-labelledby="wrongBookTitle">
+      <div class="wrong-book-page notebook-panel">
+        <div class="section-heading">
+          <div><p class="eyebrow">只练真正不会的</p><h1 id="wrongBookTitle">我的错题本</h1></div>
+          <button class="back-button" id="closeWrongBookButton" type="button">返回首页</button>
+        </div>
+        <div class="wrong-filter" id="wrongFilter" role="group" aria-label="按学科筛选错题">
+          <button class="active" type="button" data-filter="all">全部</button>
+          <button type="button" data-filter="chinese">语文</button>
+          <button type="button" data-filter="math">数学</button>
+          <button type="button" data-filter="english">英语</button>
+        </div>
+        <div id="wrongList" class="wrong-list"></div>
+        <div class="wrong-actions">
+          <button class="primary-button" id="startWrongPracticeButton" type="button">开始错题训练</button>
+          <button class="danger-text-button" id="clearWrongButton" type="button">清空已掌握错题</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="shopScreen" aria-labelledby="shopTitle">
+      <div class="shop-page notebook-panel">
+        <div class="section-heading">
+          <div><p class="eyebrow">努力会变成真正有用的东西</p><h1 id="shopTitle">能量补给站</h1></div>
+          <button class="back-button" id="closeShopButton" type="button">返回首页</button>
+        </div>
+        <div class="shop-wallet"><span aria-hidden="true">⚡</span><strong id="shopEnergy">0</strong><small>当前知识能量</small></div>
+        <div class="shop-grid" id="shopGrid">
+          <article class="shop-item" data-item="hint">
+            <div class="shop-item-icon" aria-hidden="true">?</div>
+            <div><p class="eyebrow">消耗品</p><h2>提示卡</h2><p>答题时使用：选择题排除两个错误项，输入题给出关键提示。</p></div>
+            <button type="button" data-buy="hint"><span>40</span> ⚡ · 购买</button>
+          </article>
+          <article class="shop-item" data-item="double">
+            <div class="shop-item-icon" aria-hidden="true">×2</div>
+            <div><p class="eyebrow">消耗品</p><h2>双倍能量券</h2><p>下一轮训练自动启用，答题获得的能量翻倍。</p></div>
+            <button type="button" data-buy="double">80 ⚡ · 购买</button>
+          </article>
+          <article class="shop-item" data-item="shield">
+            <div class="shop-item-icon" aria-hidden="true">◇</div>
+            <div><p class="eyebrow">消耗品</p><h2>连胜保护章</h2><p>下一次答错时自动消耗，保住当前连续答对次数。</p></div>
+            <button type="button" data-buy="shield">60 ⚡ · 购买</button>
+          </article>
+          <article class="shop-item" data-item="snack">
+            <div class="shop-item-icon" aria-hidden="true">♧</div>
+            <div><p class="eyebrow">宠物用品</p><h2>成长饼干</h2><p>在宠物营地喂食，为出战宠物增加 15 点经验。</p></div>
+            <button type="button" data-buy="snack">30 ⚡ · 购买</button>
+          </article>
+          <article class="shop-item" data-item="ocean">
+            <div class="shop-item-icon" aria-hidden="true">≈</div>
+            <div><p class="eyebrow">特别主题</p><h2>深海实验室</h2><p>解锁蓝绿色深海手册主题，购买后永久保留。</p></div>
+            <button type="button" data-buy="ocean"><span>160</span> ⚡ · 解锁</button>
+          </article>
+          <article class="shop-item" data-item="detective">
+            <div class="shop-item-icon" aria-hidden="true">⌕</div>
+            <div><p class="eyebrow">功能称号</p><h2>避坑侦探</h2><p>永久解锁“条件扫描”：每轮一次，标出题目中容易漏看的关键词。</p></div>
+            <button type="button" data-buy="detective"><span>120</span> ⚡ · 解锁</button>
+          </article>
+        </div>
+        <p class="shop-message" id="shopMessage" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section class="screen" id="gameScreen" aria-labelledby="miniGameTitle">
+      <div class="mini-game-page notebook-panel">
+        <div class="section-heading">
+          <div><p class="eyebrow">不倒计时，认真判断</p><h1 id="miniGameTitle">训练小游戏</h1></div>
+          <button class="back-button" id="closeGameButton" type="button">返回首页</button>
+        </div>
+        <div class="game-switcher" role="group" aria-label="选择小游戏">
+          <button type="button" data-switch-game="factor">因数捕手</button>
+          <button type="button" data-switch-game="memory">单词翻翻乐</button>
+        </div>
+
+        <div class="mini-game-panel" id="factorGame" hidden>
+          <p class="game-reward">完成奖励：<strong>+20 ⚡</strong></p>
+          <h2>找出 <span id="factorTarget">24</span> 的全部因数</h2>
+          <p>可以选多个。少选或多选都不算找齐。</p>
+          <div class="factor-board" id="factorBoard"></div>
+          <button class="primary-button" id="checkFactorsButton" type="button">检查捕捉结果</button>
+        </div>
+
+        <div class="mini-game-panel" id="memoryGame" hidden>
+          <p class="game-reward">完成奖励：<strong>+20 ⚡</strong></p>
+          <h2>配对英文和中文</h2>
+          <p>每次翻两张牌。配对错误会重新盖上。</p>
+          <div class="memory-board" id="memoryBoard"></div>
+        </div>
+
+        <div class="game-result" id="gameResult" hidden>
+          <strong id="gameResultTitle">完成！</strong>
+          <p id="gameResultText"></p>
+          <button class="secondary-button" id="playAgainButton" type="button">再玩一次</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="petScreen" aria-labelledby="petTitle">
+      <div class="pet-page notebook-panel">
+        <div class="section-heading">
+          <div><p class="eyebrow">宠物不是摆设，它会陪你成长</p><h1 id="petTitle">宠物营地</h1></div>
+          <button class="back-button" id="closePetButton" type="button">返回首页</button>
+        </div>
+        <section class="active-pet-panel" id="activePetPanel">
+          <div class="active-pet-icon" id="activePetIcon" aria-hidden="true">◇</div>
+          <div>
+            <p class="eyebrow">当前出战</p>
+            <h2 id="activePetName">还没有宠物</h2>
+            <p id="activePetSkill">先从下面免费领养墨团猫。</p>
+            <div class="pet-level"><span><i id="petXpBar"></i></span><small id="petLevelText">等级 0 · 0/50 XP</small></div>
+          </div>
+          <button class="secondary-button" id="feedPetButton" type="button" disabled>喂成长饼干（0）</button>
+        </section>
+        <div class="pet-grid" id="petGrid">
+          <article class="pet-option" data-pet="cat"><div class="pet-avatar cat">猫</div><h2>墨团猫</h2><p>语文题答对时，额外获得 1 点能量。</p><button type="button" data-pet-action="cat">免费领养</button></article>
+          <article class="pet-option" data-pet="fox"><div class="pet-avatar fox">狐</div><h2>几何狐</h2><p>数学题答对时，额外获得 1 点能量。</p><button type="button" data-pet-action="fox">100 ⚡ · 领养</button></article>
+          <article class="pet-option" data-pet="owl"><div class="pet-avatar owl">鸮</div><h2>单词鸮</h2><p>英语题答对时，额外获得 1 点能量。</p><button type="button" data-pet-action="owl">100 ⚡ · 领养</button></article>
+        </div>
+        <p class="pet-message" id="petMessage" aria-live="polite"></p>
+      </div>
+    </section>
+  </main>
+
+  <div class="feedback-overlay" id="feedbackOverlay" hidden>
+    <section class="feedback-card" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
+      <div class="feedback-mark" id="feedbackMark" aria-hidden="true">✓</div>
+      <p class="eyebrow" id="feedbackKicker">回答正确</p>
+      <h2 id="feedbackTitle">方法掌握了</h2>
+      <p class="answer-line" id="answerLine"></p>
+      <div class="explanation-box"><strong>为什么？</strong><p id="explanationText"></p></div>
+      <p class="transfer-notice" id="transferNotice" hidden>下一题会换个问法，检查你是否真的学会。</p>
+      <button class="primary-button" id="nextQuestionButton" type="button">下一题</button>
+    </section>
+  </div>
+
+  <div class="simple-dialog" id="howToDialog" hidden>
+    <section role="dialog" aria-modal="true" aria-labelledby="howToTitle">
+      <button class="dialog-close" id="closeHowToButton" type="button" aria-label="关闭">×</button>
+      <p class="eyebrow">三步训练法</p>
+      <h2 id="howToTitle">不是刷题，是把漏洞补上</h2>
+      <ol>
+        <li><strong>独立作答</strong><span>不倒计时，先把思路想清楚。</span></li>
+        <li><strong>马上纠错</strong><span>答错后看解释，错题自动记录。</span></li>
+        <li><strong>举一反三</strong><span>立刻做相似的新题，证明自己学会了。</span></li>
+      </ol>
+      <button class="primary-button" id="understoodButton" type="button">明白了</button>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="questions.js?v=3"></script>
+  <script src="grade-questions.js?v=1"></script>
+  <script src="game.js?v=7"></script>
+</body>
+</html>

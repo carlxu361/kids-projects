@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0c1112">
+  <title>撤离线：原型</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="game-wrap" aria-label="第一人称搜打撤原型">
+      <canvas id="gameCanvas" width="960" height="540"></canvas>
+      <div class="crosshair" aria-hidden="true"></div>
+      <div class="damage-vignette" id="damageVignette" aria-hidden="true"></div>
+      <div class="hud top-left">
+        <strong id="raidName">闸门水坝</strong>
+        <span id="timer">30:00</span>
+        <span id="objective">目标：搜物资并撤离</span>
+      </div>
+      <div class="hud top-right">
+        <span id="extractHint">撤离点：未知</span>
+        <span id="weightText">负重 0 / 35 kg</span>
+        <span id="soundState">声音：开</span>
+      </div>
+      <div class="hud bottom-left">
+        <div class="bar"><i id="hpBar"></i><b id="hpText">100</b></div>
+        <div class="bar stamina"><i id="staminaBar"></i><b>体力</b></div>
+      </div>
+      <div class="hud bottom-right">
+        <strong id="weaponName">R-9 Carbine</strong>
+        <span id="ammoText">24 / 72</span>
+        <span id="interactText">点击画面开始</span>
+      </div>
+      <div class="log" id="log"></div>
+    </section>
+
+    <aside class="panel">
+      <header>
+        <p>EXTRACTION LINE</p>
+        <h1>撤离线：原型</h1>
+      </header>
+
+      <section class="section">
+        <h2>部署</h2>
+        <div class="map-grid" id="mapGrid"></div>
+        <button class="primary" id="startRaid">开始行动</button>
+      </section>
+
+      <section class="section">
+        <h2>状态</h2>
+        <div class="stat-grid">
+          <span>现金 <b id="moneyText">0</b></span>
+          <span>仓库 <b id="stashCount">0</b></span>
+          <span>安全箱 <b id="secureCount">0/4</b></span>
+          <span>击倒 <b id="killsText">0</b></span>
+        </div>
+      </section>
+
+      <section class="section inventory-panel">
+        <div class="section-title">
+          <h2>背包</h2>
+          <button id="toggleInventory" type="button">打开</button>
+        </div>
+        <div class="grid-label">普通格子：死亡会掉落</div>
+        <div class="bag-grid" id="bagGrid"></div>
+        <div class="grid-label">安全箱：死亡不会掉落</div>
+        <div class="secure-grid" id="secureGrid"></div>
+      </section>
+
+      <section class="section">
+        <h2>仓库</h2>
+        <div class="stash" id="stashList"></div>
+        <button class="ghost" id="clearSave">重置存档</button>
+      </section>
+    </aside>
+  </main>
+
+  <dialog id="resultDialog">
+    <div class="result-card">
+      <p id="resultKicker">行动结束</p>
+      <h2 id="resultTitle">撤离成功</h2>
+      <p id="resultCopy"></p>
+      <div id="resultLoot"></div>
+      <button class="primary" id="closeResult">回到部署</button>
+    </div>
+  </dialog>
+
+  <script src="game.js"></script>
+</body>
+</html>
