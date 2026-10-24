@@ -245,24 +245,19 @@
         <div class="mark">🥋</div>
         <h1>竹节人</h1>
         <div class="category">动作竞技</div>
-        <p>原创竹节人格斗网页游戏，包含训练、对战和成长玩法。这是前后端联机工程：先启动本机程序，再用下面的网址进入游戏。</p>
+        <p>原创竹节人格斗网页游戏，包含训练、对战和成长玩法。当前作品墙展示的是介绍页；联机后端需要单独部署到 Vercel/云服务后才能线上游玩。</p>
         <form class="launcher" id="launcher-form">
-          <label for="game-url">游戏网址</label>
+          <label for="game-url">线上游戏网址（后端部署后填写）</label>
           <div class="launcher-row">
-            <input id="game-url" type="url" value="http://127.0.0.1:5173">
+            <input id="game-url" type="url" placeholder="https://your-bamboo-game.vercel.app">
             <button type="submit">打开</button>
             <button class="secondary" id="check-button" type="button">检测</button>
           </div>
-          <p class="message" id="message">如果页面打不开，先双击启动器。</p>
+          <p class="message" id="message">当前还没有线上后端地址，不会再自动打开本机路径。</p>
         </form>
         <div class="steps">
-          <div class="step">1. 双击启动器
-            <code>/Users/xjc/Developer/games/启动 Space Hideout.command</code>
-          </div>
-          <div class="step">2. 或者手动启动
-            <code>cd /Users/xjc/Developer/games/projects/14-竹节人</code>
-            <code>pnpm dev</code>
-          </div>
+          <div class="step">推荐方案：把这个工程作为独立 Vercel 项目部署，前端由 Vercel 托管，API 路由使用 Vercel Functions。</div>
+          <div class="step">如果需要真正多人实时对战，再把房间服务放到支持 WebSocket 的云服务，前端通过环境变量连接它。</div>
         </div>
         <a href="../">返回作品集</a>
       </section>
@@ -287,7 +282,7 @@
       try {
         return new URL(input.value.trim()).toString();
       } catch {
-        message.textContent = "网址格式不对，可以试试 http://127.0.0.1:5173";
+        message.textContent = "请先填写线上游戏网址，例如 https://your-bamboo-game.vercel.app";
         return null;
       }
     }

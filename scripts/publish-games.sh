@@ -800,7 +800,7 @@ write_readme() {
 EOF_README
 
   local categories category
-  categories="学习工具 联机原型 动作原型 派对竞技 益智合成 棋类策略 纸牌合集 社交推理 音乐训练 其他作品"
+  categories="学习工具 游戏 攻略研究 其他作品"
 
   for category in $categories; do
     if ! has_category "$category"; then
@@ -859,6 +859,7 @@ html_card() {
   local category="$4"
   local icon="$5"
   local number="$6"
+  local marker="${7:-}"
 
   local escaped_folder escaped_title escaped_description escaped_category escaped_icon escaped_number
   escaped_folder="$(printf "%s" "$folder" | html_escape)"
@@ -867,11 +868,15 @@ html_card() {
   escaped_category="$(printf "%s" "$category" | html_escape)"
   escaped_icon="$(printf "%s" "$icon" | html_escape)"
   escaped_number="$(printf "%s" "$number" | html_escape)"
+  local marker_html=""
+  if [[ "$marker" == "NEW" ]]; then
+    marker_html=' <span class="new-badge">NEW</span>'
+  fi
 
   cat >> "$TARGET_REPO/index.html" <<EOF_CARD
         <a class="project-card" href="./${escaped_folder}/" aria-label="${escaped_title}">
           <span class="project-icon" aria-hidden="true">${escaped_icon}</span>
-          <span class="project-meta">${escaped_category} · ${escaped_number}</span>
+          <span class="project-meta">${escaped_category} · ${escaped_number}${marker_html}</span>
           <h3>${escaped_title}</h3>
           <p>${escaped_description}。</p>
         </a>
@@ -885,7 +890,7 @@ write_static_ai_card() {
 write_map_cards_for_category() {
   local wanted="$1"
 
-  while IFS=$'\t' read -r _source_file folder title description category icon _extra; do
+  while IFS=$'\t' read -r _source_file folder title description category icon marker; do
     [[ -z "${_source_file:-}" ]] && continue
     category="${category:-其他作品}"
     icon="${icon:-$(project_icon "$category")}"
@@ -895,7 +900,7 @@ write_map_cards_for_category() {
 
     local number
     number="${folder%%-*}"
-    html_card "$folder" "$title" "$description" "$category" "$icon" "$number"
+    html_card "$folder" "$title" "$description" "$category" "$icon" "$number" "$marker"
   done < "$MAP_FILE"
 }
 
@@ -1128,6 +1133,16 @@ write_index() {
       font-size: 13px;
       font-weight: 800;
     }
+    .new-badge {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      color: #fff;
+      background: var(--pink);
+      font-size: 10px;
+      letter-spacing: .08em;
+    }
     h3 {
       margin: 8px 0 0;
       font-size: 22px;
@@ -1174,14 +1189,8 @@ EOF_INDEX
   perl -0pi -e "s/__PROJECT_COUNT__/$total_projects/g; s/__CATEGORY_COUNT__/$total_categories/g" "$TARGET_REPO/index.html"
 
   write_category_section "学习工具" "复习、识字、钢琴和 AI 学习辅助都放在这里。"
-  write_category_section "联机原型" "多人联机、房间、AI 决策这类工程型游戏。"
-  write_category_section "动作原型" "移动、瞄准、探索和战斗循环练习。"
-  write_category_section "派对竞技" "适合短时间重复游玩、看局势变化的本地游戏。"
-  write_category_section "益智合成" "规则简单、目标清楚，适合练习策略和观察。"
-  write_category_section "棋类策略" "需要提前思考和复盘的策略桌面游戏。"
-  write_category_section "纸牌合集" "用扑克牌规则做出来的小玩法集合。"
-  write_category_section "社交推理" "多人轮流操作、观察发言和判断身份的作品。"
-  write_category_section "音乐训练" "把音乐练习拆成更容易坚持的小关卡。"
+  write_category_section "游戏" "可以直接玩的动作、派对、益智和联机作品。"
+  write_category_section "攻略研究" "棋类、牌类和适合复盘研究的作品。"
   write_category_section "其他作品" "暂时还没归到固定类型里的项目。"
 
   cat >> "$TARGET_REPO/index.html" <<'EOF_INDEX'
