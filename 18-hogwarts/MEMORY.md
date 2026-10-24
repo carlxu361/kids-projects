@@ -7,7 +7,7 @@
 - Project name: Hogwarts Immersive Web Game
 - Created date: 2026-10-24
 - Main goal: 建设徐锦成的高品质浏览器 3D 魔法冒险游戏作品
-- Current status: P0 audit and P1 courtyard greybox are complete; the next stage is controller/camera stabilization and authored asset replacement.
+- Current status: P0 audit, P1 courtyard greybox, and the moonwell story spike are complete; the next stage is movement/camera stabilization, a compact duel, and authored asset replacement.
 - Tech stack: React, TypeScript, Vite, React Three Fiber, Three.js, Rapier, Zustand, GLSL tooling, pnpm
 
 ## User Preferences
@@ -29,6 +29,8 @@
 - 2026-10-24: P1 uses deterministic procedural geometry and marks the scene `PLACEHOLDER ART`; no unverified reference assets are part of the main app.
 - 2026-10-24: Keep R3F hooks inside Canvas and render HTML overlays outside Canvas. Performance telemetry uses an in-Canvas collector plus a Zustand bridge.
 - 2026-10-24: Third-person camera uses direct `camera.lookAt()` after quaternion interpolation failed to produce a visible view in browser smoke; camera collision and smoother shoulder framing remain P2 work.
+- 2026-10-24: Keep the first playable slice narrow and complete: mentor teaches Lumos, three runes open the moonwell, and a hidden relic rewards exploration. Quest rules stay in a pure reducer and interactions resolve from nearby stage-valid targets.
+- 2026-10-24: Ambient sound and short cues are Web Audio synthesis placeholders, avoiding unverified audio assets while adding an audio feedback layer.
 
 ## Architecture Notes
 
@@ -67,6 +69,7 @@ pnpm build
 
 - 2026-10-24: Read the repository instructions and root memory, confirmed the project directory is empty, and created this project-level `AGENTS.md` and `MEMORY.md`.
 - 2026-10-24: Completed the three reference audits, created P0/P1 documentation, implemented the procedural courtyard and shared camera/player foundation, and verified typecheck, lint, unit tests, production build, and browser smoke.
+- 2026-10-24: Added the moonwell story spike with red/green TDD for quest transitions, target selection, and store actions; verified tests and production build and documented browser smoke, performance sample, and open art gaps in `docs/spike-vertical-slice.md`.
 
 ## Do Not Store
 

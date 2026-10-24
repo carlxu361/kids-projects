@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { useGameStore } from "../../core/state/game-store";
 import { FirstPersonWand } from "./FirstPersonWand";
+import { startSoundscape } from "../../core/audio/soundscape";
 
 interface CameraRigProps {
   player: RefObject<EcctrlHandle | null>;
@@ -17,7 +18,6 @@ export function CameraRig({ player }: CameraRigProps) {
   const desiredPosition = useMemo(() => new THREE.Vector3(), []);
   const lookTarget = useMemo(() => new THREE.Vector3(), []);
   const forward = useMemo(() => new THREE.Vector3(), []);
-  const helper = useMemo(() => new THREE.Object3D(), []);
 
   useEffect(() => {
     const onPointerMove = (event: PointerEvent) => {
@@ -27,9 +27,8 @@ export function CameraRig({ player }: CameraRigProps) {
     };
 
     const onCanvasClick = () => {
-      if (useGameStore.getState().cameraMode === "first") {
-        gl.domElement.requestPointerLock?.();
-      }
+      startSoundscape();
+      gl.domElement.requestPointerLock?.();
     };
 
     window.addEventListener("pointermove", onPointerMove);
@@ -52,8 +51,8 @@ export function CameraRig({ player }: CameraRigProps) {
 
     const position = handle.currPos;
     if (cameraMode === "third") {
-      desiredPosition.set(Math.sin(yaw.current) * 6.5, 3.8, Math.cos(yaw.current) * 6.5).add(position);
-      lookTarget.set(position.x, position.y + 1.05, position.z);
+      desiredPosition.set(Math.sin(yaw.current) * 8.4, 4.25, Math.cos(yaw.current) * 8.4).add(position);
+      lookTarget.set(position.x, position.y + 1.12, position.z);
     } else {
       forward.set(
         Math.sin(yaw.current) * Math.cos(pitch.current),
@@ -66,13 +65,7 @@ export function CameraRig({ player }: CameraRigProps) {
 
     const smoothing = 1 - Math.exp(-delta * 12);
     camera.position.lerp(desiredPosition, smoothing);
-    if (cameraMode === "third") {
-      camera.lookAt(lookTarget);
-    } else {
-      helper.position.copy(camera.position);
-      helper.lookAt(lookTarget);
-      camera.quaternion.slerp(helper.quaternion, smoothing);
-    }
+    camera.lookAt(lookTarget);
   });
 
   return <FirstPersonWand visible={cameraMode === "first"} />;

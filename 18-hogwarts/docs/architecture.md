@@ -1,6 +1,6 @@
 # Technical architecture
 
-Status: P1 baseline
+Status: P1 spike baseline
 
 ## Runtime boundary
 
@@ -8,16 +8,18 @@ Status: P1 baseline
 
 ```text
 App
-├── GameStore (Zustand: camera mode, Lumos, debug, quality)
-├── KeyboardShortcuts (V, 1, F3)
+├── GameStore (Zustand: camera mode, Lumos, quest stage, target, debug, quality)
+├── KeyboardShortcuts (V, 1, E, F3)
 ├── SceneCanvas
 │   ├── KeyboardControls
 │   ├── Physics
 │   │   ├── CollisionWorld
 │   │   └── PlayerController (Ecctrl)
 │   ├── MagicCourtyard
+│   ├── MoonwellQuestController (nearby targets and passage trigger)
 │   ├── CameraRig (shared player reference)
 │   └── Atmosphere
+├── Soundscape (gesture-started Web Audio ambience and cues)
 └── Hud / PerformancePanel
 ```
 
@@ -32,6 +34,9 @@ App
 | Physics | Rapier world and colliders | `src/core/physics/`, `src/world/collisions/` |
 | Player | Ecctrl wrapper, visual, camera target | `src/player/` |
 | World | Procedural courtyard and atmosphere | `src/world/` |
+| Quest rules | Pure story transition reducer | `src/quests/quest-machine.ts` |
+| Interactions | Stage-aware nearest target and chamber threshold | `src/world/interactions/` |
+| Audio | Synthesized ambience and short feedback cues | `src/core/audio/soundscape.ts` |
 | Spells | Definitions and pure cooldown rules | `src/spells/` |
 | UI | HUD, help, diagnostics | `src/ui/` |
 | Tests | Pure rule tests and future browser checks | `tests/` |
@@ -42,15 +47,15 @@ App
 2. Ecctrl updates one Rapier character body.
 3. `CameraRig` reads the Ecctrl handle and positions the active camera mode around the same body.
 4. `GameStore` changes presentation state such as `cameraMode` and `lumosEnabled`; it does not own per-frame physics.
-5. Spell rules will emit gameplay events. VFX components will subscribe to those events and release their resources when the event ends.
+5. The quest reducer owns story progression; VFX and sound provide feedback and cannot decide quest completion.
 
 ## Camera decisions
 
-P1 uses a single camera and one player reference. Third-person follows from behind the camera yaw; first-person uses the same position and yaw with a local wand presentation. The initial slice keeps obstacle correction and full Pointer Lock tuning for P2, so P1 is honest about its scope.
+The two camera modes share the player and quest state. First-person hides the player mesh and presents a local wand; switching view does not reset quest progress. Click the scene to request pointer lock. Camera obstacle correction, polished transitions, and extended input states remain future work.
 
 ## Asset decisions
 
-P1 uses procedural geometry and CSS/Three materials only. It contains no copied model, texture, audio, or HDR asset from the reference repositories. The asset gap is tracked in `docs/asset-gap-list.md`.
+The spike uses procedural geometry and Web Audio synthesis. It contains no copied model, texture, audio, or HDR asset from the reference repositories. The asset gap is tracked in `docs/asset-gap-list.md`.
 
 ## Performance decisions
 

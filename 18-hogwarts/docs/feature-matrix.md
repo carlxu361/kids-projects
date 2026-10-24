@@ -16,10 +16,12 @@ Legend: `done` means implemented and checked in the current stage; `partial` mea
 | Ecctrl WASD / run / jump | — | done | crouch / prone | combat movement | polish |
 | Third-person camera | — | partial | shoulder / obstacle correction | combat framing | regression |
 | First-person camera | — | partial | pointer lock / wand animation | spell aim | regression |
-| Lumos | — | partial (light rule + presentation) | environment triggers | puzzle use | polish |
+| Lumos | — | done for moonwell rune reveal and local light | more environment triggers | puzzle use | polish |
 | Spell registry / cooldown rule | — | done foundation | six spells | combo system | balance |
 | Accio / Levioso / Expelliarmus / Protego / Confringo | — | planned | planned | done target | polish |
-| NPC / quest flow | — | planned | planned | vertical slice | polish |
+| Mentor dialogue / moonwell quest | — | done (compact spike) | interaction polish | expanded story | polish |
+| Rune puzzle / hidden relic | — | done (compact spike) | spatial feedback | more puzzle types | polish |
+| Synthesized ambience / spell cues | — | partial (browser-generated) | spatial audio | authored mix | licensed audio assets |
 | Enemy state machine | — | planned | planned | vertical slice | balance |
 | Debug telemetry | — | done | expand physics / spell stats | QA tools | public build gate |
 | Typecheck / lint / unit / build | — | done | keep green | keep green | release gate |

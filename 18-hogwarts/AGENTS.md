@@ -88,6 +88,6 @@ pnpm build
 
 - Planned tech stack: React, TypeScript, Vite, React Three Fiber, Three.js, Rapier, Zustand, GLSL tooling, and pnpm.
 - Important folders: `docs/`, `references/`, `src/`, `public/`, `tests/`, and `scripts/`.
-- First priority: a high-quality Gothic magic courtyard and reliable shared first-person/third-person foundations.
+- First priority: make one compact magic-world scene feel complete and immersive before widening the map; protect code quality with tests and keep each milestone documented.
 - Do not depend on a specific macOS username or absolute home-directory path.
 - Do not delete or overwrite unrelated projects or published game folders.

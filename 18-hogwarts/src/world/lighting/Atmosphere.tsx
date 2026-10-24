@@ -3,8 +3,8 @@ import { Sparkles, Stars } from "@react-three/drei";
 export function Atmosphere() {
   return (
     <>
-      <hemisphereLight args={["#7e91c7", "#090b14", 1.15]} />
-      <ambientLight color="#9ea8d5" intensity={0.38} />
+      <hemisphereLight args={["#8498cf", "#121520", 1.42]} />
+      <ambientLight color="#9ea8d5" intensity={0.52} />
       <directionalLight
         castShadow
         color="#d8ddff"

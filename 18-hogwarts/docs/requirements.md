@@ -1,6 +1,6 @@
 # Hogwarts Immersive Web Game — requirements baseline
 
-Status: P0 approved for implementation, P1 in progress
+Status: P0 and P1 foundations complete; compact P1 story spike implemented; broader P2/P3 scope remains planned
 
 Date: 2026-10-24
 
@@ -37,21 +37,26 @@ The previous project brief describes an existing demo with a third-person courty
 - First-person wand presentation and a real nearby Lumos point light.
 - Zustand store for camera mode, Lumos state, debug HUD, and quality mode.
 - Spell registry and cooldown utility so visual effects do not own gameplay rules.
+- Compact, complete first-play loop: meet mentor, learn Lumos, reveal three moonwell runes, open the passage, and collect the hidden relic.
+- Context-sensitive keyboard and HUD interaction, state-aware rune targeting, and synthesized ambience/feedback with no unlicensed audio dependency.
+- TDD for pure quest transitions, interaction targeting, and shared Zustand actions.
 - Type checking, linting, unit test, production build, and manual browser smoke entry point.
 
-### P2 — dual-view interaction
+### P2 — dual-view interaction and robust movement
 
 - Pointer Lock mouse look, smooth 0.2–0.35 second camera transition, third-person shoulder offset, camera obstacle correction, and first-person local-model hiding.
 - Crouch and prone state with matching collider and animation changes.
 - Mobile camera-mode button and controller/R3 input mapping.
 - Accio, Levioso, Expelliarmus, Protego, and Confringo with distinct rule and VFX modules.
 
-### P3 — vertical slice
+### P3 — expanded vertical slice
 
 - Explore courtyard, enter classroom, learn a spell, solve an environmental puzzle, find a hidden room, duel, and receive a reward.
 - NPC dialogue and task guidance.
 - Explainable enemy state machine with patrol, alert, reposition, cast, defend, control reaction, failure, and retreat.
 - Easy, normal, and challenge presets.
+
+The compact moonwell story is an implemented spike and does not claim the broader P3 classroom, duel, NPC, or enemy scope is complete. Its evidence and limitations are tracked in `docs/spike-vertical-slice.md`.
 
 ### P4 — quality and release
 

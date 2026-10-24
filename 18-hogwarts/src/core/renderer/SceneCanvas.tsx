@@ -10,6 +10,7 @@ import { CollisionWorld } from "../../world/collisions/CollisionWorld";
 import { MagicCourtyard } from "../../world/environments/MagicCourtyard";
 import { Atmosphere } from "../../world/lighting/Atmosphere";
 import { PerformanceCollector } from "../../ui/PerformancePanel";
+import { MoonwellQuestController } from "../../world/interactions/MoonwellQuestController";
 
 const keyboardMap = [
   { name: "forward", keys: ["ArrowUp", "KeyW"] },
@@ -45,6 +46,7 @@ export function SceneCanvas() {
           <MagicCourtyard />
           <CollisionWorld />
           <PlayerController playerRef={playerRef} />
+          <MoonwellQuestController player={playerRef} />
           <CameraRig player={playerRef} />
           <PerformanceCollector />
         </Physics>
