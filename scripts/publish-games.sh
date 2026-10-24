@@ -860,6 +860,7 @@ html_card() {
   local icon="$5"
   local number="$6"
   local marker="${7:-}"
+  local updated="${8:-未知}"
 
   local escaped_folder escaped_title escaped_description escaped_category escaped_icon escaped_number
   escaped_folder="$(printf "%s" "$folder" | html_escape)"
@@ -876,7 +877,7 @@ html_card() {
   cat >> "$TARGET_REPO/index.html" <<EOF_CARD
         <a class="project-card" href="./${escaped_folder}/" aria-label="${escaped_title}">
           <span class="project-icon" aria-hidden="true">${escaped_icon}</span>
-          <span class="project-meta">${escaped_category} · ${escaped_number}${marker_html}</span>
+          <span class="project-meta">${escaped_category} · ${escaped_number}${marker_html} · 更新于 ${updated}</span>
           <h3>${escaped_title}</h3>
           <p>${escaped_description}。</p>
         </a>
@@ -884,7 +885,9 @@ EOF_CARD
 }
 
 write_static_ai_card() {
-  html_card "02-AI学习助手" "AI学习助手" "AI 驱动的学习助手，制定计划、跟踪进度、收集徽章" "学习工具" "🤖" "02"
+  local updated
+  updated="$(git -C "$TARGET_REPO" log -1 --format='%ad' --date=short -- '02-AI学习助手' 2>/dev/null || echo '未知')"
+  html_card "02-AI学习助手" "AI学习助手" "AI 驱动的学习助手，制定计划、跟踪进度、收集徽章" "学习工具" "🤖" "02" "" "$updated"
 }
 
 write_map_cards_for_category() {
@@ -900,7 +903,9 @@ write_map_cards_for_category() {
 
     local number
     number="${folder%%-*}"
-    html_card "$folder" "$title" "$description" "$category" "$icon" "$number" "$marker"
+    updated="$(git -C "$TARGET_REPO" log -1 --format='%ad' --date=short -- "$folder" 2>/dev/null || true)"
+    updated="${updated:-未知}"
+    html_card "$folder" "$title" "$description" "$category" "$icon" "$number" "$marker" "$updated"
   done < "$MAP_FILE"
 }
 

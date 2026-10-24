@@ -249,11 +249,11 @@
         <form class="launcher" id="launcher-form">
           <label for="game-url">游戏网址</label>
           <div class="launcher-row">
-            <input id="game-url" type="url" value="http://127.0.0.1:5173">
+            <input id="game-url" type="url" placeholder="https://your-last-base.vercel.app">
             <button type="submit">打开</button>
             <button class="secondary" id="check-button" type="button">检测</button>
           </div>
-          <p class="message" id="message">如果页面打不开，先双击启动器。</p>
+          <p class="message" id="message">当前需要先部署线上游戏地址，页面不会自动打开本机路径。</p>
         </form>
         <div class="steps">
           <div class="step">1. 双击启动器
@@ -287,7 +287,7 @@
       try {
         return new URL(input.value.trim()).toString();
       } catch {
-        message.textContent = "网址格式不对，可以试试 http://127.0.0.1:5173";
+        message.textContent = "请先填写线上游戏网址，例如 https://your-last-base.vercel.app";
         return null;
       }
     }
