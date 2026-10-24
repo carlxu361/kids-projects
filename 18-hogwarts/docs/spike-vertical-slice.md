@@ -33,7 +33,7 @@ The player and quest state are shared across first- and third-person views. This
 
 ## TDD evidence
 
-Three new test files were introduced before their corresponding implementation modules; their first run failed because those modules did not exist yet. Implementations were then added until the tests passed. The resulting checks cover:
+Quest-transition and target-selection tests were written before their pure implementation modules; the first red run exposed the missing modules. Store tests protect the shared actions used by the scene and HUD. The rules and integrations were then iterated until the suite passed. The resulting checks cover:
 
 - legal and illegal quest transitions, Lumos gating, idempotent rune progress, passage unlock, and terminal completion;
 - nearest eligible interaction selection, distance limits, and stage gating;
