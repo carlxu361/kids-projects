@@ -1,0 +1,15 @@
+# Project dependencies and generated output
+node_modules/
+.pnpm-store/
+dist/
+coverage/
+test-results/
+playwright-report/
+.DS_Store
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+
+# Local reference clones are intentionally kept outside the main source tree.
+references/*/
+!references/README.md
