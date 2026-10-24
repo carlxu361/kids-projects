@@ -1219,7 +1219,7 @@ if [[ "$PUBLISH_SKIP_GIT" == "1" ]]; then
   exit 0
 fi
 
-git add .gitignore AGENTS.md MEMORY.md README.md index.html projects scripts/publish-games.sh scripts/publish-map.tsv [0-9][0-9]-*
+git add .gitignore AGENTS.md MEMORY.md README.md CHANGELOG.md index.html projects scripts/publish-games.sh scripts/publish-map.tsv [0-9][0-9]-*
 
 if git diff --cached --quiet; then
   echo "没有新的变化需要提交，继续检查是否有未推送内容。"

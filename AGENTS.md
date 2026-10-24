@@ -70,6 +70,7 @@ If both `AGENTS.md` and `MEMORY.md` are missing, do not change project files or 
 - If the child says “存档但不要发布” or “不公开”, commit locally only. Never treat “存档” as permission to publish.
 - Before publishing, make sure the project has a usable browser entry point and does not expose secrets, admin controls, debug-only controls, `AGENTS.md`, or `MEMORY.md`.
 - After creating or meaningfully changing a child project, record stable preferences and important decisions in that project's `MEMORY.md`; update the root `MEMORY.md` only for preferences shared by future projects.
+- After changing a published project, update that project's `README.md` and `CHANGELOG.md`; update the root `CHANGELOG.md` when the portfolio layout or publishing workflow changes.
 - Use `scripts/project-control.sh save` for a manual local save and `scripts/project-control.sh publish <project-slug>` for an explicit new-project portfolio release.
 - New projects require a `projects/<project-slug>/.publish` marker before the publishing script may add them to the portfolio. Add this marker only for the project explicitly selected by the user.
 - An hourly task creates local Git commits. A daily task pushes committed work to GitHub but does not add drafts to the portfolio page.
