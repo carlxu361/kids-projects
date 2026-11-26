@@ -1615,7 +1615,7 @@ function shop() {
       purchase.disabled = true;
       purchase.textContent = '已兑换';
       ticket.hidden = false;
-      tile.classList.add('reward-redeemed');
+      tile.classList.add('reward-redeemed', 'reward-just-redeemed');
       status.textContent = stored ? '兑换成功。刷新或重播后还可以查看这张券。' : '这次兑换还在当前页面，请打开兑换券下载留存。';
       ticket.focus({ preventScroll: true });
     });

@@ -1824,3 +1824,97 @@ html[data-turn="daybreak"][data-turn-dir="back"]::view-transition-new(stage) {
     animation: none;
   }
 }
+
+/* ===== P1-1: Voucher redeem slam stamp ===== */
+.reward-card {
+  position: relative;
+}
+.reward-card.reward-redeemed {
+  animation: none;
+  border-color: #ffc36480;
+}
+.reward-card.reward-redeemed::after {
+  content: "已兑换";
+  position: absolute;
+  top: .95rem;
+  right: .95rem;
+  z-index: 2;
+  padding: .24rem .62rem;
+  border: 2px solid #ffd886;
+  border-radius: 6px;
+  background: #231130d9;
+  color: #ffe5a3;
+  font: 900 .78rem/1.15 ui-monospace, Menlo, monospace;
+  letter-spacing: .12em;
+  box-shadow: 0 0 14px #ffc3644d, inset 0 0 8px #ffc36426;
+  transform: rotate(-6deg);
+  pointer-events: none;
+}
+.reward-card.reward-just-redeemed {
+  animation: reward-card-slam 340ms cubic-bezier(.22, .68, .22, 1);
+}
+.reward-card.reward-just-redeemed::after {
+  animation: reward-stamp-slam 420ms cubic-bezier(.2, .85, .3, 1) both;
+}
+.reward-card.reward-just-redeemed::before {
+  content: "";
+  position: absolute;
+  top: -.1rem;
+  right: 1.05rem;
+  width: 3.6rem;
+  height: 3.6rem;
+  border-radius: 50%;
+  border: 2px solid #ffe094;
+  background: radial-gradient(circle, #ffd88655 0%, #ffc3641f 48%, transparent 72%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+  animation: reward-stamp-halo 520ms cubic-bezier(.18, .68, .22, 1) both;
+}
+@keyframes reward-card-slam {
+  0% { transform: none; }
+  30% { transform: translateY(2px) scale(.992); }
+  66% { transform: translateY(-1px) scale(1.003); }
+  100% { transform: none; }
+}
+@keyframes reward-stamp-slam {
+  0% {
+    opacity: 0;
+    transform: scale(1.65) rotate(-14deg);
+  }
+  58% {
+    opacity: 1;
+    transform: scale(.94) rotate(-5deg);
+  }
+  82% {
+    opacity: 1;
+    transform: scale(1.03) rotate(-6.4deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-6deg);
+  }
+}
+@keyframes reward-stamp-halo {
+  0% {
+    opacity: 0;
+    transform: scale(.35);
+  }
+  28% {
+    opacity: .95;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.85);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reward-card.reward-just-redeemed,
+  .reward-card.reward-just-redeemed::after,
+  .reward-card.reward-just-redeemed::before {
+    animation: none;
+  }
+  .reward-card.reward-just-redeemed::before {
+    opacity: 0;
+  }
+}
