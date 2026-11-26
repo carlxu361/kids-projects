@@ -40,7 +40,8 @@ function extrusion(shape, depth) {
   return new THREE.ExtrudeGeometry(shape, { depth, curveSegments: 32, bevelEnabled: false }).rotateX(Math.PI / 2);
 }
 
-const material = (color, roughness = .48) => new THREE.MeshStandardMaterial({ color, roughness });
+const material = (color, roughness = .48, envMapIntensity = .32) =>
+  new THREE.MeshStandardMaterial({ color, roughness, envMapIntensity });
 function add(parent, geometry, paint, x = 0, y = 0, z = 0) {
   const mesh = new THREE.Mesh(geometry, paint);
   mesh.position.set(x, y, z);
@@ -56,12 +57,36 @@ function dispose(group) {
   group.removeFromParent();
 }
 
+function createEnvironment(renderer) {
+  const envScene = new THREE.Scene();
+  envScene.background = new THREE.Color(0x231438);
+  const softbox = (color, width, height, x, y, z) => {
+    const panel = new THREE.Mesh(
+      new THREE.PlaneGeometry(width, height),
+      new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }),
+    );
+    panel.position.set(x, y, z);
+    panel.lookAt(0, 0, 0);
+    envScene.add(panel);
+  };
+  softbox(0xffdfb8, 14, 14, 0, 6, 0);
+  softbox(0xd8b8ff, 10, 8, -7, 2.5, 2);
+  softbox(0xffcca8, 9, 7, 7, 2, -2.5);
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const envRT = pmrem.fromScene(envScene, 0.045);
+  pmrem.dispose();
+  dispose(envScene);
+  return envRT;
+}
+
 export function mountCake(board, onLayout, onLost) {
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
   renderer.domElement.className = 'cake-webgl';
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
   renderer.setClearColor(0x000000, 0);
   const scene = new THREE.Scene();
+  const envRT = createEnvironment(renderer);
+  scene.environment = envRT.texture;
   const camera = new THREE.OrthographicCamera(-2, 2, 2, -2, .1, 30);
   camera.position.set(0, 3.5, 5.4);
   camera.lookAt(0, .45, 0);
@@ -75,7 +100,7 @@ export function mountCake(board, onLayout, onLost) {
   scene.add(rim);
 
   const plate = add(scene, profile([[0, .005], [1.06, .005], [1.23, .04], [1.27, .07],
-    [1.25, .10], [1.19, .10], [1.06, .055], [0, .055]]), material(0x51416e, .23));
+    [1.25, .10], [1.19, .10], [1.06, .055], [0, .055]]), material(0x51416e, .22, .55));
   plate.scale.set(1.19, 1, 1.19);
 
   let cake = new THREE.Group();
@@ -115,7 +140,7 @@ export function mountCake(board, onLayout, onLost) {
       } else if (flavor === 'strawberry') {
         const berry = profile([[0, 0], [.047, .008], [.068, .026], [.070, .054],
           [.060, .086], [.041, .114], [.020, .137], [0, .147]], 14);
-        add(group, berry, material(0xe42c54, .32), ...place);
+        add(group, berry, material(0xe42c54, .30, .42), ...place);
         const leaf = add(group, new THREE.SphereGeometry(.055, 8, 5), material(0x458441), place[0], top + .024, place[2]);
         leaf.scale.y = .22;
       } else {
@@ -135,22 +160,22 @@ export function mountCake(board, onLayout, onLost) {
     const whole = to - from >= turn;
     if (whole) {
       add(group, profile([[0, base], [.96, base], [1, base + .04], [1, top - .04],
-        [0, top - .04]]), material(recipe.glaze));
+        [0, top - .04]]), material(recipe.glaze, .26, .48));
       add(group, profile([[0, top], [.88, top - .005], [.98, top - .015],
-        [1.02, top - .045], [1.025, top - .075], [1, top - .085]]), material(recipe.glaze, .29));
+        [1.02, top - .045], [1.025, top - .075], [1, top - .085]]), material(recipe.glaze, .26, .48));
     } else {
       const inner = sector(.975, from, to);
       const layers = [recipe.crumb, recipe.cream, recipe.crumb, recipe.cream, recipe.crumb];
-      layers.forEach((color, i) => add(group, extrusion(inner, .116), material(color, .76), 0, base + .116 * (i + 1), 0));
-      add(group, extrusion(sector(1, from, to, .024), .58), material(recipe.glaze), 0, top - .06, 0);
-      add(group, extrusion(sector(1.025, from, to), .06), material(recipe.glaze, .29), 0, top, 0);
+      layers.forEach((color, i) => add(group, extrusion(inner, .116), material(color, .78, .10), 0, base + .116 * (i + 1), 0));
+      add(group, extrusion(sector(1, from, to, .024), .58), material(recipe.glaze, .26, .48), 0, top - .06, 0);
+      add(group, extrusion(sector(1.025, from, to), .06), material(recipe.glaze, .26, .48), 0, top, 0);
     }
 
     for (let i = 0; i < 24; i++) {
       const angle = (i + .7) * turn / 24;
       const phase = ((angle - from) % turn + turn) % turn;
       if (phase < .06 || phase > to - from - .06) continue;
-      const drop = add(group, new THREE.SphereGeometry(.042, 10, 7), material(recipe.glaze, .29),
+      const drop = add(group, new THREE.SphereGeometry(.042, 10, 7), material(recipe.glaze, .26, .48),
         1.003 * Math.cos(angle), top - .065, 1.003 * Math.sin(angle));
       drop.scale.set(1, 1 + (i % 5) * .45, 1);
     }
@@ -228,6 +253,8 @@ export function mountCake(board, onLayout, onLost) {
     renderer.domElement.removeEventListener('webglcontextlost', lose);
     dispose(cake);
     dispose(scene);
+    scene.environment = null;
+    envRT.dispose();
     renderer.dispose();
     renderer.forceContextLoss();
     renderer.domElement.remove();
