@@ -1408,7 +1408,10 @@ function finale() {
   });
   const controls = element('div', null, 'row finale-actions');
   const again = button('重新播放', () => go('intro'), 'primary');
-  controls.append(again, button('回看兑换券', () => go('shop')));
+  const blessing = element('button', '送上祝福');
+  blessing.type = 'button';
+  blessing.dataset.openBlessings = '';
+  controls.append(again, button('回看兑换券', () => go('shop')), blessing);
   panel.append(notes, controls);
   celebrate();
   const bursts = [setTimeout(celebrate, 950), setTimeout(celebrate, 2100)];

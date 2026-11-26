@@ -9,7 +9,7 @@ npm run build
 BIRTHDAY_DATE=2099-11-28 BIRTHDAY_PREVIEW_KEY=local-preview-only npm run birthday:preview
 ```
 
-打开 http://127.0.0.1:8787 检查 19 张卡片。打开 http://127.0.0.1:8787/birthday?preview=local-preview-only 预览整段旅程，返回首页可看到第 20 张卡。用无痕窗口验证普通访客。将日期设成过去日期并另开窗口，可验证解锁后的状态。上面的密钥只用于本地。
+打开 http://127.0.0.1:8787 检查 19 张卡片。普通访客可直接打开 http://127.0.0.1:8787/birthday。需要模拟提前授权时，打开 http://127.0.0.1:8787/birthday?preview=local-preview-only。将日期设为香港当天可验证首页横幅，设成过去日期可验证首页显示第 20 张卡。上面的密钥只用于本地。
 
 ## Vercel 部署
 
@@ -17,7 +17,7 @@ BIRTHDAY_DATE=2099-11-28 BIRTHDAY_PREVIEW_KEY=local-preview-only npm run birthda
 
 | 环境变量 | 用途 |
 | --- | --- |
-| `BIRTHDAY_DATE` | 默认 `2026-11-28`，香港时间零点解锁 |
+| `BIRTHDAY_DATE` | 默认 `2026-11-28`，香港时间当天展示首页横幅，次日展示项目卡片 |
 | `BIRTHDAY_PREVIEW_KEY` | 爸爸用来提前预览的随机密钥 |
 | `BIRTHDAY_FAMILY_KEY` | 生日后查看家庭私密素材的独立随机口令 |
 | `BIRTHDAY_SESSION_SECRET` | 建议设置随机会话签名密钥，缺省使用预览密钥 |
@@ -26,7 +26,8 @@ BIRTHDAY_DATE=2099-11-28 BIRTHDAY_PREVIEW_KEY=local-preview-only npm run birthda
 | `BIRTHDAY_GUIDE_MEDIA` | 可选授权向导图片在媒体映射里的 .webp 文件名 |
 | `BIRTHDAY_SONGS_JSON` | 可选家庭会话短谱覆盖，结构与 `content/songs.json` 相同 |
 | `AI_API_BASE`、`AI_API_KEY`、`AI_MODEL` | 许愿工作台的 OpenAI 兼容服务地址、服务端密钥和模型 ID |
-| `BIRTHDAY_REDIS_URL`、`BIRTHDAY_REDIS_TOKEN` | 服务端 Redis REST 与令牌，用于原子限流 |
+| `BIRTHDAY_REDIS_URL`、`BIRTHDAY_REDIS_TOKEN` | 服务端 Redis REST 地址和写入令牌，供祝福存储和愿望工作台限流 |
+| `BIRTHDAY_MODERATOR_KEY` | 独立家长审核口令，至少 32 字符，建议随机生成 |
 | `AI_MINUTE_LIMIT`、`AI_DAILY_LIMIT`、`AI_TOTAL_LIMIT` | 可选，默认每分钟 3 次、每日 20 次、活动 60 次 |
 | `BIRTHDAY_CREDITS_JSON` | 可选真实制作统计，以字段名覆盖彩蛋面板的样稿 |
 
@@ -41,8 +42,8 @@ BIRTHDAY_DATE=2099-11-28 BIRTHDAY_PREVIEW_KEY=local-preview-only npm run birthda
 
 ## 发布前彩排
 
-- 从普通浏览器核对生日之前 19 张卡、关卡与所有素材请求 404。
-- 预览会话和解锁后的普通会话分别打开首页，核对第 20 张卡。普通会话没有真实日志和家庭媒体。
+- 从普通浏览器核对生日前首页显示 19 张卡，`/birthday/card` 返回 404，直达关卡和公共素材可加载。
+- 当天核对首页顶部横幅，次日核对第 20 张卡。普通会话没有真实日志和家庭媒体。
 - Chrome 与 Safari 用键盘点亮 12 根蜡烛，验证自动换曲与切蛋糕，断网后继续玩已打开页面的愿望关，并检查家庭口令、图文来信、媒体播放、礼物与彩蛋。
 - 在授权的预览环境验证真实媒体源和浏览器控制台。
 
@@ -71,3 +72,7 @@ BIRTHDAY_DATE=2099-11-28 BIRTHDAY_PREVIEW_KEY=local-preview-only npm run birthda
 使用真实钢琴时，一次弹一个音。同一拍亮起多键时，逐个弹完本组即可继续。网页琴键支持鼠标、触屏和电脑键盘。用 Tab 聚焦琴键区后，可按标注键位弹奏，按 `[` 或 `]` 换八度。四首主线曲目每首首次完成可收集星核，旧曲可在「加演」中选择。
 
 琴声使用 Alexander Holm 的 Salamander Grand Piano，依照 CC BY 3.0 使用。采样、署名和双手示范复用作品墙训练营资源。
+
+## 访客祝福
+
+访客可从庆祝页谢幕或页脚打开祝福窗口。昵称和祝福进入 Redis 待审队列。家长打开窗口内的「家长审核」并输入审核口令，可批准公开或拒绝。预览与生产各自使用独立队列，审核口令与家庭素材口令分开配置。祝福窗口随归档后的项目一并保留。

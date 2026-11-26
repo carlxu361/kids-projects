@@ -1,3 +1,4 @@
+const { handleBlessings } = require('../lib/birthday-blessings.cjs');
 const { generate } = require('../lib/wish-ai.cjs');
 const { createHmac, timingSafeEqual } = require('node:crypto');
 const { readFile } = require('node:fs/promises');
@@ -33,6 +34,17 @@ function login(res, scope) {
   res.setHeader('Set-Cookie', 'birthday_session=' + scope + '.' + expires + '.' +
     sign(scope, expires) + '; HttpOnly; SameSite=Lax; Path=/; Max-Age=' + sessionSeconds + secure);
   res.writeHead(303, { Location: '/birthday' }).end();
+}
+
+function moderatorSignature(expires) {
+  const key = process.env.BIRTHDAY_MODERATOR_KEY;
+  if (key?.length >= 32) return createHmac('sha256', key).update('moderator.' + expires).digest('base64url');
+}
+
+function moderatorScope(req) {
+  const value = req.headers.cookie?.match(/(?:^|;\s*)birthday_moderator=([^;]+)/)?.[1];
+  const [expires, signature] = (value || '').split('.');
+  if (Number(expires) > now() && equal(signature, moderatorSignature(expires))) return 'moderator';
 }
 
 function reply(res, status, value, type = 'application/json; charset=utf-8') {
@@ -99,7 +111,6 @@ module.exports = async (req, res) => {
       if (equal(url.searchParams.get('preview'), process.env.BIRTHDAY_PREVIEW_KEY) && sign('preview', now())) return login(res, 'preview');
       return reply(res, 404, { error: 'Not found' });
     }
-    if (!unlocked() && scope !== 'preview') return reply(res, 404, { error: 'Not found' });
     if (part === 'family-session' && req.method === 'POST') {
       const fields = await body(req).catch(() => ({}));
       if (equal(fields.code, process.env.BIRTHDAY_FAMILY_KEY) && sign('family', now())) return login(res, 'family');
@@ -111,10 +122,33 @@ module.exports = async (req, res) => {
       const [status, result] = await generate(fields);
       return reply(res, status, result);
     }
+    if (part === 'blessings-session' && req.method === 'POST') {
+      const { code } = await body(req).catch(() => null) || {};
+      const expires = now() + sessionSeconds;
+      const signature = moderatorSignature(expires);
+      if (!signature || !equal(code, process.env.BIRTHDAY_MODERATOR_KEY)) {
+        return reply(res, 403, { message: '审核口令不正确。' });
+      }
+      const secure = process.env.VERCEL ? '; Secure' : '';
+      res.setHeader('Set-Cookie', 'birthday_moderator=' + expires + '.' + signature +
+        '; HttpOnly; SameSite=Strict; Path=/birthday; Max-Age=' + sessionSeconds + secure);
+      return reply(res, 200, { message: '已开启家长审核。' });
+    }
+    if (part === 'blessings') {
+      const fields = req.method === 'POST' ? await body(req).catch(() => null) : null;
+      const visitor = req.headers['x-vercel-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress;
+      const [status, result] = await handleBlessings(req.method, moderatorScope(req), fields, visitor);
+      return reply(res, status, result);
+    }
     if (req.method !== 'GET') return reply(res, 405, { error: 'Method not allowed' });
-    if (part === 'card') return reply(res, 200, {
-      title: '橙子 12 岁生日隐藏关卡', date: date(), description: '你的存档里出现了一个新任务，只有今天才知道是什么。',
-    });
+    if (part === 'card') {
+      if (!unlocked()) return reply(res, 404, { error: 'Not found' });
+      return reply(res, 200, {
+        title: '橙子 12 岁生日庆祝页', date: date(),
+        display: localDate() === date() ? 'banner' : 'card',
+        description: '重温生日庆祝，玩游戏、听钢琴，也可以给橙子送上祝福。',
+      });
+    }
     if (part === 'data') {
       const copy = await sample('copy.json');
       copy.credits = { ...copy.credits, ...privateContent('BIRTHDAY_CREDITS_JSON', {}) };
@@ -137,9 +171,11 @@ module.exports = async (req, res) => {
     }
     const artwork = ['hero.webp', 'cake.webp', 'game-time.webp', 'weekend-hike.webp', 'food-choice.webp'];
     if (artwork.includes(part)) return reply(res, 200, await readFile(join(root, part)), 'image/webp');
-    const files = { 'cake-3d.js': ['cake-3d.js', 'text/javascript'],
-      'three-0.160.0.min.js': ['three-0.160.0.min.js', 'text/javascript'],
+    // Keep browser modules as text in the function bundle so Vercel serves their original ESM.
+    const files = { 'cake-3d.js': ['cake-3d.js.txt', 'text/javascript'],
+      'three-0.160.0.min.js': ['three-0.160.0.min.js.txt', 'text/javascript'],
       'blow-detector.js': ['blow-detector.js', 'text/javascript'], 'cake-geometry.js': ['cake-geometry.js', 'text/javascript'],
+      'blessings.js': ['blessings.js', 'text/javascript'],
       'party-cake.js': ['party-cake.js', 'text/javascript'], 'effects.js': ['effects.js', 'text/javascript'], 'wishes.js': ['wishes.js', 'text/javascript'], 'arcade.js': ['arcade.js', 'text/javascript'], page: ['index.html', 'text/html'], 'app.js': ['app.js', 'text/javascript'],
       'style.css': ['style.css', 'text/css'] };
     if (Object.hasOwn(files, part)) {

@@ -671,3 +671,24 @@ body.guide-active .journey-top { visibility: hidden; }
 .credits-names dd { color: #f0dfef; margin: .2rem 0 0; line-height: 1.6; overflow-wrap: anywhere; }
 .credits-end { color: #ffdb90; font-size: 1.25rem; min-height: 30vh; align-content: center; }
 .credits-controls { justify-content: center; }
+
+.blessings-panel form#blessings-form {
+  display: grid;
+  gap: .55rem;
+}
+
+.blessings-panel input, .blessings-panel textarea {
+  width: 100%;
+  padding: .65rem;
+  border: 1px solid currentColor;
+  border-radius: .5rem;
+  background: #101f29;
+  color: inherit;
+  font: inherit;
+}
+
+.blessings-panel textarea { resize: vertical; }
+.blessings-panel ul { list-style: none; padding: 0; }
+.blessings-panel li { padding: .75rem 0; border-top: 1px solid #42535d; }
+.blessings-panel li p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.blessings-panel li button { margin-inline-end: .5rem; }
