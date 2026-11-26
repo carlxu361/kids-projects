@@ -9,6 +9,7 @@ const PartyEffects = (() => {
   const colors = ['#ffbb68', '#e0b6ff', '#ff759e', '#a69cff', '#fff1d4'];
   let context;
   let bus;
+  let noiseBuffer;
   let timer;
   let step = 0;
   let video = true;
@@ -223,6 +224,71 @@ const PartyEffects = (() => {
     if (step % 2 === 0) tone(harmony[(step / 2) % harmony.length], .026, .6);
     step++;
   }
+  function canPlaySfx() {
+    return Boolean(enabled && !paused && context && context.state === 'running');
+  }
+  function getNoiseBuffer() {
+    if (noiseBuffer) return noiseBuffer;
+    const length = Math.max(1, Math.round(context.sampleRate * .2));
+    const buffer = context.createBuffer(1, length, context.sampleRate);
+    const data = buffer.getChannelData(0);
+    let smooth = 0;
+    for (let i = 0; i < length; i++) {
+      smooth = smooth * .35 + (Math.random() * 2 - 1) * .65;
+      data[i] = smooth;
+    }
+    noiseBuffer = buffer;
+    return noiseBuffer;
+  }
+  function playTurnSfx(kind = 'book') {
+    if (!canPlaySfx()) return;
+    const at = context.currentTime;
+    const daybreak = kind === 'daybreak';
+    const duration = daybreak ? .22 : .16;
+    const peak = daybreak ? .038 : .045;
+    const source = context.createBufferSource();
+    source.buffer = getNoiseBuffer();
+    source.loop = true;
+    const filter = context.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.Q.value = daybreak ? 1.1 : 1.4;
+    filter.frequency.setValueAtTime(daybreak ? 680 : 1600, at);
+    filter.frequency.exponentialRampToValueAtTime(daybreak ? 1250 : 750, at + duration);
+    const envelope = context.createGain();
+    envelope.gain.setValueAtTime(.0001, at);
+    envelope.gain.exponentialRampToValueAtTime(peak, at + .02);
+    envelope.gain.exponentialRampToValueAtTime(.0001, at + duration);
+    source.connect(filter).connect(envelope).connect(bus || context.destination);
+    source.start(at);
+    source.stop(at + duration + .02);
+    source.onended = () => {
+      source.disconnect();
+      filter.disconnect();
+      envelope.disconnect();
+    };
+  }
+  function playGiftSfx() {
+    if (!canPlaySfx()) return;
+    const base = context.currentTime;
+    [84, 91, 96].forEach((note, index) => {
+      const at = base + index * .07;
+      const duration = .55;
+      const synth = context.createOscillator();
+      const envelope = context.createGain();
+      synth.type = 'sine';
+      synth.frequency.value = 440 * 2 ** ((note - 69) / 12);
+      envelope.gain.setValueAtTime(.0001, at);
+      envelope.gain.exponentialRampToValueAtTime(.028, at + .018);
+      envelope.gain.exponentialRampToValueAtTime(.0001, at + duration);
+      synth.connect(envelope).connect(bus || context.destination);
+      synth.start(at);
+      synth.stop(at + duration + .02);
+      synth.onended = () => {
+        synth.disconnect();
+        envelope.disconnect();
+      };
+    });
+  }
   function updateMusic() {
     clearInterval(timer);
     music.setAttribute('aria-pressed', String(enabled));
@@ -278,5 +344,7 @@ const PartyEffects = (() => {
       updateSky();
     },
     isMusicEnabled: () => enabled,
+    playTurnSfx,
+    playGiftSfx,
   };
 })();

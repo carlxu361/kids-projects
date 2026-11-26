@@ -130,14 +130,17 @@ function guideAppearance() {
 
 function turnTo(key) {
   if (turning) turning.skipTransition();
+  const turnKind = (key === 'cake' || key === 'finale') ? 'daybreak' : 'book';
   if (reduceMotion.matches || !document.startViewTransition) {
+    if (!reduceMotion.matches) PartyEffects.playTurnSfx?.(turnKind);
     show(key, true);
     return;
   }
   const root = document.documentElement;
   const order = ['intro', ...Object.keys(chapters)];
-  root.dataset.turn = (key === 'cake' || key === 'finale') ? 'daybreak' : 'book';
+  root.dataset.turn = turnKind;
   root.dataset.turnDir = order.indexOf(key) < order.indexOf(save.chapter) ? 'back' : 'next';
+  PartyEffects.playTurnSfx?.(turnKind);
   const current = document.startViewTransition(() => show(key, false));
   turning = current;
   current.ready.catch(() => {});
@@ -1649,6 +1652,7 @@ function shop() {
       if (PartyEffects.isMusicEnabled?.()) {
         [72, 76, 79, 83, 86].forEach((note, index) => playNote(note, index * .09, .85));
       }
+      PartyEffects.playGiftSfx?.();
     }, 'primary');
     unlock.disabled = !ready;
     gift.append(element('p', '已拥有', 'mono'), element('h3', '爸爸的礼物'), unlock);
