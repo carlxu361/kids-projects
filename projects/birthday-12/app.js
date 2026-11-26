@@ -159,6 +159,12 @@ function go(key) {
   document.body.classList.add('guide-active');
   guide.classList.toggle('scene-premiere', Boolean(stage.querySelector('.premiere.party-live')));
   guide.classList.toggle('scene-history', key === 'history');
+  const idx = Object.keys(chapters).indexOf(key) + 1;
+  const card = guide.querySelector('.scene-card');
+  if (card) {
+    if (idx > 0) card.dataset.act = 'ACT ' + String(idx).padStart(2, '0');
+    else delete card.dataset.act;
+  }
   guideAppearance();
   get('#scene-title').textContent = cue[0];
   get('#scene-narration').textContent = cue[1];
@@ -175,6 +181,8 @@ function finishGuide() {
   const turn = () => {
     guide.close();
     guide.classList.remove('scene-leaving', 'scene-premiere', 'scene-history');
+    const card = guide.querySelector('.scene-card');
+    if (card) delete card.dataset.act;
     document.body.classList.remove('guide-active');
     turnTo(key);
   };
@@ -210,7 +218,13 @@ function show(key, animate = false) {
   nav.hidden = key === 'intro';
   get('#journey-top').hidden = key === 'intro';
   const scene = Object.keys(chapters).indexOf(key) + 1;
-  get('#scene-progress').textContent = scene ? '第 ' + scene + ' 幕 / ' + Object.keys(chapters).length + ' 幕' : '';
+  const progress = get('#scene-progress');
+  progress.textContent = scene ? '第 ' + scene + ' 幕 / ' + Object.keys(chapters).length + ' 幕' : '';
+  progress.classList.remove('progress-bump');
+  if (!reduceMotion.matches && scene) {
+    void progress.offsetWidth;
+    progress.classList.add('progress-bump');
+  }
   guideAppearance();
   nav.replaceChildren(...Object.entries(chapters).map(([id, title]) => {
     const tab = button(title, () => go(id));

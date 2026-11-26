@@ -1755,3 +1755,72 @@ html[data-turn="daybreak"][data-turn-dir="back"]::view-transition-new(stage) {
     opacity: 0;
   }
 }
+
+/* ===== P0-4: Act curtain watermark & tabular progress typography ===== */
+.scene-card[data-act] {
+  position: relative;
+  overflow: hidden;
+}
+.scene-card[data-act]::before {
+  content: "";
+  position: absolute;
+  inset: 0 12% auto;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #ffc364d8 35%, #fff0c9 50%, #ffc364d8 65%, transparent);
+  pointer-events: none;
+}
+.scene-card[data-act]::after {
+  content: attr(data-act);
+  position: absolute;
+  top: clamp(.75rem, 2.2vw, 1.25rem);
+  right: clamp(.9rem, 3vw, 1.65rem);
+  font: 800 clamp(.72rem, 1.4vw, .85rem)/1 ui-monospace, Menlo, monospace;
+  letter-spacing: .18em;
+  color: #ffd79459;
+  pointer-events: none;
+}
+.scene-history .scene-card[data-act]::after {
+  top: .55rem;
+  right: .8rem;
+  font-size: .68rem;
+}
+
+.scene-guide[open] {
+  animation: guide-unfold-in .32s cubic-bezier(.22, .68, .22, 1) both;
+}
+@keyframes guide-unfold-in {
+  from {
+    opacity: 0;
+    transform: perspective(900px) translateY(14px) rotateX(6deg) scale(.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+#balance,
+#scene-progress,
+.arcade-best {
+  font-variant-numeric: tabular-nums;
+}
+#scene-progress.progress-bump {
+  animation: scene-progress-bump 180ms cubic-bezier(.22, .68, .22, 1) both;
+}
+@keyframes scene-progress-bump {
+  from {
+    opacity: .35;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene-guide[open],
+  #scene-progress.progress-bump {
+    animation: none;
+  }
+}
