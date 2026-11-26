@@ -140,6 +140,8 @@ function turnTo(key) {
   root.dataset.turnDir = order.indexOf(key) < order.indexOf(save.chapter) ? 'back' : 'next';
   const current = document.startViewTransition(() => show(key, false));
   turning = current;
+  current.ready.catch(() => {});
+  current.updateCallbackDone.catch(() => {});
   current.finished.catch(() => {}).finally(() => {
     if (turning === current) {
       turning = null;
