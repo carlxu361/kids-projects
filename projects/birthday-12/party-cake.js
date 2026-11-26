@@ -437,13 +437,15 @@ const PartyCake = (() => {
       if (document.hidden) suspend();
     }, { signal });
 
-    return () => {
+    const stopCake = () => {
       controller.abort();
       stopHold();
       stopMic();
       model?.destroy();
       if (notice.open) notice.close();
     };
+    stopCake.suspend = suspend;
+    return stopCake;
   }
   return { attach };
 })();

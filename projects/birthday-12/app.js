@@ -117,6 +117,7 @@ function next(panel, key, text = chapters[key]) {
 
 let sceneTarget;
 let sceneTimer;
+let turning = null;
 const guide = get('#scene-guide');
 function guideAppearance() {
   const looks = { '🎩 魔法帽': '🎩', '🎧 耳机': '🎧', '🧢 船员帽': '🧢' };
@@ -127,10 +128,32 @@ function guideAppearance() {
   }
 }
 
+function turnTo(key) {
+  if (turning) turning.skipTransition();
+  if (reduceMotion.matches || !document.startViewTransition) {
+    show(key, true);
+    return;
+  }
+  const root = document.documentElement;
+  const order = ['intro', ...Object.keys(chapters)];
+  root.dataset.turn = (key === 'cake' || key === 'finale') ? 'daybreak' : 'book';
+  root.dataset.turnDir = order.indexOf(key) < order.indexOf(save.chapter) ? 'back' : 'next';
+  const current = document.startViewTransition(() => show(key, false));
+  turning = current;
+  current.finished.catch(() => {}).finally(() => {
+    if (turning === current) {
+      turning = null;
+      delete root.dataset.turn;
+      delete root.dataset.turnDir;
+    }
+  });
+}
+
 function go(key) {
   if (guide.open || key === save.chapter) return;
+  if (turning) turning.skipTransition();
   const cue = data.copy.scenes[key];
-  if (!cue) { show(key, true); return; }
+  if (!cue) { turnTo(key); return; }
   sceneTarget = key;
   document.body.classList.add('guide-active');
   guide.classList.toggle('scene-premiere', Boolean(stage.querySelector('.premiere.party-live')));
@@ -139,7 +162,7 @@ function go(key) {
   get('#scene-title').textContent = cue[0];
   get('#scene-narration').textContent = cue[1];
   get('#scene-continue').textContent = cue[2];
-  if (save.chapter === 'cake') stopChapter();
+  if (save.chapter === 'cake') stopChapter.suspend?.();
   guide.showModal();
   get('#scene-continue').focus();
 }
@@ -152,7 +175,7 @@ function finishGuide() {
     guide.close();
     guide.classList.remove('scene-leaving', 'scene-premiere', 'scene-history');
     document.body.classList.remove('guide-active');
-    show(key, true);
+    turnTo(key);
   };
   if (reduceMotion.matches) { turn(); return; }
   guide.classList.add('scene-leaving');
@@ -1169,6 +1192,7 @@ function cake() {
     clearTimeout(celebrationTimer);
     stopCake();
   };
+  stopChapter.suspend = stopCake.suspend;
 }
 
 const wishExample = {

@@ -1379,3 +1379,152 @@ body.immersive-stage.compact-editor { grid-template-rows: minmax(0, 1fr); }
   }
   .crew-display > .guide-art { justify-self: center; }
 }
+
+/* ===== P0-1: View Transitions 3D book-flip & daybreak ===== */
+html[data-turn] #stage {
+  view-transition-name: stage;
+}
+::view-transition-group(stage) {
+  animation-duration: .62s;
+  animation-timing-function: cubic-bezier(.22, .68, .22, 1);
+}
+html[data-turn][data-turn-dir="back"]::view-transition-group(stage) {
+  animation-duration: .46s;
+}
+::view-transition-image-pair(stage) {
+  perspective: 1650px;
+  isolation: auto;
+}
+::view-transition-old(stage),
+::view-transition-new(stage) {
+  mix-blend-mode: normal;
+  animation-fill-mode: both;
+}
+
+html[data-turn="book"]::view-transition-old(stage) {
+  z-index: 2;
+  transform-origin: left center;
+  backface-visibility: hidden;
+  animation-name: vt-book-turn-out;
+  animation-duration: .62s;
+  animation-timing-function: cubic-bezier(.22, .68, .22, 1);
+}
+html[data-turn="book"]::view-transition-new(stage) {
+  z-index: 1;
+  animation-name: vt-book-reveal-in;
+  animation-duration: .62s;
+  animation-timing-function: cubic-bezier(.22, .68, .22, 1);
+}
+
+html[data-turn="book"][data-turn-dir="back"]::view-transition-old(stage) {
+  transform-origin: right center;
+  animation-name: vt-book-turn-back;
+  animation-duration: .46s;
+}
+html[data-turn="book"][data-turn-dir="back"]::view-transition-new(stage) {
+  animation-duration: .46s;
+}
+
+html[data-turn="daybreak"]::view-transition-old(stage) {
+  z-index: 1;
+  animation-name: vt-daybreak-out;
+  animation-duration: .62s;
+  animation-timing-function: cubic-bezier(.22, .68, .22, 1);
+}
+html[data-turn="daybreak"]::view-transition-new(stage) {
+  z-index: 2;
+  animation-name: vt-daybreak-in;
+  animation-duration: .62s;
+  animation-timing-function: cubic-bezier(.22, .68, .22, 1);
+}
+html[data-turn="daybreak"][data-turn-dir="back"]::view-transition-old(stage),
+html[data-turn="daybreak"][data-turn-dir="back"]::view-transition-new(stage) {
+  animation-duration: .46s;
+}
+
+@keyframes vt-book-turn-out {
+  0% {
+    opacity: 1;
+    transform: rotateY(0);
+    filter: none;
+    box-shadow: none;
+  }
+  58% {
+    opacity: 1;
+    filter: brightness(.78);
+    box-shadow: 18px 0 38px #06020cb8;
+  }
+  82% {
+    opacity: .28;
+  }
+  100% {
+    opacity: 0;
+    transform: rotateY(-108deg);
+    filter: brightness(.58);
+    box-shadow: 24px 0 48px #05020ae0;
+  }
+}
+@keyframes vt-book-turn-back {
+  0% {
+    opacity: 1;
+    transform: rotateY(0);
+    filter: none;
+    box-shadow: none;
+  }
+  58% {
+    opacity: 1;
+    filter: brightness(.78);
+    box-shadow: -18px 0 38px #06020cb8;
+  }
+  82% {
+    opacity: .28;
+  }
+  100% {
+    opacity: 0;
+    transform: rotateY(108deg);
+    filter: brightness(.58);
+    box-shadow: -24px 0 48px #05020ae0;
+  }
+}
+@keyframes vt-book-reveal-in {
+  from {
+    filter: brightness(.82);
+    transform: scale(.988);
+  }
+  to {
+    filter: none;
+    transform: none;
+  }
+}
+@keyframes vt-daybreak-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+    filter: none;
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.03);
+    filter: brightness(1.08);
+  }
+}
+@keyframes vt-daybreak-in {
+  from {
+    opacity: 0;
+    transform: scale(.985);
+    filter: brightness(1.18);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
