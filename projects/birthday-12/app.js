@@ -152,6 +152,7 @@ function turnTo(key) {
 function go(key) {
   if (guide.open || key === save.chapter) return;
   if (turning) turning.skipTransition();
+  if (key === 'cake') import('/birthday/cake-3d.js').catch(() => {});
   const cue = data.copy.scenes[key];
   if (!cue) { turnTo(key); return; }
   sceneTarget = key;
@@ -1596,10 +1597,12 @@ function shop() {
     tile.append(image, details);
     cards.append(tile);
   }
-  const gift = element('div', null, 'tile');
+  const shopTimers = [];
+  const gift = element('div', null, 'tile gift-card');
   const reveal = () => {
     gift.replaceChildren(element('p', '已拥有', 'mono'), element('h3', data.copy.gift.name, 'gift'),
       element('p', data.copy.gift.message));
+    gift.classList.add('gift-revealed');
     gift.tabIndex = -1;
   };
   if (save.gift && ready) reveal();
@@ -1608,8 +1611,13 @@ function shop() {
       save.gift = true;
       persist();
       reveal();
+      gift.classList.add('gift-ceremony');
       gift.focus();
       celebrate();
+      shopTimers.push(setTimeout(celebrate, 620));
+      if (PartyEffects.isMusicEnabled?.() ?? get('#music')?.getAttribute('aria-pressed') === 'true') {
+        [72, 76, 79, 83, 86].forEach((note, index) => playNote(note, index * .09, .85));
+      }
     }, 'primary');
     unlock.disabled = !ready;
     gift.append(element('p', '已拥有', 'mono'), element('h3', '爸爸的礼物'), unlock);
@@ -1621,6 +1629,7 @@ function shop() {
   const showGift = button('生日礼物', () => views.show(giftView, [back, advance]));
   const back = button('回到兑换', () => views.show(rewards, [showGift, advance], showGift));
   views.show(rewards, [showGift, advance], null);
+  stopChapter = () => shopTimers.forEach(clearTimeout);
 }
 
 function finale() {
@@ -1644,9 +1653,26 @@ function finale() {
   view.setAttribute('aria-label', '谢幕祝福');
   view.append(notes);
   let stopRoll;
+  let tiltTimer;
+  function clearTilt(reset = false) {
+    clearTimeout(tiltTimer);
+    tiltTimer = undefined;
+    if (reset) panel.classList.remove('finale-tilted');
+  }
+  function scheduleTilt() {
+    clearTilt();
+    if (reduceMotion.matches) return;
+    tiltTimer = setTimeout(() => {
+      if (!reduceMotion.matches && !stopRoll) panel.classList.add('finale-tilted');
+    }, 3000);
+  }
   const playback = button('播放祝福', () => {
-    if (stopRoll) pause();
-    else play();
+    if (stopRoll) {
+      pause();
+      scheduleTilt();
+    } else {
+      play();
+    }
   });
   function pause() {
     stopRoll?.();
@@ -1654,21 +1680,37 @@ function finale() {
     playback.textContent = '播放祝福';
   }
   function play() {
+    clearTilt(true);
     if (view.scrollTop >= view.scrollHeight - view.clientHeight - 1) view.scrollTop = 0;
     playback.textContent = '暂停滚动';
-    stopRoll = startTextScroll(view, pause);
+    stopRoll = startTextScroll(view, () => {
+      pause();
+      scheduleTilt();
+    });
   }
-  for (const event of ['wheel', 'pointerdown', 'keydown']) view.addEventListener(event, pause);
-  const motion = event => { if (event.matches) pause(); };
+  function interact() {
+    pause();
+    clearTilt(true);
+    scheduleTilt();
+  }
+  for (const event of ['wheel', 'pointerdown', 'keydown']) view.addEventListener(event, interact);
+  const motion = event => {
+    if (event.matches) {
+      pause();
+      clearTilt(true);
+    }
+  };
   reduceMotion.addEventListener('change', motion);
   const again = button('重新播放', () => go('intro'), 'primary');
   views.actions.classList.add('finale-actions');
   views.show(view, [playback, again, button('回看兑换券', () => go('shop'))], null);
   if (!reduceMotion.matches) play();
+  if (view.scrollHeight <= view.clientHeight + 2) scheduleTilt();
   celebrate();
   const bursts = [setTimeout(celebrate, 950), setTimeout(celebrate, 2100)];
   stopChapter = () => {
     pause();
+    clearTilt(true);
     reduceMotion.removeEventListener('change', motion);
     bursts.forEach(timer => clearTimeout(timer));
   };

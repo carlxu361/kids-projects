@@ -1528,3 +1528,230 @@ html[data-turn="daybreak"][data-turn-dir="back"]::view-transition-new(stage) {
     animation: none !important;
   }
 }
+
+/* ===== P0-2: Opening spotlight, cake wish ritual, gift ceremony, finale live frame ===== */
+#start {
+  position: relative;
+  box-shadow: 0 0 22px #ffc3644d, 0 0 0 1px #ffe2a866;
+  transition: transform .18s cubic-bezier(.22, .68, .22, 1),
+    box-shadow .26s ease,
+    filter .22s ease,
+    background-color .22s ease;
+}
+#start:hover,
+#start:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 0 34px #ffc3648c, 0 0 68px #ff9e4244, 0 0 0 2px #fff0c7b8;
+}
+#start:active {
+  transform: scale(.965);
+  box-shadow: 0 0 18px #ffc364cc, 0 0 42px #ffae4780, inset 0 0 14px #fff7db99;
+  filter: brightness(1.06);
+}
+.premiere {
+  transition: box-shadow .48s ease, border-color .48s ease;
+}
+.premiere::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle at 28% 60%, #ffd27d38, transparent 58%);
+  transition: opacity .48s ease;
+}
+.premiere.party-live {
+  border-color: #ffd58899;
+  box-shadow: 0 0 92px #ffb95a45, 0 18px 85px #0a071980;
+}
+.premiere.party-live::before {
+  filter: saturate(1.32) brightness(1.2);
+}
+.premiere.party-live::after {
+  opacity: 1;
+}
+
+.cake-surface .knife-trace {
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #fff8dc, #ffcf70 55%, #ff9d4a);
+  box-shadow: 0 0 12px #ffc15e, 0 0 22px #ff9d4788;
+}
+.cake-surface .knife-mark {
+  height: 3.5px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #fff5d1, #ffc864 60%, #7f3e34);
+  box-shadow: 0 0 10px #ffc364b8, 0 1px 2px #291324cc;
+}
+.cake-board.cake-wished::after {
+  content: "";
+  position: absolute;
+  inset: 4% 8% 14%;
+  border-radius: 50%;
+  border: 2px solid #ffe09a;
+  box-shadow: 0 0 30px #ffb855a3, inset 0 0 24px #ffd88a5c;
+  pointer-events: none;
+  z-index: 31;
+  animation: cake-wish-halo 1.85s cubic-bezier(.18, .68, .22, 1) both;
+}
+.cake-board.cake-wished::before {
+  content: "LV.12 · 愿望点亮";
+  position: absolute;
+  top: 2%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: .2rem .68rem;
+  border: 1px solid #ffe09a88;
+  border-radius: 999px;
+  background: #281538d9;
+  color: #ffe8b8;
+  font: 800 .76rem/1.2 ui-monospace, Menlo, monospace;
+  letter-spacing: .12em;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 33;
+  box-shadow: 0 0 18px #ffc36455;
+  animation: cake-wish-label 2.2s ease-out both;
+}
+@keyframes cake-wish-halo {
+  0% {
+    opacity: 0;
+    transform: scale(.72);
+  }
+  28% {
+    opacity: .95;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.16);
+  }
+}
+@keyframes cake-wish-label {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 10px) scale(.92);
+  }
+  18%, 72% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -10px) scale(.98);
+  }
+}
+
+.gift-card {
+  position: relative;
+  overflow: hidden;
+  border-color: #7c5698;
+}
+.gift-card.gift-revealed {
+  border-color: #ffc3648c;
+  background: radial-gradient(ellipse at 50% 0%, #5a3466, #27193c 72%);
+  box-shadow: 0 12px 36px #12081fb8, inset 0 1px 0 #ffe9b833;
+}
+.gift-card.gift-ceremony {
+  animation: gift-unbox .72s cubic-bezier(.22, .68, .22, 1) both;
+}
+.gift-card.gift-ceremony::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 12rem;
+  height: 12rem;
+  margin: -6rem 0 0 -6rem;
+  border-radius: 50%;
+  border: 2px solid #ffe094;
+  background: radial-gradient(circle, #ffd88655 0%, #ffc36420 45%, transparent 72%);
+  pointer-events: none;
+  animation: gift-ring .88s cubic-bezier(.18, .68, .22, 1) both;
+}
+.gift-card.gift-ceremony::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 20%, #fff0ca38 48%, transparent 76%);
+  animation: gift-sheen .85s ease-out both;
+}
+@keyframes gift-unbox {
+  0% {
+    transform: perspective(900px) rotateX(10deg) scale(.95);
+    box-shadow: 0 0 0 #ffc36400;
+  }
+  45% {
+    transform: perspective(900px) rotateX(-2deg) translateY(-4px) scale(1.015);
+    box-shadow: 0 0 46px #ffc36466, 0 18px 44px #0e061ac4;
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes gift-ring {
+  0% {
+    opacity: 0;
+    transform: scale(.2);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.4);
+  }
+}
+@keyframes gift-sheen {
+  from {
+    transform: translateX(-90%);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  to {
+    transform: translateX(90%);
+    opacity: 0;
+  }
+}
+
+.immersive-stage #stage > .finale {
+  transition: transform 1.15s cubic-bezier(.22, .68, .22, 1),
+    box-shadow 1.15s ease,
+    border-color 1.15s ease;
+}
+.immersive-stage #stage > .finale.finale-tilted {
+  transform: scale(.96) rotate(-.8deg);
+  border-color: #ffd7887a;
+  box-shadow: 0 28px 80px #06020ee0, 0 0 0 1px #ffe2a833, inset 0 1px 0 #fff1d129;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #start,
+  .premiere,
+  .premiere::after,
+  .immersive-stage #stage > .finale {
+    transition: none;
+  }
+  #start:hover,
+  #start:focus-visible,
+  #start:active,
+  .immersive-stage #stage > .finale.finale-tilted {
+    transform: none;
+  }
+  .cake-board.cake-wished::after,
+  .cake-board.cake-wished::before,
+  .gift-card.gift-ceremony,
+  .gift-card.gift-ceremony::before,
+  .gift-card.gift-ceremony::after {
+    animation: none;
+  }
+  .cake-board.cake-wished::after,
+  .cake-board.cake-wished::before,
+  .gift-card.gift-ceremony::before,
+  .gift-card.gift-ceremony::after {
+    opacity: 0;
+  }
+}

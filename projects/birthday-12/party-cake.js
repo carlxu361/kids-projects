@@ -167,6 +167,7 @@ const PartyCake = (() => {
       candle.classList.add('candle-out');
       status.textContent = remaining ? '还有 ' + remaining + ' 根蜡烛亮着' : '十二根蜡烛都吹灭了。';
       if (remaining) return;
+      board.classList.add('cake-wished');
       stopHold();
       stopMic();
       mic.hidden = true;
