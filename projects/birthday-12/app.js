@@ -252,50 +252,14 @@ function intro() {
   }, { once: true });
 }
 
-function readingPager(view, showPage, noun = '页') {
-  const controls = element('div', null, 'row reading-pager');
-  const counter = element('span');
-  counter.setAttribute('role', 'status');
-  let pages = [];
-  let current = 0;
-  const previous = button('上一' + noun, () => select(current - 1));
-  const nextPage = button('下一' + noun, () => select(current + 1));
-  controls.append(previous, counter, nextPage);
-
-  function select(index) {
-    if (index < 0 || index >= pages.length) return;
-    current = index;
-    showPage(pages[index]);
-    view.scrollTop = 0;
-    counter.textContent = (index + 1) + ' / ' + pages.length;
-    previous.setAttribute('aria-disabled', String(index === 0));
-    nextPage.setAttribute('aria-disabled', String(index === pages.length - 1));
-  }
-
-  return {
-    controls,
-    replace(items) {
-      pages = items;
-      controls.hidden = items.length < 2;
-      select(0);
-    },
-  };
-}
-
 function timeline(eras, view) {
   const section = element('section', null, 'history');
-  section.append(element('h3', '游戏机发展路线'));
   const rail = element('div', null, 'history-rail reading-controls');
   rail.setAttribute('role', 'group');
   rail.setAttribute('aria-label', '年代');
   const exhibit = element('div', null, 'history-exhibit');
   exhibit.id = 'history-exhibit';
-  const machines = element('div', null, 'history-machines');
-  const pages = readingPager(view, machine => {
-    machines.replaceChildren(machine);
-    exhibit.classList.remove('history-in');
-    requestAnimationFrame(() => exhibit.classList.add('history-in'));
-  });
+  const machines = element('div', null, 'history-machines showcase');
   function select(era) {
     [...rail.children].forEach(tab => tab.setAttribute('aria-expanded', String(tab.textContent === era.era)));
     const cards = [];
@@ -313,7 +277,7 @@ function timeline(eras, view) {
       const identity = element('div', null, 'machine-identity');
       identity.append(element('time', item.year), element('h4', item.model), citation);
       const masthead = element('div', null, 'machine-masthead');
-      masthead.append(identity, picture);
+      masthead.append(picture, identity);
       machine.append(masthead, element('p', item.note));
       cards.push(machine);
     }
@@ -324,8 +288,10 @@ function timeline(eras, view) {
     story.append(element('h4', era.title), details);
     banner.append(element('strong', era.era), story);
     exhibit.replaceChildren(banner, machines);
-    machines.replaceChildren();
-    pages.replace(cards);
+    machines.replaceChildren(...cards);
+    view.scrollTop = 0;
+    exhibit.classList.remove('history-in');
+    requestAnimationFrame(() => exhibit.classList.add('history-in'));
   }
   for (const era of eras) {
     const control = button(era.era, () => select(era));
@@ -335,17 +301,16 @@ function timeline(eras, view) {
   section.append(exhibit);
   if (eras[0]) select(eras[0]);
   view.append(section);
-  return { rail, paging: pages.controls };
+  return rail;
 }
 
 function history() {
-  const panel = chapter('GAME HISTORY', '游戏是怎样走到今天的', '从投币机到可以随身带走的世界。');
+  const panel = chapter('GAME HISTORY', '游戏是怎样走到今天的');
   panel.classList.add('history-chapter');
   const views = immersiveViews(panel);
-  const view = views.add();
-  const { rail, paging } = timeline(data.history, view);
-  view.before(rail);
-  views.show(view, [paging], null);
+  const view = views.add(element('section', null, 'showcase-stage'));
+  view.before(timeline(data.history, view));
+  views.show(view, [], null);
   next(views.actions, 'arcade', '试玩一下经典游戏');
 }
 
@@ -357,7 +322,7 @@ function immersiveViews(panel) {
     actions,
     add(view = element('section')) {
       view.classList.add('immersive-view');
-      view.tabIndex = -1;
+      view.tabIndex = view.classList.contains('cabinet-host') ? -1 : 0;
       view.hidden = true;
       views.push(view);
       actions.before(view);
@@ -369,23 +334,6 @@ function immersiveViews(panel) {
       if (focus) (focus.isConnected ? focus : view).focus({ preventScroll: true });
     },
   };
-}
-
-function gamePicker(view, cards, onSelect) {
-  const counter = element('span');
-  counter.setAttribute('role', 'status');
-  const paging = element('div', null, 'row immersive-picker');
-  let index = 0;
-  function select(indexToShow) {
-    index = (indexToShow + cards.length) % cards.length;
-    cards.forEach((card, position) => { card.hidden = position !== index; });
-    counter.textContent = (index + 1) + ' / ' + cards.length;
-    onSelect(index);
-  }
-  paging.append(button('上一个游戏', () => select(index - 1)), counter,
-    button('下一个游戏', () => select(index + 1)));
-  view.prepend(paging);
-  select(0);
 }
 
 function immersiveCabinet(views) {
@@ -413,18 +361,16 @@ function arcade() {
   const panel = chapter('ARCADE', '轮到你试玩', '带着一个问题来玩：什么让你想再来一次？');
   panel.classList.add('arcade-chapter');
   const views = immersiveViews(panel);
-  const localView = views.add();
-  const classicsView = views.add();
+  const localView = views.add(element('section', null, 'showcase-stage'));
+  const classicsView = views.add(element('section', null, 'showcase-stage'));
   const cabinet = immersiveCabinet(views);
   const highs = save.arcade ||= {};
-  const cards = [];
-  const challenges = [];
-  let selectedChallenge;
+  const cards = element('div', null, 'showcase game-cards');
   const continueStory = button('看看你的成长日志', () => go('logs'), 'primary scene-next');
   const classicsButton = button('别人的经典', () => showClassics());
   const localButton = button('在这里试玩', () => showLocal(classicsButton));
   function showLocal(focus) {
-    views.show(localView, [selectedChallenge, classicsButton, continueStory], focus);
+    views.show(localView, [classicsButton, continueStory], focus);
   }
   function showClassics() {
     views.show(classicsView, [localButton, continueStory]);
@@ -454,16 +400,11 @@ function arcade() {
     const artwork = element('div', null, 'arcade-art');
     artwork.setAttribute('aria-hidden', 'true');
     tile.append(artwork, history, element('h3', game.title), element('p', game.summary),
-      element('p', game.lesson, 'history-lesson'), best);
-    cards.push(tile);
-    challenges.push(launch);
+      element('p', game.lesson, 'history-lesson'), best, launch);
+    cards.append(tile);
   }
-  localView.append(...cards);
-  gamePicker(localView, cards, index => {
-    selectedChallenge = challenges[index];
-    if (!localView.hidden) showLocal(null);
-  });
-  const classics = element('div', null, 'grid classic-grid');
+  localView.append(cards);
+  const classics = element('div', null, 'showcase classic-grid');
   for (const [title, prompt, href] of [
     ['PAC-MAN', '试试只靠转弯和预判，就让自己再玩一局。', 'https://doodles.google/doodle/30th-anniversary-of-pac-man/'],
     ['贝多芬音乐拼图', '把旋律拼回去。留意一小句音乐怎样变成一道谜题。', 'https://doodles.google/doodle/celebrating-ludwig-van-beethovens-245th-year/'],
@@ -476,7 +417,7 @@ function arcade() {
     tile.append(element('h3', title), element('p', prompt), launch);
     classics.append(tile);
   }
-  classicsView.append(element('h3', '别人做的经典'), classics);
+  classicsView.append(classics);
   showLocal(null);
   stopChapter = cabinet.stop;
 }
@@ -493,16 +434,16 @@ function logs() {
   views.actions.before(categories);
   const continueStory = button('听听你的钢琴', () => go('piano'), 'primary scene-next');
 
-  function addCategory(label, view, paging, extra = []) {
+  function addCategory(label, view, extra = []) {
     const control = button(label, () => {
       for (const tab of categories.children) tab.setAttribute('aria-pressed', String(tab === control));
-      views.show(view, [...extra, paging, continueStory], null);
+      views.show(view, [...extra, continueStory], null);
     });
     categories.append(control);
   }
 
   const ceremony = element('section', null, 'growth-ceremony');
-  const medals = element('ul', null, 'growth-medals');
+  const medals = element('ul', null, 'growth-medals showcase');
   const awardPages = awards.map(award => {
     const medal = element('li');
     const icon = element('span', award.icon, 'growth-medal-icon');
@@ -519,12 +460,12 @@ function logs() {
   const ovation = element('p', null, 'growth-ovation');
   ovation.setAttribute('role', 'status');
   if (awardPages.length) {
-    const awardView = views.add();
-    const pager = readingPager(awardView, medal => medals.replaceChildren(medal));
-    pager.replace(awardPages);
-    ceremony.append(element('h3', '颁给你的 ' + awards.length + ' 枚奖章'), medals, ovation);
+    const awardView = views.add(element('section', null, 'showcase-stage'));
+    medals.append(...awardPages);
+    medals.setAttribute('aria-label', '颁给你的 ' + awards.length + ' 枚奖章');
+    ceremony.append(medals, ovation);
     awardView.append(ceremony);
-    addCategory('奖章', awardView, pager.controls, [applause]);
+    addCategory('奖章', awardView, [applause]);
   }
 
   function addWorkLink(card, href) {
@@ -543,7 +484,6 @@ function logs() {
     controls.setAttribute('role', 'group');
     controls.setAttribute('aria-label', '作品浏览方式');
     const groups = element('div', null, 'growth-groups');
-    const pager = readingPager(archiveView, section => groups.replaceChildren(section));
     const byTime = button('按时间', () => renderWorks(false));
     const bySkill = button('按创作技能', () => renderWorks(true));
     controls.append(byTime, bySkill);
@@ -559,10 +499,11 @@ function logs() {
         if (!sections.has(label)) sections.set(label, []);
         sections.get(label).push(work);
       }
-      const workPages = [];
+      const workGroups = [];
       for (const [label, items] of sections) {
+        const section = element('section', null, 'growth-group');
+        const cards = element('div', null, 'showcase');
         for (const work of items) {
-          const section = element('section', null, 'growth-group');
           const tile = element('article', null, 'tile growth-work');
           const meta = element('p', null, 'growth-meta');
           if (work.date) {
@@ -578,21 +519,23 @@ function logs() {
             element('p', work.growth), element('p', '如果你想试试：' + work.experiment));
           tile.append(details);
           addWorkLink(tile, work.link);
-          section.append(element('h4', label), tile);
-          workPages.push(section);
+          cards.append(tile);
         }
+        section.append(element('h4', label), cards);
+        workGroups.push(section);
       }
-      pager.replace(workPages);
+      groups.replaceChildren(...workGroups);
+      archiveView.scrollTop = 0;
     }
 
     renderWorks(false);
     archive.append(controls, groups);
     archiveView.append(archive);
-    addCategory('作品档案', archiveView, pager.controls);
+    addCategory('作品档案', archiveView);
   }
 
   const memoryView = views.add();
-  const memories = element('div', null, 'growth-memories');
+  const memories = element('div', null, 'growth-memories showcase');
   const memoryPages = entries.map(entry => {
     const tile = element('article', null, 'tile');
     tile.append(element('p', entry.date, 'mono'), element('h4', entry.title));
@@ -601,11 +544,10 @@ function logs() {
     addWorkLink(tile, entry.link);
     return tile;
   });
-  memoryPages.push(element('p', '还记得哪个点子是你最想试的吗？有空就挑一个，做个小版本，看看会发生什么。生日快乐，橙子。', 'growth-sendoff'));
-  const pager = readingPager(memoryView, page => memories.replaceChildren(page));
-  pager.replace(memoryPages);
-  memoryView.append(memories);
-  addCategory(entries.length ? '对话回忆' : '寄语', memoryView, pager.controls);
+  memories.append(...memoryPages);
+  if (memoryPages.length) memoryView.append(memories);
+  memoryView.append(element('p', '还记得哪个点子是你最想试的吗？有空就挑一个，做个小版本，看看会发生什么。生日快乐，橙子。', 'growth-sendoff'));
+  addCategory(entries.length ? '对话回忆' : '寄语', memoryView);
   categories.firstElementChild.click();
 }
 
@@ -1351,13 +1293,11 @@ function wishes() {
   const panel = chapter('WISH STUDIO', '生日愿望关', '橙子，这一关是你的游戏工作台。你定规则，AI 帮你做出一个能玩的原型。');
   panel.classList.add('wish-chapter');
   const views = immersiveViews(panel);
-  const editor = views.add();
-  const results = views.add();
-  const premade = views.add();
+  const editor = views.add(element('section', null, 'showcase-stage'));
+  const results = views.add(element('section', null, 'showcase-stage'));
+  const premade = views.add(element('section', null, 'showcase-stage'));
   const cabinet = immersiveCabinet(views);
-  const cards = [];
-  const challenges = [];
-  let selectedChallenge;
+  const cards = element('div', null, 'showcase game-cards');
   const records = save.wishScores ||= {};
   const continueStory = button('打开船员来信', () => go('crew'), 'primary scene-next');
   const openEditor = button('回愿望工作台', () => showEditor());
@@ -1371,7 +1311,7 @@ function wishes() {
     views.show(results, [openEditor, openPremade, continueStory], focus);
   }
   function showPremade(focus) {
-    views.show(premade, [selectedChallenge, openEditor, continueStory], focus);
+    views.show(premade, [openEditor, continueStory], focus);
   }
   function play(game, onResult, onBack) {
     PartyEffects.focus(game.id === 'fireflies');
@@ -1401,15 +1341,10 @@ function wishes() {
       }, () => showPremade(open));
     }, 'primary');
     card.append(element('div', game.icon, 'wish-mark ' + game.id), element('h3', game.title),
-      element('p', game.summary), element('p', game.lesson, 'history-lesson'), best);
-    cards.push(card);
-    challenges.push(open);
+      element('p', game.summary), element('p', game.lesson, 'history-lesson'), best, open);
+    cards.append(card);
   }
-  premade.append(...cards);
-  gamePicker(premade, cards, index => {
-    selectedChallenge = challenges[index];
-    if (!premade.hidden) showPremade(null);
-  });
+  premade.append(cards);
   showEditor(null);
   stopChapter = () => { cabinet.stop(); studio.stop(); };
 }
@@ -1443,34 +1378,11 @@ function familyForm(panel) {
   panel.append(form);
 }
 
-function letterTextPages(text) {
-  const limit = 130;
-  const pages = [];
-  const sentences = String(text ?? '').match(/[^。！？!?；;\n]+[。！？!?；;]*|[。！？!?；;]+|\n+/gu) || [];
-  let page = '';
-  for (const sentence of sentences) {
-    if (page.trim() && page.length + sentence.length > limit) {
-      pages.push(element('p', page.trim()));
-      page = '';
-    }
-    const chars = Array.from(sentence);
-    while (chars.length > limit) {
-      const partial = chars.slice(0, limit).join('');
-      const boundary = Math.max(partial.lastIndexOf(' '), partial.lastIndexOf('，'), partial.lastIndexOf('、'));
-      const count = boundary >= limit / 2 ? Array.from(partial.slice(0, boundary + 1)).length : limit;
-      pages.push(element('p', chars.splice(0, count).join('').trim()));
-    }
-    page += chars.join('');
-  }
-  if (page.trim() || !pages.length) pages.push(element('p', page.trim()));
-  return pages;
-}
-
 function crew() {
   const panel = chapter('CHARACTER BAY', '全家入队', '船员们各留了一段话。按顺序点开，爸爸最后。');
   panel.classList.add('crew-chapter');
   const views = immersiveViews(panel);
-  const crewView = views.add();
+  const crewView = views.add(element('section', null, 'showcase-stage crew-display'));
   const optionsView = views.add();
   if (data.guideArt && /^[\w.-]+\.webp$/.test(data.guideArt)) {
     const guide = element('img', null, 'guide-art');
@@ -1478,7 +1390,7 @@ function crew() {
     guide.src = '/birthday/media/' + encodeURIComponent(data.guideArt);
     crewView.append(guide);
   }
-  const roster = element('div', null, 'letter-roster');
+  const roster = element('div', null, 'letter-roster showcase');
   const dialog = element('dialog', null, 'letter-dialog');
   dialog.setAttribute('aria-labelledby', 'letter-title');
   let opener;
@@ -1515,40 +1427,21 @@ function crew() {
     content.tabIndex = 0;
     content.setAttribute('role', 'region');
     content.setAttribute('aria-label', '来信内容');
-    const pages = letterTextPages(member.text);
+    content.append(element('p', member.text));
     if (data.privateAccess && typeof member.photo === 'string' && /^[\w.-]+\.(webp|jpg|png)$/.test(member.photo)) {
       const picture = element('img', null, 'letter-photo');
       picture.alt = member.photoAlt || member.name + '的随信照片';
       picture.src = '/birthday/media/' + encodeURIComponent(member.photo);
-      pages.push(picture);
+      content.append(picture);
     }
     if (data.privateAccess && typeof member.media === 'string' && /^[\w.-]+\.(mp3|m4a|mp4)$/.test(member.media)) {
       const player = element(member.media.endsWith('.mp4') ? 'video' : 'audio');
       player.controls = true;
       player.preload = 'none';
       player.src = '/birthday/media/' + encodeURIComponent(member.media);
-      pages.push(player);
+      content.append(player);
     }
-    const paging = element('div', null, 'row letter-pages');
-    const counter = element('span');
-    counter.setAttribute('role', 'status');
-    let index = 0;
-    const previous = button('上一页', () => renderPage(index - 1, true));
-    const nextPage = button('下一页', () => renderPage(index + 1, true));
-    function renderPage(page, moveFocus = false) {
-      content.querySelector('audio, video')?.pause();
-      index = page;
-      content.replaceChildren(pages[index]);
-      content.scrollTop = 0;
-      counter.textContent = '第 ' + (index + 1) + ' 页 / 共 ' + pages.length + ' 页';
-      previous.disabled = index === 0;
-      nextPage.disabled = index === pages.length - 1;
-      if (moveFocus) content.focus({ preventScroll: true });
-    }
-    paging.append(previous, counter, nextPage);
-    paging.hidden = pages.length < 2;
-    renderPage(0);
-    note.append(bar, content, paging);
+    note.append(bar, content);
     const flap = element('div', null, 'letter-flap');
     flap.setAttribute('aria-hidden', 'true');
     shell.append(note, flap);
@@ -1578,6 +1471,8 @@ function crew() {
     if (nextIndex < 0) nextIndex = data.family.length;
     [...roster.children].forEach((control, index) => {
       control.disabled = index > nextIndex;
+      const hint = control.querySelector('.envelope-hint');
+      hint.textContent = control.disabled ? '等前一封打开' : control.classList.contains('has-read') ? '再读一次' : '打开信封';
     });
     openShop.disabled = nextIndex !== data.family.length;
     const shopTab = [...nav.children].find(tab => tab.textContent === chapters.shop);
@@ -1635,23 +1530,14 @@ function receipt(item) {
   dialog.showModal();
 }
 
-function scenePager(pages, view, noun) {
-  const pager = readingPager(view, selected => {
-    for (const page of pages) page.hidden = page !== selected;
-  }, noun);
-  pager.replace(pages);
-  pager.controls.classList.add('scene-pager');
-  return pager.controls;
-}
-
 function shop() {
   const ready = data.family.every(member => save.crew.includes(member.id));
   const panel = chapter('STAR SHOP', '生日体验商店', '用星核兑换你想和家人一起做的事。');
   panel.classList.add('shop-chapter');
   const views = immersiveViews(panel);
-  const rewards = views.add();
-  const giftView = views.add();
-  const cards = [];
+  const rewards = views.add(element('section', null, 'showcase-stage'));
+  const giftView = views.add(element('section', null, 'showcase-stage gift-display'));
+  const cards = element('div', null, 'showcase reward-cards');
   const status = element('p', '', 'shop-status');
   status.setAttribute('role', 'status');
   for (const item of data.copy.shop) {
@@ -1684,7 +1570,7 @@ function shop() {
     actions.append(purchase, ticket);
     details.append(element('span', item.label, 'mono'), element('h3', item.name), element('p', item.detail), actions);
     tile.append(image, details);
-    cards.push(tile);
+    cards.append(tile);
   }
   const gift = element('div', null, 'tile');
   const reveal = () => {
@@ -1705,7 +1591,7 @@ function shop() {
     gift.append(element('p', '已拥有', 'mono'), element('h3', '爸爸的礼物'), unlock);
     if (!ready) gift.append(element('p', '先召集全部家庭船员。'));
   }
-  rewards.append(scenePager(cards, rewards, '件'), ...cards, status);
+  rewards.append(cards, status);
   giftView.append(gift);
   const advance = button('走向最后一幕', () => go('finale'), 'primary scene-next');
   const showGift = button('生日礼物', () => views.show(giftView, [back, advance]));
@@ -1726,23 +1612,42 @@ function finale() {
     }
   }
   for (const [from, line] of wishes) {
-    for (const paragraph of letterTextPages(line)) {
-      const entry = element('li', null, 'finale-note');
-      entry.append(paragraph);
-      if (from) entry.append(element('span', from, 'mono'));
-      notes.append(entry);
-    }
+    const entry = element('li', null, 'finale-note');
+    entry.append(element('p', line));
+    if (from) entry.append(element('span', from, 'mono'));
+    notes.append(entry);
   }
-  view.append(notes, scenePager([...notes.children], view, '页'));
+  view.setAttribute('aria-label', '谢幕祝福');
+  view.append(notes);
+  let stopRoll;
+  const playback = button('播放祝福', () => {
+    if (stopRoll) pause();
+    else play();
+  });
+  function pause() {
+    stopRoll?.();
+    stopRoll = null;
+    playback.textContent = '播放祝福';
+  }
+  function play() {
+    if (view.scrollTop >= view.scrollHeight - view.clientHeight - 1) view.scrollTop = 0;
+    playback.textContent = '暂停滚动';
+    stopRoll = startTextScroll(view, pause);
+  }
+  for (const event of ['wheel', 'pointerdown', 'keydown']) view.addEventListener(event, pause);
+  const motion = event => { if (event.matches) pause(); };
+  reduceMotion.addEventListener('change', motion);
   const again = button('重新播放', () => go('intro'), 'primary');
-  const blessing = element('button', '送上祝福');
-  blessing.type = 'button';
-  blessing.dataset.openBlessings = '';
   views.actions.classList.add('finale-actions');
-  views.show(view, [again, button('回看兑换券', () => go('shop')), blessing], null);
+  views.show(view, [playback, again, button('回看兑换券', () => go('shop'))], null);
+  if (!reduceMotion.matches) play();
   celebrate();
   const bursts = [setTimeout(celebrate, 950), setTimeout(celebrate, 2100)];
-  stopChapter = () => bursts.forEach(timer => clearTimeout(timer));
+  stopChapter = () => {
+    pause();
+    reduceMotion.removeEventListener('change', motion);
+    bursts.forEach(timer => clearTimeout(timer));
+  };
 }
 
 const renderers = { intro, history, arcade, logs, piano, cake, wishes, crew, shop, finale };
@@ -1758,28 +1663,34 @@ async function fetchData() {
 const creditsPanel = get('#panel');
 const creditsViewport = get('#credits');
 const creditsToggle = get('#credits-toggle');
-let creditsFrame = null;
+let stopCredits;
+
+function startTextScroll(viewport, onEnd) {
+  let frame;
+  let position = viewport.scrollTop;
+  let previous;
+  function advance(now) {
+    const end = viewport.scrollHeight - viewport.clientHeight;
+    position += Math.min(now - (previous ?? now), 50) * .034;
+    previous = now;
+    viewport.scrollTop = Math.min(end, position);
+    if (position < end) frame = requestAnimationFrame(advance);
+    else onEnd();
+  }
+  frame = requestAnimationFrame(advance);
+  return () => cancelAnimationFrame(frame);
+}
 
 function pauseCredits() {
-  if (creditsFrame !== null) cancelAnimationFrame(creditsFrame);
-  creditsFrame = null;
+  stopCredits?.();
+  stopCredits = null;
   creditsToggle.textContent = '播放字幕';
 }
 
 function playCredits() {
   pauseCredits();
-  let position = creditsViewport.scrollTop;
-  let previous;
-  function advance(now) {
-    const end = creditsViewport.scrollHeight - creditsViewport.clientHeight;
-    position += Math.min(now - (previous ?? now), 50) * .034;
-    previous = now;
-    creditsViewport.scrollTop = Math.min(end, position);
-    if (creditsPanel.open && position < end) creditsFrame = requestAnimationFrame(advance);
-    else pauseCredits();
-  }
   creditsToggle.textContent = '暂停字幕';
-  creditsFrame = requestAnimationFrame(advance);
+  stopCredits = startTextScroll(creditsViewport, pauseCredits);
 }
 
 function replayCredits() {
@@ -1834,7 +1745,7 @@ function systems() {
 get('#systems').addEventListener('click', systems);
 creditsPanel.addEventListener('close', pauseCredits);
 creditsToggle.addEventListener('click', () => {
-  if (creditsFrame !== null) pauseCredits();
+  if (stopCredits) pauseCredits();
   else if (creditsViewport.scrollTop >= creditsViewport.scrollHeight - creditsViewport.clientHeight - 1) replayCredits();
   else playCredits();
 });

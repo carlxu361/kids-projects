@@ -1,4 +1,4 @@
-const { handleBlessings } = require('../lib/birthday-blessings.cjs');
+const { handleBlessings, checkModeratorAttempt } = require('../lib/birthday-blessings.cjs');
 const { generate } = require('../lib/wish-ai.cjs');
 const { createHmac, timingSafeEqual } = require('node:crypto');
 const { readFile } = require('node:fs/promises');
@@ -36,9 +36,15 @@ function login(res, scope) {
   res.writeHead(303, { Location: '/birthday' }).end();
 }
 
+function visitorAddress(req) {
+  const forwarded = req.headers['x-vercel-forwarded-for'];
+  if (process.env.VERCEL && typeof forwarded === 'string') return forwarded.split(',')[0].trim();
+  return req.socket?.remoteAddress;
+}
+
 function moderatorSignature(expires) {
   const key = process.env.BIRTHDAY_MODERATOR_KEY;
-  if (key?.length >= 32) return createHmac('sha256', key).update('moderator.' + expires).digest('base64url');
+  if (key && [...key].length >= 8) return createHmac('sha256', key).update('moderator.' + expires).digest('base64url');
 }
 
 function moderatorScope(req) {
@@ -124,10 +130,25 @@ module.exports = async (req, res) => {
     }
     if (part === 'blessings-session' && req.method === 'POST') {
       const { code } = await body(req).catch(() => null) || {};
-      const expires = now() + sessionSeconds;
+      const currentSecond = now();
+      const expires = currentSecond + sessionSeconds;
       const signature = moderatorSignature(expires);
-      if (!signature || !equal(code, process.env.BIRTHDAY_MODERATOR_KEY)) {
-        return reply(res, 403, { message: '审核口令不正确。' });
+      if (!signature) {
+        return reply(res, 503, { message: '家长审核口令未生效。请检查此部署是否配置了至少 8 个字符的审核口令。' });
+      }
+      let attempt;
+      try {
+        attempt = await checkModeratorAttempt(visitorAddress(req),
+          equal(code, process.env.BIRTHDAY_MODERATOR_KEY), currentSecond);
+      } catch {
+        return reply(res, 503, { message: '审核登录暂时不可用，请稍后再试。' });
+      }
+      if (attempt.remaining === 0) {
+        res.setHeader('Retry-After', String(attempt.resetIn));
+        return reply(res, 429, { message: '今天的审核口令尝试次数已用完，请在香港时间零点后再试。' });
+      }
+      if (attempt.remaining > 0) {
+        return reply(res, 403, { message: '审核口令不正确，今天还可尝试 ' + attempt.remaining + ' 次。' });
       }
       const secure = process.env.VERCEL ? '; Secure' : '';
       res.setHeader('Set-Cookie', 'birthday_moderator=' + expires + '.' + signature +
@@ -136,8 +157,7 @@ module.exports = async (req, res) => {
     }
     if (part === 'blessings') {
       const fields = req.method === 'POST' ? await body(req).catch(() => null) : null;
-      const visitor = req.headers['x-vercel-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress;
-      const [status, result] = await handleBlessings(req.method, moderatorScope(req), fields, visitor);
+      const [status, result] = await handleBlessings(req.method, moderatorScope(req), fields, visitorAddress(req));
       return reply(res, status, result);
     }
     if (req.method !== 'GET') return reply(res, 405, { error: 'Method not allowed' });
