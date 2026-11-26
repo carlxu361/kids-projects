@@ -1939,3 +1939,39 @@ html[data-turn="daybreak"][data-turn-dir="back"]::view-transition-new(stage) {
     display: none;
   }
 }
+
+/* ===== P1-3: Desktop-only subtle card hover lift & specular rim ===== */
+@media (hover: hover) and (pointer: fine) {
+  :where(.history-machine, .arcade-card, .wish-card, .reward-card, .tile:not(.gift-ceremony), .envelope:not(:disabled)) {
+    box-shadow: inset 0 1px 0 #fff4e622;
+    transition: transform .22s cubic-bezier(.22, .68, .22, 1),
+      border-color .22s ease,
+      box-shadow .26s ease;
+  }
+  :where(.history-machine, .arcade-card, .wish-card, .reward-card, .tile:not(.gift-ceremony), .envelope:not(:disabled)):hover {
+    transform: translateY(-3px);
+    border-color: #d6b6f588;
+    box-shadow: inset 0 1px 0 #fff4e638, 0 12px 26px #07031094;
+  }
+  .history-machine:hover {
+    border-left-color: #d6bcff;
+  }
+  .reward-card:hover {
+    border-top-color: #ffd37f;
+  }
+  .reward-card.reward-redeemed:hover {
+    border-color: #ffc364b8;
+  }
+  .gift-card.gift-revealed:not(.gift-ceremony):hover {
+    border-color: #ffd47fb3;
+    box-shadow: 0 16px 40px #12081fc8, inset 0 1px 0 #ffe9b84d;
+  }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: reduce) {
+  :where(.history-machine, .arcade-card, .wish-card, .reward-card, .tile:not(.gift-ceremony), .envelope:not(:disabled)) {
+    transition: none;
+  }
+  :where(.history-machine, .arcade-card, .wish-card, .reward-card, .tile:not(.gift-ceremony), .envelope:not(:disabled)):hover {
+    transform: none;
+  }
+}
