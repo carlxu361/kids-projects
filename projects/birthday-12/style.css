@@ -135,7 +135,6 @@ nav button[aria-current] { background: #382450; color: #fff; }
 .cabinet-host { width: 100%; }
 .cabinet-host:empty { display: none; }
 .cabinet { width: min(100%, 800px); display: grid; gap: .65rem; margin: 0 auto; }
-.cabinet-header { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
 .cabinet canvas { width: 100%; height: auto; border-radius: 12px; border: 1px solid #77528d; touch-action: none; }
 .game-controls { display: flex; flex-wrap: wrap; gap: .5rem; }
 .game-controls button { touch-action: none; }
@@ -249,9 +248,6 @@ body.piano-mode main { width: calc(100% - 36px); padding: .8rem 0 1rem; }
   .reward-redeemed { animation: reward-stamp .43s ease both; }
   @keyframes reward-stamp { 35% { transform: translateY(-5px); box-shadow: 0 0 24px #ffca667f; } }
 }
-.history-heading { margin-bottom: 1.25rem; padding: clamp(.9rem, 3vw, 1.4rem); border: 1px solid #6e4969; border-radius: 12px; background: linear-gradient(130deg,#49314f,#2d203f); }
-.history-invitation { margin: .65rem 0; color: #f9e5d8; line-height: 1.8; max-width: 66ch; }
-.history-signature { display: block; color: var(--sun); font-size: .9rem; text-align: right; }
 .history-rail button { transition: background .2s, transform .2s; }
 .history-rail button[aria-expanded="true"] { transform: scale(1.045); box-shadow: 0 0 16px #ffc36455; }
 .era-banner { display: flex; align-items: center; gap: clamp(.65rem, 3vw, 1.5rem); padding: .65rem .8rem 1rem; }
@@ -302,6 +298,18 @@ nav .next-scene { border-color: #a87467; }
 .scene-card p { color: #f0dfef; font-size: 1.04rem; }
 #scene-continue { justify-self: center; }
 .scene-avatar { width: max-content; padding: .36rem .65rem; border: 1px solid #edb78f80; border-radius: 20px; background: #39223d; font-size: 1.55rem; }
+/* A short guide bubble for the first chapter. */
+.scene-history { width: min(430px, calc(100% - 28px)); }
+.scene-history .scene-card {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: .55rem .75rem;
+  padding: 1rem;
+}
+.scene-history .scene-avatar { grid-row: 1 / span 2; padding: .35rem .48rem; }
+.scene-history .scene-card h2 { font-size: clamp(1.08rem, 4vw, 1.45rem); }
+.scene-history .scene-card p { grid-column: 2; font-size: .94rem; }
+.scene-history #scene-continue { grid-column: 2; justify-self: start; }
 .scene-guide[open] { animation: guide-in .28s ease-out both; }
 .scene-guide.scene-leaving { animation: guide-out .23s ease-in both; }
 @keyframes guide-in { from { opacity: 0; transform: translateY(18px) scale(.96); } }
@@ -629,6 +637,73 @@ body.guide-active .journey-top { visibility: hidden; }
   .growth-medals { grid-template-columns: 1fr; }
 }
 
+.reading-controls {
+  display: flex;
+  flex: none;
+  flex-wrap: nowrap;
+  gap: .35rem;
+  overflow-x: auto;
+  width: 100%;
+  margin: 0;
+  padding: .2rem .25rem .35rem;
+  scrollbar-width: thin;
+}
+.reading-controls::before { content: none; }
+.reading-controls button {
+  flex: none;
+  padding: .35rem .6rem;
+  white-space: nowrap;
+}
+.reading-controls button[aria-pressed="true"] {
+  color: #201124;
+  background: var(--sun);
+  border-color: var(--sun);
+}
+.reading-pager {
+  gap: .25rem;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.reading-pager [aria-disabled="true"] { opacity: .48; cursor: default; }
+.history-chapter .history { padding: clamp(.6rem, 1.8vw, 1.35rem); }
+.history-chapter .history h3 { margin-bottom: .5rem; }
+.history-chapter .era-banner { padding: 0 .15rem .6rem; }
+.history-chapter .era-banner strong { font-size: clamp(1.5rem, 4vw, 3.15rem); }
+.history-chapter .history-machines { grid-template-columns: minmax(0, 1fr); }
+.growth-log .growth-ceremony, .growth-log .growth-archive, .growth-log .growth-group { gap: .55rem; }
+.growth-log .growth-ceremony { padding: clamp(.55rem, 1.8vw, 1.25rem); }
+.growth-log .growth-medals { grid-template-columns: 1fr; }
+.growth-log .growth-medals li {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: .25rem .65rem;
+  padding: clamp(.55rem, 1.5vw, 1rem);
+}
+.growth-log .growth-medal-icon { grid-row: 1 / span 2; }
+.growth-log .growth-medals li > :last-child { grid-column: 1 / -1; }
+.growth-log .growth-archive button { padding: .3rem .55rem; }
+.growth-log .growth-group { padding-block: 0; }
+.growth-log .growth-work { width: 100%; padding: clamp(.6rem, 1.5vw, 1rem); gap: .35rem; }
+.growth-log .growth-ovation:empty { margin: 0; }
+.growth-log .growth-memories { overflow-wrap: anywhere; }
+@media (min-width: 700px) {
+  .history-chapter .history-exhibit {
+    display: grid;
+    grid-template-columns: minmax(11rem, 1fr) minmax(0, 2fr);
+    gap: 1rem;
+  }
+  .history-chapter .era-banner { flex-direction: column; align-items: start; }
+}
+@media (max-width: 500px) {
+  .history-chapter .era-banner { flex-direction: row; align-items: start; }
+  .history-chapter .era-banner strong { display: none; }
+  .history-chapter .machine-art { width: 4.55rem; }
+  .history-chapter .reading-pager button, .growth-log .reading-pager button {
+    font-size: .85rem;
+    padding-inline: .42rem;
+  }
+}
+
 .credits-panel {
   width: min(650px, calc(100% - 28px));
   max-height: calc(100% - 28px);
@@ -692,3 +767,574 @@ body.guide-active .journey-top { visibility: hidden; }
 .blessings-panel li { padding: .75rem 0; border-top: 1px solid #42535d; }
 .blessings-panel li p { white-space: pre-wrap; overflow-wrap: anywhere; }
 .blessings-panel li button { margin-inline-end: .5rem; }
+
+/* The stage stays in view while its current scene changes. */
+body.immersive-stage {
+  height: 100vh;
+  height: var(--immersive-height, 100dvh);
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+.immersive-stage > .hud { min-height: 2.65rem; }
+.immersive-stage > footer.hud button { padding-block: .3rem; }
+.immersive-stage #mission {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: .35rem .75rem;
+  padding-block: .35rem;
+}
+.immersive-stage #stage { grid-column: 1 / -1; min-height: 0; }
+.immersive-stage #stage:focus { outline: none; }
+.immersive-stage .journey-top { margin: 0; white-space: nowrap; }
+.immersive-stage #chapters {
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow-x: auto;
+  margin: 0;
+  padding: .25rem;
+  scrollbar-width: thin;
+}
+.immersive-stage #chapters button { flex: none; padding: .35rem .65rem; }
+.immersive-stage #stage > .chapter {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(.35rem, 1.2vh, .8rem);
+  padding: clamp(.65rem, 2vw, 1.5rem);
+  border-radius: 18px;
+  background: radial-gradient(ellipse at top right, #4c2b55 0%, transparent 58%), #20152e;
+}
+.immersive-stage .chapter > h2 { font-size: clamp(1.3rem, 3.25vw, 2.6rem); }
+.immersive-stage .chapter > .lead { font-size: clamp(.9rem, 1.3vw, 1.08rem); }
+.immersive-stage .immersive-view {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scroll-padding-block: .5rem;
+  padding: .3rem;
+}
+.immersive-stage .immersive-actions {
+  flex: none;
+  padding-top: .45rem;
+  border-top: 1px solid #aa78ae55;
+  gap: .4rem;
+}
+.immersive-stage .immersive-actions button { padding: .45rem .65rem; }
+.immersive-stage .immersive-actions .scene-next { margin-inline-start: auto; }
+.immersive-stage .arcade-card { grid-template-rows: auto; }
+.immersive-stage .immersive-picker { margin-bottom: .5rem; gap: .5rem; }
+.immersive-stage .immersive-picker button { padding: .35rem .6rem; }
+.immersive-stage .chapter:has(.cabinet-host:not([hidden])) > :is(.mono, h2, .lead) { display: none; }
+@media (min-width: 701px) {
+  .immersive-stage .arcade-card {
+    grid-template-columns: minmax(9rem, 1fr) minmax(0, 3fr);
+    align-items: center;
+  }
+  .immersive-stage .arcade-card .arcade-art {
+    grid-row: 1 / span 6;
+    height: 100%;
+    min-height: 6rem;
+  }
+}
+.immersive-stage .arcade-art, .immersive-stage .wish-mark { height: clamp(36px, 9dvh, 84px); }
+.immersive-stage .wish-mark { font-size: 1.9rem; }
+.immersive-stage .letter-dialog { max-height: calc(100dvh - 1.25rem); }
+.immersive-stage .letter-shell {
+  max-height: calc(100dvh - 1.25rem);
+  grid-template-rows: minmax(0, 1fr) clamp(.5rem, 5dvh, 2.5rem);
+}
+.immersive-stage .letter-paper {
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: .6rem;
+}
+.letter-content { display: grid; align-content: start; gap: .65rem; overflow: auto; overflow-wrap: anywhere; }
+.letter-content video { max-height: 40dvh; }
+.letter-pages { justify-content: space-between; }
+.letter-pages button { padding: .4rem .65rem; }
+.letter-pages :focus-visible, .letter-content:focus-visible { outline-color: #854980; }
+@media (max-width: 700px) {
+  .immersive-stage .chapter > .mono, .immersive-stage > footer.hud > span { display: none; }
+  .immersive-stage > footer.hud button { white-space: nowrap; }
+  .immersive-stage :is(.arcade-grid, .classic-grid) { grid-template-columns: 1fr; }
+  .immersive-stage :is(.arcade-art, .wish-mark) { display: none; }
+  .immersive-stage .arcade-card, .immersive-stage .wish-card { gap: .3rem; }
+}
+@media (max-height: 480px) {
+  .immersive-stage > footer.hud > span, .immersive-stage .journey-top,
+  .immersive-stage .chapter > .mono { display: none; }
+  .immersive-stage > footer.hud { min-height: 2.15rem; }
+  .immersive-stage #mission { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-height: 18.75em) {
+  body.immersive-stage { display: flex; height: auto; min-height: 100dvh; overflow: visible; }
+  .immersive-stage #mission { display: block; }
+  .immersive-stage #stage > :is(.chapter, .premiere) { height: auto; }
+}
+
+
+/* Give the game the whole window and keep its controls alongside it. */
+body.immersive-stage:has(.cabinet) {
+  display: block;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+.immersive-stage:has(.cabinet) > .hud,
+.immersive-stage:has(.cabinet) :is(#journey-top, #chapters, .immersive-actions) { display: none; }
+.immersive-stage:has(.cabinet) #mission,
+.immersive-stage:has(.cabinet) #stage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+.immersive-stage:has(.cabinet) #stage.page-turn { animation: none; }
+.immersive-stage:has(.cabinet) #stage.page-turn::before { content: none; }
+.immersive-stage #stage > .chapter:has(.cabinet) {
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}
+.immersive-stage .immersive-view.cabinet-host {
+  padding: 0;
+  overflow: clip;
+}
+.immersive-stage .cabinet {
+  width: 100%;
+  height: 100%;
+  grid-template-columns: minmax(0, 1fr) clamp(10rem, 19vw, 17rem);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
+}
+.cabinet-screen {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  container-type: size;
+  background: #090711;
+}
+.immersive-stage .cabinet canvas {
+  display: block;
+  width: min(100%, calc(100vh * 16 / 9));
+  width: min(100cqw, calc(100cqh * 16 / 9));
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: 0;
+  background: #090711;
+  outline-offset: -3px;
+}
+#page-fullscreen {
+  position: fixed;
+  z-index: 6;
+  top: .35rem;
+  right: max(.5rem, env(safe-area-inset-right));
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border-color: #946ba1;
+  border-radius: 9px;
+  background: #2d1e3cef;
+  color: #fff3df;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+#page-fullscreen > span {
+  width: 1rem;
+  height: 1rem;
+  background:
+    linear-gradient(currentColor 0 0) left top / 6px 2px,
+    linear-gradient(currentColor 0 0) left top / 2px 6px,
+    linear-gradient(currentColor 0 0) right top / 6px 2px,
+    linear-gradient(currentColor 0 0) right top / 2px 6px,
+    linear-gradient(currentColor 0 0) left bottom / 6px 2px,
+    linear-gradient(currentColor 0 0) left bottom / 2px 6px,
+    linear-gradient(currentColor 0 0) right bottom / 6px 2px,
+    linear-gradient(currentColor 0 0) right bottom / 2px 6px;
+  background-repeat: no-repeat;
+}
+#page-fullscreen[aria-pressed="true"] > span { background: none; height: auto; }
+#page-fullscreen:hover, #page-fullscreen[aria-pressed="true"] {
+  color: #ffdb90;
+  border-color: #ffdb90;
+}
+#page-fullscreen:is(:hover, :focus-visible)::after {
+  content: attr(aria-label);
+  position: absolute;
+  inset: calc(100% + .35rem) 0 auto auto;
+  width: max-content;
+  padding: .35rem .55rem;
+  border: 1px solid #946ba1;
+  border-radius: 6px;
+  background: #251a33;
+  color: #fff3df;
+  font: 600 .8rem/1.3 system-ui, sans-serif;
+  pointer-events: none;
+}
+header.hud > a { white-space: nowrap; }
+@media (max-width: 360px) {
+  header.hud > a { font-size: .85rem; }
+  header.hud .hud-controls { gap: .35rem; }
+}
+body:has(#page-fullscreen:not([hidden])) > header.hud { padding-inline-end: 2.25rem; }
+.immersive-stage:has(.cabinet) #page-fullscreen { top: .65rem; right: .65rem; }
+.cabinet-panel {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .85rem;
+  padding: clamp(.65rem, 1.5vw, 1.3rem);
+  border-inline-start: 1px solid #b685bb65;
+  background: radial-gradient(ellipse at top right, #4b2e55, transparent 65%), #21162f;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+body:has(#page-fullscreen:not([hidden])) .cabinet-panel { padding-top: 3.25rem; }
+.cabinet-header h3 { color: #fff2de; font-size: clamp(1.12rem, 2vw, 1.65rem); }
+.cabinet-hint { color: #dfcbe8; font-size: .9rem; line-height: 1.55; }
+.cabinet-result {
+  color: #ffdb90;
+  font-size: .9rem;
+  font-weight: 700;
+}
+.cabinet-result:empty { display: none; }
+.cabinet-panel .game-controls { gap: .35rem; }
+.cabinet-panel button { min-height: 2.25rem; padding: .36rem .6rem; }
+.cabinet-panel .game-controls button { border-color: #8f639b; background: #382447; }
+.cabinet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin-top: auto;
+  padding-top: .65rem;
+  border-top: 1px solid #b685bb55;
+}
+.cabinet-actions .cabinet-restart { color: #261731; background: #ffd88a; border-color: #ffd88a; font-weight: 700; }
+.cabinet-panel :focus-visible { outline-offset: 1px; }
+.wish-details summary { width: fit-content; color: var(--line); cursor: pointer; }
+@media (max-height: 430px) {
+  .cabinet-panel { gap: .45rem; }
+  .cabinet-actions { padding-top: .4rem; }
+}
+@media (orientation: portrait) {
+  .immersive-stage .cabinet {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  .cabinet-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: .45rem;
+    max-height: 45dvh;
+    border-inline-start: 0;
+    border-block-start: 1px solid #aa78ae55;
+  }
+  body:has(#page-fullscreen:not([hidden])) .cabinet-panel { padding-top: .65rem; }
+  .cabinet-panel > :is(.cabinet-hint, .cabinet-result, .game-controls) { grid-column: 1 / -1; }
+  .cabinet-actions {
+    grid-column: 2;
+    grid-row: 1;
+    justify-content: end;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+}
+@media (max-width: 700px) {
+  .immersive-stage .letter-roster {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 7rem), 1fr));
+    gap: .4rem;
+  }
+  .immersive-stage .envelope { min-height: 4rem; padding: .35rem; }
+  .immersive-stage .envelope::after { display: none; }
+  .immersive-stage .crew-chapter .immersive-view > .row { gap: .35rem; }
+  .immersive-stage .crew-chapter .immersive-view > .row button { padding: .35rem .55rem; }
+}
+
+
+/* Cover, shop and finale use the available stage height. */
+.immersive-stage.intro-mode #mission {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+.immersive-stage #stage > .premiere {
+  height: 100%;
+  min-height: 0;
+  padding: clamp(1rem, 4.5vw, 4rem);
+  overflow: auto;
+}
+.immersive-stage .premiere .hero-copy h1 {
+  font-size: clamp(1.85rem, min(6vw, 10vh), 5.3rem);
+}
+.immersive-stage .premiere .hero-copy { gap: .7rem; }
+.scene-pager { justify-content: center; gap: .45rem; margin-block: .15rem .65rem; }
+.scene-pager button { padding: .36rem .65rem; }
+.immersive-stage .shop-chapter .reward-card {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  align-items: center;
+  min-height: 0;
+  padding: .5rem;
+  gap: clamp(.65rem, 2vw, 1.5rem);
+  overflow: visible;
+}
+.immersive-stage .shop-chapter .reward-details { display: grid; gap: .5rem; margin: 0; padding: .5rem; }
+.immersive-stage .shop-chapter .reward-art {
+  max-height: min(30vh, 17rem);
+  object-fit: cover;
+  border-radius: 9px;
+}
+.shop-status:not(:empty) { margin-top: .4rem; }
+.shop-status:empty { display: none; }
+.immersive-stage #stage > .finale {
+  background: radial-gradient(ellipse at 50% 14%,#744562,#302047 47%,#160e25);
+}
+.immersive-stage .finale .immersive-view {
+  display: grid;
+  justify-items: center;
+  align-content: safe center;
+  gap: .75rem;
+}
+.immersive-stage .finale-notes { margin: 0; }
+.immersive-stage .finale-note { --wish-delay: 0ms; overflow-wrap: anywhere; }
+.immersive-stage .finale-note p { text-wrap: pretty; }
+@media (max-width: 740px) {
+  .immersive-stage #mission { grid-template-columns: minmax(0, 1fr); }
+  .immersive-stage .journey-top { display: none; }
+}
+@media (orientation: portrait) and (max-width: 650px) {
+  .immersive-stage #stage > .premiere { padding-bottom: 1.1rem; }
+  .immersive-stage .premiere-caption { display: none; }
+  .immersive-stage .premiere .hero-copy h1 { font-size: clamp(1.8rem, 8.6vw, 3rem); }
+  .immersive-stage .shop-chapter .reward-card { grid-template-columns: minmax(0, 1fr); gap: .25rem; }
+  .immersive-stage .shop-chapter .reward-art { max-height: 19vh; }
+  .immersive-stage .shop-chapter .reward-details { padding: .2rem; }
+}
+@media (max-height: 480px) {
+  .immersive-stage .premiere-caption { display: none; }
+  .immersive-stage .premiere-actions button { padding: .5rem .75rem; }
+  .immersive-stage .shop-chapter .reward-art { max-height: 27vh; }
+}
+@media (max-height: 18.75em) {
+  .immersive-stage #stage > .premiere { height: auto; min-height: 12rem; }
+}
+
+/* Keep the piano's score and playable keys together within the stage. */
+.immersive-stage .piano-studio {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
+  min-height: 0;
+}
+.immersive-stage .piano-toolbar {
+  display: flex;
+  align-items: center;
+  gap: .45rem 1rem;
+  padding-block: .5rem;
+}
+.immersive-stage .piano-toolbar h2 { font-size: clamp(1.15rem, 3.3vw, 2.35rem); }
+.immersive-stage .piano-candles { flex: none; }
+.piano-workspace {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(10rem, 23%, 17rem);
+  grid-template-areas: "instrument controls";
+}
+.piano-control-panel {
+  grid-area: controls;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .55rem;
+  padding: .6rem;
+  border-inline-start: 1px solid #615478;
+  background: #292039;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.piano-control-panel .birthday-piano-transport { display: grid; grid-template-columns: 1fr; gap: .35rem; }
+.piano-control-panel select, .piano-control-panel button { width: 100%; min-width: 0; padding: .34rem .4rem; }
+.piano-control-panel .piano-mic-status { font-size: .77rem; }
+.piano-play-area {
+  grid-area: instrument;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.immersive-stage .piano-stand { gap: .25rem; padding: .45rem .7rem; }
+.immersive-stage .piano-stand .score-header { gap: .2rem .5rem; }
+.immersive-stage .piano-stand progress { width: 100%; height: .38rem; }
+.immersive-stage .piano-studio .note-queue { min-height: 0; }
+.immersive-stage .piano-studio .note-queue:empty { display: none; }
+.immersive-stage .piano-studio .note-queue kbd { width: 1.65rem; height: 1.35rem; }
+.immersive-stage .birthday-keyboard-window { min-height: 0; min-width: 0; overflow-y: hidden; }
+.immersive-stage .birthday-instrument {
+  height: 100%;
+  display: grid;
+  grid-template-rows: minmax(0, 43fr) minmax(0, 57fr);
+}
+.immersive-stage .piano-studio :is(.birthday-roll, .concert-keys) { height: 100%; min-height: 0; }
+.immersive-stage .piano-studio .note-rain { height: 43%; }
+.immersive-stage .piano-actions { padding: .45rem .7rem; }
+.piano-settings { max-height: calc(100dvh - 2rem); overflow: auto; }
+.piano-settings-controls { margin-block: .8rem; }
+.piano-settings .birthday-piano-footer { padding: 0; }
+
+/* Put cake controls beside the stage on wide screens and underneath on phones. */
+.immersive-stage .cake-chapter { text-align: start; }
+.immersive-stage .cake-chapter .lead { text-align: start; }
+.cake-workspace {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(13rem, 32%, 24rem);
+  gap: .55rem;
+}
+.cake-stage {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  min-width: 0;
+  container-type: size;
+  background: radial-gradient(ellipse, #62334c70, transparent 70%);
+}
+.cake-stage .cake-board { width: min(100%, 540px, 60vh); width: min(100cqw, 540px, calc(100cqh * 1.16)); }
+.cake-controls {
+  min-height: 0;
+  display: grid;
+  align-content: center;
+  gap: .5rem;
+  padding: .65rem;
+  border: 1px solid #ad7ba86b;
+  border-radius: 13px;
+  background: #40274475;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.cake-controls .row { justify-content: flex-start; gap: .35rem; }
+.cake-controls button { padding: .4rem .55rem; }
+.cake-controls .cake-privacy { line-height: 1.4; }
+
+@media (max-width: 670px) and (orientation: portrait) {
+  .piano-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: "controls" "instrument";
+  }
+  .piano-control-panel { border-inline-start: 0; border-block-end: 1px solid #615478; gap: .25rem; padding: .4rem .55rem; }
+  .piano-control-panel .birthday-piano-transport { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .immersive-stage .piano-studio .piano-dedication { display: none; }
+  .immersive-stage .piano-candles { font-size: .75rem; }
+  .immersive-stage .piano-studio .score-detail { font-size: .72rem; }
+  .immersive-stage .piano-stand .birthday-hand-legend { margin-left: 0; }
+  .cake-workspace { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(6rem, 1fr) auto; }
+  .cake-controls { padding: .45rem; gap: .35rem; max-height: 42dvh; }
+  .cake-controls button { font-size: .85rem; }
+}
+@media (max-height: 430px) {
+  .immersive-stage .piano-toolbar .piano-dedication { display: none; }
+  .immersive-stage .piano-toolbar { padding-block: .3rem; }
+  .immersive-stage .piano-actions { padding-block: .22rem; }
+  .cake-controls { align-content: start; }
+}
+@media (max-height: 18.75em) {
+  .immersive-stage .piano-studio { height: auto; }
+  .immersive-stage .birthday-keyboard-window { min-height: 100px; }
+  .immersive-stage .birthday-instrument { height: 100px; }
+  .cake-stage .cake-board { width: min(100%, 200px); }
+  .cake-stage { min-height: 170px; container-type: normal; }
+}
+
+@media (max-width: 380px), (max-height: 480px) {
+  .immersive-stage #stage > .chapter:not(:has(.cabinet)) { padding: .55rem; gap: .3rem; }
+  .immersive-stage .chapter > h2 { font-size: clamp(1.15rem, 4vw, 1.65rem); }
+  .immersive-stage .piano-stand { padding-block: .3rem; }
+  .immersive-stage .piano-stand .score-detail {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .immersive-stage .piano-studio .piano-status { font-size: .82rem; line-height: 1.25; }
+  .immersive-stage .piano-studio .phrase-meter { line-height: 1.25; }
+  .immersive-stage .birthday-instrument { grid-template-rows: minmax(0, 30fr) minmax(0, 70fr); }
+  .immersive-stage .piano-studio .note-rain { height: 30%; }
+}
+@media (orientation: landscape) and (max-height: 480px) {
+  .immersive-stage .chapter > .lead,
+  .immersive-stage .history-chapter .history h3 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .immersive-stage #mission { gap: .2rem; padding-block: .2rem; }
+  .immersive-stage .immersive-actions { padding-top: .25rem; }
+  .immersive-stage .immersive-actions button { padding-block: .25rem; }
+  .immersive-stage .history-chapter .history { padding: .4rem; }
+  .immersive-stage .history-chapter .history-exhibit {
+    display: grid;
+    grid-template-columns: minmax(8rem, 1fr) minmax(0, 2fr);
+    gap: .45rem;
+  }
+  .immersive-stage .history-chapter .era-banner { flex-direction: column; align-items: start; }
+  .immersive-stage .history-chapter .history-machine { padding: .4rem .55rem; }
+  .immersive-stage .history-chapter .machine-art { width: 4.5rem; }
+  .immersive-stage .piano-workspace { grid-template-columns: minmax(0, 1fr) clamp(15rem, 34%, 18rem); }
+  .piano-control-panel .birthday-piano-transport { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .immersive-stage .piano-control-panel .birthday-piano-transport button { padding-inline: .3rem; font-size: .82rem; }
+  .immersive-stage .cake-workspace { grid-template-columns: minmax(0, 1fr) minmax(18rem, 42%); }
+}
+
+
+.immersive-stage .crew-chapter .immersive-view > form { margin-bottom: 1rem; }
+.immersive-stage .crew-chapter .immersive-actions > :last-child { margin-inline-start: auto; }
+@media (max-width: 345px) and (orientation: portrait) {
+  .immersive-stage .shop-chapter .reward-art { max-height: 14vh; }
+  .immersive-stage .shop-chapter .reward-details { gap: .35rem; }
+  .immersive-stage .shop-chapter .reward-details p { font-size: .9rem; line-height: 1.45; }
+}
+
+.era-summary summary { width: fit-content; color: var(--line); cursor: pointer; }
+.era-summary p { margin-top: .35rem; }
+@media (max-width: 345px) and (orientation: portrait) {
+  .immersive-stage .history-chapter .history h3 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .immersive-stage .history-chapter .history { padding: .4rem; }
+}
+
+
+/* Give very short visual viewports room for the focused form. */
+body.immersive-stage.compact-editor { grid-template-rows: minmax(0, 1fr); }
+.immersive-stage.compact-editor > .hud,
+.immersive-stage.compact-editor #page-fullscreen,
+.immersive-stage.compact-editor :is(#chapters, #journey-top) { display: none; }
+.immersive-stage.compact-editor #mission {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+.immersive-stage.compact-editor .chapter > :is(.mono, .lead) { display: none; }

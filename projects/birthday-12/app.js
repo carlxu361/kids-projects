@@ -1,5 +1,24 @@
 const get = selector => document.querySelector(selector);
 const stage = get('#stage');
+const fullscreenControl = get('#page-fullscreen');
+fullscreenControl.hidden = !document.fullscreenEnabled;
+function syncFullscreenControl() {
+  const active = document.fullscreenElement === document.documentElement;
+  const label = active ? '退出全屏' : '全屏';
+  fullscreenControl.setAttribute('aria-pressed', String(active));
+  fullscreenControl.setAttribute('aria-label', label);
+  fullscreenControl.firstElementChild.textContent = active ? '×' : '';
+}
+document.addEventListener('fullscreenchange', syncFullscreenControl);
+fullscreenControl.addEventListener('click', async () => {
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await document.documentElement.requestFullscreen();
+  } catch {
+    syncFullscreenControl();
+  }
+});
+
 const nav = get('#chapters');
 const storageKey = 'orange-birthday-12-v1';
 const emptySave = { chapter: 'intro', stars: 0, songs: [], pianoLevels: [], purchases: [], wishes: [], crew: [], gift: false };
@@ -115,6 +134,7 @@ function go(key) {
   sceneTarget = key;
   document.body.classList.add('guide-active');
   guide.classList.toggle('scene-premiere', Boolean(stage.querySelector('.premiere.party-live')));
+  guide.classList.toggle('scene-history', key === 'history');
   guideAppearance();
   get('#scene-title').textContent = cue[0];
   get('#scene-narration').textContent = cue[1];
@@ -130,7 +150,7 @@ function finishGuide() {
   sceneTarget = null;
   const turn = () => {
     guide.close();
-    guide.classList.remove('scene-leaving', 'scene-premiere');
+    guide.classList.remove('scene-leaving', 'scene-premiere', 'scene-history');
     document.body.classList.remove('guide-active');
     show(key, true);
   };
@@ -176,6 +196,16 @@ function show(key, animate = false) {
     return tab;
   }));
   document.body.classList.toggle('piano-mode', key === 'piano');
+  document.body.classList.add('immersive-stage');
+  document.body.classList.toggle('intro-mode', key === 'intro');
+  const activeTab = nav.querySelector('[aria-current]');
+  if (activeTab) {
+    const tab = activeTab.getBoundingClientRect();
+    const rail = nav.getBoundingClientRect();
+    nav.scrollLeft += Math.max(tab.right - rail.right, 0) + Math.min(tab.left - rail.left, 0);
+  }
+  document.body.classList.remove('compact-editor');
+  syncImmersiveHeight();
   PartyEffects.focus(key === 'piano');
   renderers[key]();
   stage.classList.remove('page-turn');
@@ -186,6 +216,26 @@ function show(key, animate = false) {
   if (animate) window.scrollTo({ top: 0, behavior: 'instant' });
   stage.focus({ preventScroll: true });
 }
+
+const visualViewport = window.visualViewport;
+function syncImmersiveHeight() {
+  const editor = stage.querySelector('textarea:focus, input:focus, [contenteditable="true"]:focus');
+  const typing = editor || document.body.classList.contains('compact-editor');
+  const reducedViewport = document.body.classList.contains('immersive-stage') && typing &&
+    visualViewport?.scale === 1 && visualViewport.height < document.documentElement.clientHeight;
+  const keyboardTakesSpace = reducedViewport && visualViewport.height < 400 &&
+    document.documentElement.clientHeight - visualViewport.height > 100;
+  document.body.classList.toggle('compact-editor', Boolean(keyboardTakesSpace));
+  if (reducedViewport) {
+    document.body.style.setProperty('--immersive-height', visualViewport.height + 'px');
+  } else {
+    document.body.style.removeProperty('--immersive-height');
+  }
+}
+visualViewport?.addEventListener('resize', syncImmersiveHeight);
+visualViewport?.addEventListener('scroll', syncImmersiveHeight);
+stage.addEventListener('focusin', syncImmersiveHeight);
+stage.addEventListener('focusout', () => queueMicrotask(syncImmersiveHeight));
 
 function intro() {
   stage.append(get('#intro').content.cloneNode(true));
@@ -202,18 +252,53 @@ function intro() {
   }, { once: true });
 }
 
-function timeline(eras) {
+function readingPager(view, showPage, noun = '页') {
+  const controls = element('div', null, 'row reading-pager');
+  const counter = element('span');
+  counter.setAttribute('role', 'status');
+  let pages = [];
+  let current = 0;
+  const previous = button('上一' + noun, () => select(current - 1));
+  const nextPage = button('下一' + noun, () => select(current + 1));
+  controls.append(previous, counter, nextPage);
+
+  function select(index) {
+    if (index < 0 || index >= pages.length) return;
+    current = index;
+    showPage(pages[index]);
+    view.scrollTop = 0;
+    counter.textContent = (index + 1) + ' / ' + pages.length;
+    previous.setAttribute('aria-disabled', String(index === 0));
+    nextPage.setAttribute('aria-disabled', String(index === pages.length - 1));
+  }
+
+  return {
+    controls,
+    replace(items) {
+      pages = items;
+      controls.hidden = items.length < 2;
+      select(0);
+    },
+  };
+}
+
+function timeline(eras, view) {
   const section = element('section', null, 'history');
-  const invitation = element('blockquote', data.copy.historyLetter, 'history-invitation');
-  const heading = element('div', null, 'history-heading');
-  heading.append(element('h3', '为什么先看游戏史？'), invitation, element('span', '爸爸', 'history-signature'));
-  section.append(heading, element('h3', '游戏机发展路线'));
-  const rail = element('div', null, 'history-rail');
+  section.append(element('h3', '游戏机发展路线'));
+  const rail = element('div', null, 'history-rail reading-controls');
+  rail.setAttribute('role', 'group');
+  rail.setAttribute('aria-label', '年代');
   const exhibit = element('div', null, 'history-exhibit');
   exhibit.id = 'history-exhibit';
+  const machines = element('div', null, 'history-machines');
+  const pages = readingPager(view, machine => {
+    machines.replaceChildren(machine);
+    exhibit.classList.remove('history-in');
+    requestAnimationFrame(() => exhibit.classList.add('history-in'));
+  });
   function select(era) {
     [...rail.children].forEach(tab => tab.setAttribute('aria-expanded', String(tab.textContent === era.era)));
-    const machines = element('div', null, 'history-machines');
+    const cards = [];
     for (const item of era.machines) {
       const machine = element('article', null, 'history-machine');
       const citation = element('a', item.company);
@@ -230,40 +315,120 @@ function timeline(eras) {
       const masthead = element('div', null, 'machine-masthead');
       masthead.append(identity, picture);
       machine.append(masthead, element('p', item.note));
-      machines.append(machine);
+      cards.push(machine);
     }
     const banner = element('div', null, 'era-banner');
     const story = element('div', null, 'era-story');
-    story.append(element('h4', era.title), element('p', era.summary));
+    const details = element('details', null, 'era-summary');
+    details.append(element('summary', '年代导览'), element('p', era.summary));
+    story.append(element('h4', era.title), details);
     banner.append(element('strong', era.era), story);
     exhibit.replaceChildren(banner, machines);
-    exhibit.classList.remove('history-in');
-    requestAnimationFrame(() => exhibit.classList.add('history-in'));
+    machines.replaceChildren();
+    pages.replace(cards);
   }
   for (const era of eras) {
     const control = button(era.era, () => select(era));
     control.setAttribute('aria-controls', exhibit.id);
     rail.append(control);
   }
-  section.append(rail, exhibit);
+  section.append(exhibit);
   if (eras[0]) select(eras[0]);
-  return section;
+  view.append(section);
+  return { rail, paging: pages.controls };
 }
 
 function history() {
   const panel = chapter('GAME HISTORY', '游戏是怎样走到今天的', '从投币机到可以随身带走的世界。');
-  panel.append(timeline(data.history));
-  next(panel, 'arcade', '试玩一下经典游戏');
+  panel.classList.add('history-chapter');
+  const views = immersiveViews(panel);
+  const view = views.add();
+  const { rail, paging } = timeline(data.history, view);
+  view.before(rail);
+  views.show(view, [paging], null);
+  next(views.actions, 'arcade', '试玩一下经典游戏');
+}
+
+function immersiveViews(panel) {
+  const actions = element('div', null, 'row immersive-actions');
+  panel.append(actions);
+  const views = [];
+  return {
+    actions,
+    add(view = element('section')) {
+      view.classList.add('immersive-view');
+      view.tabIndex = -1;
+      view.hidden = true;
+      views.push(view);
+      actions.before(view);
+      return view;
+    },
+    show(view, controls, focus = view) {
+      for (const other of views) other.hidden = other !== view;
+      actions.replaceChildren(...controls);
+      if (focus) (focus.isConnected ? focus : view).focus({ preventScroll: true });
+    },
+  };
+}
+
+function gamePicker(view, cards, onSelect) {
+  const counter = element('span');
+  counter.setAttribute('role', 'status');
+  const paging = element('div', null, 'row immersive-picker');
+  let index = 0;
+  function select(indexToShow) {
+    index = (indexToShow + cards.length) % cards.length;
+    cards.forEach((card, position) => { card.hidden = position !== index; });
+    counter.textContent = (index + 1) + ' / ' + cards.length;
+    onSelect(index);
+  }
+  paging.append(button('上一个游戏', () => select(index - 1)), counter,
+    button('下一个游戏', () => select(index + 1)));
+  view.prepend(paging);
+  select(0);
+}
+
+function immersiveCabinet(views) {
+  const cabinet = views.add(element('section', null, 'cabinet-host'));
+  let dispose = () => {};
+  function stop() {
+    dispose();
+    dispose = () => {};
+    cabinet.replaceChildren();
+  }
+  return {
+    open(game, onResult, onBack) {
+      const back = () => {
+        stop();
+        onBack();
+      };
+      views.show(cabinet, [], null);
+      dispose = BirthdayArcade.mount(cabinet, game, onResult, back);
+    },
+    stop,
+  };
 }
 
 function arcade() {
   const panel = chapter('ARCADE', '轮到你试玩', '带着一个问题来玩：什么让你想再来一次？');
   panel.classList.add('arcade-chapter');
-  const grid = element('div', null, 'arcade-grid');
-  const cabinet = element('div', null, 'cabinet-host');
-  let closeGame = () => {};
+  const views = immersiveViews(panel);
+  const localView = views.add();
+  const classicsView = views.add();
+  const cabinet = immersiveCabinet(views);
   const highs = save.arcade ||= {};
-  const cards = new Map();
+  const cards = [];
+  const challenges = [];
+  let selectedChallenge;
+  const continueStory = button('看看你的成长日志', () => go('logs'), 'primary scene-next');
+  const classicsButton = button('别人的经典', () => showClassics());
+  const localButton = button('在这里试玩', () => showLocal(classicsButton));
+  function showLocal(focus) {
+    views.show(localView, [selectedChallenge, classicsButton, continueStory], focus);
+  }
+  function showClassics() {
+    views.show(classicsView, [localButton, continueStory]);
+  }
   for (const game of BirthdayArcade.games) {
     const tile = element('article', null, 'arcade-card ' + game.id);
     const history = element('a', game.history);
@@ -272,10 +437,7 @@ function arcade() {
     history.rel = 'noopener noreferrer';
     const best = element('span', '最高分 ' + (highs[game.id] || 0), 'arcade-best');
     const launch = button('开始挑战', () => {
-      closeGame();
-      cabinet.replaceChildren();
-      for (const control of cards.values()) control.setAttribute('aria-pressed', String(control === launch));
-      closeGame = BirthdayArcade.mount(cabinet, game, (score, victory) => {
+      cabinet.open(game, (score, victory) => {
         highs[game.id] = Math.max(highs[game.id] || 0, score);
         best.textContent = '最高分 ' + highs[game.id];
         const wins = save.arcadeWins ||= [];
@@ -287,19 +449,20 @@ function arcade() {
         }
         persist();
         return firstWin;
-      });
-      cabinet.scrollIntoView({ block: 'nearest' });
-    });
-    cards.set(game.id, launch);
+      }, () => showLocal(launch));
+    }, 'primary');
     const artwork = element('div', null, 'arcade-art');
     artwork.setAttribute('aria-hidden', 'true');
     tile.append(artwork, history, element('h3', game.title), element('p', game.summary),
-      element('p', game.lesson, 'history-lesson'), best, launch);
-    grid.append(tile);
+      element('p', game.lesson, 'history-lesson'), best);
+    cards.push(tile);
+    challenges.push(launch);
   }
-  const links = element('div', null, 'row');
-  next(links, 'logs', '看看你的成长日志');
-
+  localView.append(...cards);
+  gamePicker(localView, cards, index => {
+    selectedChallenge = challenges[index];
+    if (!localView.hidden) showLocal(null);
+  });
   const classics = element('div', null, 'grid classic-grid');
   for (const [title, prompt, href] of [
     ['PAC-MAN', '试试只靠转弯和预判，就让自己再玩一局。', 'https://doodles.google/doodle/30th-anniversary-of-pac-man/'],
@@ -313,27 +476,41 @@ function arcade() {
     tile.append(element('h3', title), element('p', prompt), launch);
     classics.append(tile);
   }
-  panel.append(element('h3', '别人做的经典'), classics,
-    element('h3', '在这里直接试玩'), grid, cabinet, links);
-  stopChapter = () => closeGame();
+  classicsView.append(element('h3', '别人做的经典'), classics);
+  showLocal(null);
+  stopChapter = cabinet.stop;
 }
 
 function logs() {
   const { entries, works = [], awards = [] } = data.logs;
   const panel = chapter('成长日志', '橙子的十二岁作品颁奖礼',
-    '橙子，今天一起看看你做出来的东西。那些你想过、试过、改过的点子，值得我们停下来为你鼓掌。');
+    '给你做过的作品和试过的点子鼓掌。');
   panel.classList.add('growth-log');
+  const views = immersiveViews(panel);
+  const categories = element('div', null, 'row reading-controls growth-categories');
+  categories.setAttribute('role', 'group');
+  categories.setAttribute('aria-label', '成长日志内容');
+  views.actions.before(categories);
+  const continueStory = button('听听你的钢琴', () => go('piano'), 'primary scene-next');
+
+  function addCategory(label, view, paging, extra = []) {
+    const control = button(label, () => {
+      for (const tab of categories.children) tab.setAttribute('aria-pressed', String(tab === control));
+      views.show(view, [...extra, paging, continueStory], null);
+    });
+    categories.append(control);
+  }
 
   const ceremony = element('section', null, 'growth-ceremony');
   const medals = element('ul', null, 'growth-medals');
-  for (const award of awards) {
+  const awardPages = awards.map(award => {
     const medal = element('li');
     const icon = element('span', award.icon, 'growth-medal-icon');
     icon.setAttribute('aria-hidden', 'true');
     medal.append(icon, element('h4', award.title), element('p', award.work, 'growth-award-work'),
       element('p', award.reason));
-    medals.append(medal);
-  }
+    return medal;
+  });
   const applause = button('为你的作品鼓掌', () => {
     celebrate();
     applause.textContent = '再鼓一次掌';
@@ -341,8 +518,14 @@ function logs() {
   }, 'primary');
   const ovation = element('p', null, 'growth-ovation');
   ovation.setAttribute('role', 'status');
-  ceremony.append(element('h3', '颁给你的 ' + awards.length + ' 枚奖章'), medals, applause, ovation);
-  if (awards.length) panel.append(ceremony);
+  if (awardPages.length) {
+    const awardView = views.add();
+    const pager = readingPager(awardView, medal => medals.replaceChildren(medal));
+    pager.replace(awardPages);
+    ceremony.append(element('h3', '颁给你的 ' + awards.length + ' 枚奖章'), medals, ovation);
+    awardView.append(ceremony);
+    addCategory('奖章', awardView, pager.controls, [applause]);
+  }
 
   function addWorkLink(card, href) {
     if (typeof href !== 'string' || !/^\/(?![\\/])/.test(href)) return;
@@ -354,11 +537,13 @@ function logs() {
   }
 
   if (works.length) {
+    const archiveView = views.add();
     const archive = element('section', null, 'growth-archive');
     const controls = element('div', null, 'row');
     controls.setAttribute('role', 'group');
     controls.setAttribute('aria-label', '作品浏览方式');
     const groups = element('div', null, 'growth-groups');
+    const pager = readingPager(archiveView, section => groups.replaceChildren(section));
     const byTime = button('按时间', () => renderWorks(false));
     const bySkill = button('按创作技能', () => renderWorks(true));
     controls.append(byTime, bySkill);
@@ -366,7 +551,6 @@ function logs() {
     function renderWorks(groupBySkill) {
       byTime.setAttribute('aria-pressed', String(!groupBySkill));
       bySkill.setAttribute('aria-pressed', String(groupBySkill));
-      groups.replaceChildren();
       const sorted = [...works].sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999'));
       const sections = new Map();
       for (const work of sorted) {
@@ -375,10 +559,10 @@ function logs() {
         if (!sections.has(label)) sections.set(label, []);
         sections.get(label).push(work);
       }
+      const workPages = [];
       for (const [label, items] of sections) {
-        const section = element('section', null, 'growth-group');
-        const grid = element('div', null, 'grid');
         for (const work of items) {
+          const section = element('section', null, 'growth-group');
           const tile = element('article', null, 'tile growth-work');
           const meta = element('p', null, 'growth-meta');
           if (work.date) {
@@ -394,33 +578,35 @@ function logs() {
             element('p', work.growth), element('p', '如果你想试试：' + work.experiment));
           tile.append(details);
           addWorkLink(tile, work.link);
-          grid.append(tile);
+          section.append(element('h4', label), tile);
+          workPages.push(section);
         }
-        section.append(element('h4', label), grid);
-        groups.append(section);
       }
+      pager.replace(workPages);
     }
 
     renderWorks(false);
-    archive.append(element('h3', '回看你的 ' + works.length + ' 件作品'),
-      element('p', '日期来自作品记录。每一页都有你做出来的一个亮点，还有一个想玩就玩的新点子。'),
-      controls, groups);
-    panel.append(archive);
+    archive.append(controls, groups);
+    archiveView.append(archive);
+    addCategory('作品档案', archiveView, pager.controls);
   }
 
-  const memories = element('div', null, 'grid');
-  for (const entry of entries) {
+  const memoryView = views.add();
+  const memories = element('div', null, 'growth-memories');
+  const memoryPages = entries.map(entry => {
     const tile = element('article', null, 'tile');
     tile.append(element('p', entry.date, 'mono'), element('h4', entry.title));
     if (entry.chat && !/^【待/.test(entry.chat)) tile.append(element('blockquote', entry.chat));
     if (entry.note) tile.append(element('p', entry.note));
     addWorkLink(tile, entry.link);
-    memories.append(tile);
-  }
-  if (memories.childElementCount) panel.append(element('h3', '对话回忆'), memories);
-
-  panel.append(element('p', '还记得哪个点子是你最想试的吗？有空就挑一个，做个小版本，看看会发生什么。生日快乐，橙子。', 'growth-sendoff'));
-  next(panel, 'piano', '听听你的钢琴');
+    return tile;
+  });
+  memoryPages.push(element('p', '还记得哪个点子是你最想试的吗？有空就挑一个，做个小版本，看看会发生什么。生日快乐，橙子。', 'growth-sendoff'));
+  const pager = readingPager(memoryView, page => memories.replaceChildren(page));
+  pager.replace(memoryPages);
+  memoryView.append(memories);
+  addCategory(entries.length ? '对话回忆' : '寄语', memoryView, pager.controls);
+  categories.firstElementChild.click();
 }
 
 const whiteKeys = { a: 60, s: 62, d: 64, f: 65, g: 67, h: 69, j: 71, k: 72, l: 74, ';': 76 };
@@ -926,19 +1112,37 @@ function piano() {
   });
   const first = tracks.findIndex((_, index) => !completed.has(index));
   picker.value = String(Math.max(first, 0));
-  top.append(heading, candles, micButton);
+  top.append(heading, candles);
   const transport = element('div', null, 'birthday-piano-transport');
-  transport.append(picker, hands, preview, speed, metronome, source);
+  transport.append(picker, hands, preview, micButton);
   scoreHeader.append(status, detail, legend);
-  stand.append(transport, scoreHeader, phrases, progress, sequence);
+  stand.append(scoreHeader, phrases, progress, sequence);
   keyboardWindow.append(instrument);
   instrument.append(roll, rain, keyboard);
   const fallback = element('div', null, 'birthday-piano-footer');
   const keyboardHelp = element('span', '点击或触摸琴键。键盘演奏时先用 Tab 聚焦琴键区，再按标注键位，[ 和 ] 换八度。');
   keyboardHelp.id = 'piano-keyboard-help';
   fallback.append(keyboardHelp, attribution);
-  panel.append(top, stand, keyboardWindow, micStatus, fallback);
-  next(panel, 'cake', '去吹蜡烛');
+  const settings = element('dialog', null, 'piano-settings');
+  const settingsHeading = element('h3', '演奏设置');
+  settingsHeading.id = 'piano-settings-title';
+  settings.setAttribute('aria-labelledby', settingsHeading.id);
+  const settingsControls = element('div', null, 'row piano-settings-controls');
+  settingsControls.append(speed, metronome, source);
+  const closeSettings = button('关闭', () => settings.close());
+  const settingsTop = element('div', null, 'panel-top');
+  settingsTop.append(settingsHeading, closeSettings);
+  settings.append(settingsTop, settingsControls, fallback);
+  const actions = element('div', null, 'row immersive-actions piano-actions');
+  actions.append(button('演奏设置', () => settings.showModal()));
+  next(actions, 'cake', '去吹蜡烛');
+  const pianoMain = element('div', null, 'piano-play-area');
+  pianoMain.append(stand, keyboardWindow);
+  const pianoControls = element('div', null, 'piano-control-panel');
+  pianoControls.append(transport, micStatus);
+  const workspace = element('div', null, 'piano-workspace');
+  workspace.append(pianoControls, pianoMain);
+  panel.append(top, workspace, actions, settings);
   prepareSong(true);
 }
 
@@ -994,7 +1198,13 @@ function cake() {
   cut.type = 'button';
   card.append(title, element('p', '从蛋糕中心的光圈向外缘划一刀，再从中心换个方向划一刀，切出第一块蛋糕。'), cut);
   notice.append(card);
-  panel.append(flavors, board, status, actions, element('p', '吹气检测在设备上完成，无需上传声音。', 'cake-privacy'), notice);
+  const cakeStage = element('div', null, 'cake-stage');
+  cakeStage.append(board);
+  const controls = element('div', null, 'cake-controls');
+  controls.append(flavors, status, actions, element('p', '吹气检测在设备上完成，无需上传声音。', 'cake-privacy'));
+  const workspace = element('div', null, 'cake-workspace');
+  workspace.append(cakeStage, controls);
+  panel.append(workspace, notice);
   let celebrationTimer;
   const stopCake = PartyCake.attach({
     board, rest, slice, status, mic, breeze, cut, fallback, candles, clearCandles, notice, flavorButtons,
@@ -1034,7 +1244,7 @@ const wishRevision = {
   nextPrompt: '把速度调回中档，但保留 5 颗星核的目标，看看难度差在哪。',
 };
 
-function wishStudio(panel, playPrototype) {
+function wishStudio(view, results, showEditor, showResults, playPrototype) {
   const studio = element('section', null, 'wish-studio');
   const form = element('form');
   const label = element('label', '你想做一个什么游戏？');
@@ -1051,14 +1261,14 @@ function wishStudio(panel, playPrototype) {
   status.setAttribute('role', 'status');
   const actions = element('div', null, 'row');
   const output = element('div', null, 'wish-output');
-  const examples = button('打开示例', () => {
-    prompt.value = '做一个要躲暗礁、收集星核的太空运输游戏。';
-    present(wishExample, '示例 · 第一版', true);
-    status.textContent = '先试玩第一版，再查看放慢速度后的区别。';
-  });
   let current;
   let last;
   let cancel;
+  const examples = button('打开示例', () => {
+    if (!prompt.value.trim()) prompt.value = '做一个要躲暗礁、收集星核的太空运输游戏。';
+    present(wishExample, '示例 · 第一版', true);
+    status.textContent = '先试玩第一版，再查看放慢速度后的区别。';
+  });
   function present(result, badge, example) {
     last = current;
     current = result;
@@ -1075,12 +1285,14 @@ function wishStudio(panel, playPrototype) {
       entry.append(element('dt', key), element('dd', detail));
       info.append(entry);
     }
+    const details = element('details', null, 'wish-details');
+    details.append(element('summary', '规则与设计说明'), info);
     const tools = element('div', null, 'row');
-    const usable = button('试玩这一版', () => playPrototype(result), 'primary');
+    const usable = button('试玩这一版', () => playPrototype(result, usable), 'primary');
     tools.append(usable, button('把改法填进输入框', () => {
       prompt.value = result.nextPrompt;
       send.textContent = '用这句反馈再做一版';
-      prompt.focus();
+      showEditor(prompt);
     }));
     if (example && result === wishExample) tools.append(button('查看示例第二版', () => {
       prompt.value = wishExample.nextPrompt;
@@ -1088,11 +1300,14 @@ function wishStudio(panel, playPrototype) {
     }));
     if (last && last !== result) {
       const previous = last;
-      tools.append(button('回玩上一版', () => playPrototype(previous)));
+      const replay = button('回玩上一版', () => playPrototype(previous, replay));
+      tools.append(replay);
     }
-    output.replaceChildren(element('p', badge, 'mono'), element('h3', result.title),
-      element('p', '难度 ' + settings[result.difficulty - 1] + ' · 过关目标 ' + result.goal), info, tools);
+    output.replaceChildren(element('p', badge, 'mono'), element('h3', result.title), tools,
+      element('p', '难度 ' + settings[result.difficulty - 1] + ' · 过关目标 ' + result.goal), details);
+    results.scrollTop = 0;
     send.textContent = '用这句反馈再做一版';
+    if (!view.hidden || !results.hidden) showResults();
   }
   form.addEventListener('submit', async event => {
     event.preventDefault();
@@ -1101,6 +1316,7 @@ function wishStudio(panel, playPrototype) {
     if (!idea) return;
     cancel = new AbortController();
     send.disabled = true;
+    examples.disabled = true;
     status.textContent = '正在把你的想法变成玩法…';
     try {
       const response = await fetch('/birthday/wish', {
@@ -1108,6 +1324,7 @@ function wishStudio(panel, playPrototype) {
         body: JSON.stringify({ idea, original: current || null }),
       });
       const result = await response.json();
+      if (cancel.signal.aborted) return;
       if (!response.ok) { status.textContent = result.message || '这一版还没生成，可以打开示例。'; return; }
       present(result, 'AI 原型', false);
       status.textContent = '这一版已经可以试玩。';
@@ -1116,42 +1333,64 @@ function wishStudio(panel, playPrototype) {
     } finally {
       cancel = null;
       send.disabled = false;
+      examples.disabled = false;
     }
   });
   actions.append(send, examples);
   form.append(label, prompt, actions, status);
-  studio.append(element('h3', '一句话，做出第一版'), element('p',
-    '告诉 AI 玩家要做什么、怎么才算赢。先试玩，再把你发现的问题说具体，例如「太快了，给我更多反应时间」。'),
-    form, output);
-  panel.append(studio);
-  return () => cancel?.abort();
+  studio.append(element('h3', '一句话，做出第一版'), form);
+  view.append(studio);
+  results.append(output);
+  return {
+    stop: () => cancel?.abort(),
+    hasResult: () => Boolean(current),
+  };
 }
 
 function wishes() {
   const panel = chapter('WISH STUDIO', '生日愿望关', '橙子，这一关是你的游戏工作台。你定规则，AI 帮你做出一个能玩的原型。');
-  const grid = element('div', null, 'arcade-grid');
-  const cabinet = element('div', null, 'cabinet-host');
-  let close = () => {};
+  panel.classList.add('wish-chapter');
+  const views = immersiveViews(panel);
+  const editor = views.add();
+  const results = views.add();
+  const premade = views.add();
+  const cabinet = immersiveCabinet(views);
+  const cards = [];
+  const challenges = [];
+  let selectedChallenge;
   const records = save.wishScores ||= {};
-  const stopStudio = wishStudio(panel, result => {
+  const continueStory = button('打开船员来信', () => go('crew'), 'primary scene-next');
+  const openEditor = button('回愿望工作台', () => showEditor());
+  const openResults = button('查看原型', () => showResults());
+  const openPremade = button('试玩现成游戏', () => showPremade());
+  function showEditor(focus) {
+    const controls = studio.hasResult() ? [openResults, openPremade] : [openPremade];
+    views.show(editor, [...controls, continueStory], focus);
+  }
+  function showResults(focus) {
+    views.show(results, [openEditor, openPremade, continueStory], focus);
+  }
+  function showPremade(focus) {
+    views.show(premade, [selectedChallenge, openEditor, continueStory], focus);
+  }
+  function play(game, onResult, onBack) {
+    PartyEffects.focus(game.id === 'fireflies');
+    cabinet.open(game, onResult, () => {
+      PartyEffects.focus(false);
+      onBack();
+    });
+  }
+  const studio = wishStudio(editor, results, showEditor, showResults, (result, opener) => {
     const template = BirthdayWishes.find(game => game.id === result.template);
     if (!template) return;
-    close();
-    cabinet.replaceChildren();
-    PartyEffects.focus(template.id === 'fireflies');
-    close = BirthdayArcade.mount(cabinet, {
-      ...template, title: result.title, create: finish => template.create(finish, result),
-    }, () => false);
-    cabinet.scrollIntoView({ block: 'nearest' });
+    play({ ...template, title: result.title, create: finish => template.create(finish, result) },
+      () => false, () => showResults(opener));
   });
   for (const game of BirthdayWishes) {
     const card = element('article', null, 'wish-card');
     const best = element('span', '最高分 ' + (records[game.id] || 0), 'arcade-best');
     const open = button('开始挑战', () => {
-      close();
-      cabinet.replaceChildren();
-      PartyEffects.focus(game.id === 'fireflies');
-      close = BirthdayArcade.mount(cabinet, game, (score, victory) => {
+      play(game, (score, victory) => {
         records[game.id] = Math.max(records[game.id] || 0, score);
         best.textContent = '最高分 ' + records[game.id];
         const wins = save.wishWins ||= [];
@@ -1159,16 +1398,20 @@ function wishes() {
         if (first) { wins.push(game.id); save.stars += 2; celebrate(); }
         persist();
         return first;
-      });
-      cabinet.scrollIntoView({ block: 'nearest' });
-    });
+      }, () => showPremade(open));
+    }, 'primary');
     card.append(element('div', game.icon, 'wish-mark ' + game.id), element('h3', game.title),
-      element('p', game.summary), element('p', game.lesson, 'history-lesson'), best, open);
-    grid.append(card);
+      element('p', game.summary), element('p', game.lesson, 'history-lesson'), best);
+    cards.push(card);
+    challenges.push(open);
   }
-  panel.append(element('h3', '三个可以先试玩的玩法'), grid, cabinet);
-  next(panel, 'crew', '打开船员来信');
-  stopChapter = () => { close(); stopStudio(); };
+  premade.append(...cards);
+  gamePicker(premade, cards, index => {
+    selectedChallenge = challenges[index];
+    if (!premade.hidden) showPremade(null);
+  });
+  showEditor(null);
+  stopChapter = () => { cabinet.stop(); studio.stop(); };
 }
 
 function familyForm(panel) {
@@ -1192,7 +1435,7 @@ function familyForm(panel) {
         headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: input.value }) });
       if (!response.ok) { status.textContent = '家庭口令不正确。'; return; }
       data = await fetchData();
-      show('crew');
+      if (panel.isConnected) show('crew');
     } catch {
       status.textContent = '暂时连不上，可以稍后再试。';
     } finally { submit.disabled = false; }
@@ -1200,13 +1443,40 @@ function familyForm(panel) {
   panel.append(form);
 }
 
+function letterTextPages(text) {
+  const limit = 130;
+  const pages = [];
+  const sentences = String(text ?? '').match(/[^。！？!?；;\n]+[。！？!?；;]*|[。！？!?；;]+|\n+/gu) || [];
+  let page = '';
+  for (const sentence of sentences) {
+    if (page.trim() && page.length + sentence.length > limit) {
+      pages.push(element('p', page.trim()));
+      page = '';
+    }
+    const chars = Array.from(sentence);
+    while (chars.length > limit) {
+      const partial = chars.slice(0, limit).join('');
+      const boundary = Math.max(partial.lastIndexOf(' '), partial.lastIndexOf('，'), partial.lastIndexOf('、'));
+      const count = boundary >= limit / 2 ? Array.from(partial.slice(0, boundary + 1)).length : limit;
+      pages.push(element('p', chars.splice(0, count).join('').trim()));
+    }
+    page += chars.join('');
+  }
+  if (page.trim() || !pages.length) pages.push(element('p', page.trim()));
+  return pages;
+}
+
 function crew() {
   const panel = chapter('CHARACTER BAY', '全家入队', '船员们各留了一段话。按顺序点开，爸爸最后。');
+  panel.classList.add('crew-chapter');
+  const views = immersiveViews(panel);
+  const crewView = views.add();
+  const optionsView = views.add();
   if (data.guideArt && /^[\w.-]+\.webp$/.test(data.guideArt)) {
     const guide = element('img', null, 'guide-art');
     guide.alt = '生日向导';
     guide.src = '/birthday/media/' + encodeURIComponent(data.guideArt);
-    panel.append(guide);
+    crewView.append(guide);
   }
   const roster = element('div', null, 'letter-roster');
   const dialog = element('dialog', null, 'letter-dialog');
@@ -1215,6 +1485,7 @@ function crew() {
   let closeTimer;
   function closeLetter() {
     if (!dialog.open || dialog.classList.contains('letter-closing')) return;
+    dialog.querySelector('audio, video')?.pause();
     const finish = () => {
       dialog.close();
       dialog.replaceChildren();
@@ -1229,6 +1500,7 @@ function crew() {
   dialog.addEventListener('cancel', event => { event.preventDefault(); closeLetter(); });
   stopChapter = () => {
     clearTimeout(closeTimer);
+    dialog.querySelector('audio, video')?.pause();
     if (dialog.open) dialog.close();
   };
   function letter(member) {
@@ -1239,20 +1511,44 @@ function crew() {
     const bar = element('div', null, 'row letter-top');
     bar.append(heading, close);
     const note = element('article', null, 'letter-paper');
-    note.append(bar, element('p', member.text));
+    const content = element('div', null, 'letter-content');
+    content.tabIndex = 0;
+    content.setAttribute('role', 'region');
+    content.setAttribute('aria-label', '来信内容');
+    const pages = letterTextPages(member.text);
     if (data.privateAccess && typeof member.photo === 'string' && /^[\w.-]+\.(webp|jpg|png)$/.test(member.photo)) {
       const picture = element('img', null, 'letter-photo');
       picture.alt = member.photoAlt || member.name + '的随信照片';
       picture.src = '/birthday/media/' + encodeURIComponent(member.photo);
-      note.append(picture);
+      pages.push(picture);
     }
     if (data.privateAccess && typeof member.media === 'string' && /^[\w.-]+\.(mp3|m4a|mp4)$/.test(member.media)) {
       const player = element(member.media.endsWith('.mp4') ? 'video' : 'audio');
       player.controls = true;
       player.preload = 'none';
       player.src = '/birthday/media/' + encodeURIComponent(member.media);
-      note.append(player);
+      pages.push(player);
     }
+    const paging = element('div', null, 'row letter-pages');
+    const counter = element('span');
+    counter.setAttribute('role', 'status');
+    let index = 0;
+    const previous = button('上一页', () => renderPage(index - 1, true));
+    const nextPage = button('下一页', () => renderPage(index + 1, true));
+    function renderPage(page, moveFocus = false) {
+      content.querySelector('audio, video')?.pause();
+      index = page;
+      content.replaceChildren(pages[index]);
+      content.scrollTop = 0;
+      counter.textContent = '第 ' + (index + 1) + ' 页 / 共 ' + pages.length + ' 页';
+      previous.disabled = index === 0;
+      nextPage.disabled = index === pages.length - 1;
+      if (moveFocus) content.focus({ preventScroll: true });
+    }
+    paging.append(previous, counter, nextPage);
+    paging.hidden = pages.length < 2;
+    renderPage(0);
+    note.append(bar, content, paging);
     const flap = element('div', null, 'letter-flap');
     flap.setAttribute('aria-hidden', 'true');
     shell.append(note, flap);
@@ -1301,8 +1597,13 @@ function crew() {
     control.append(element('span', member.name, 'envelope-name'), element('span', '打开信封', 'envelope-hint'));
     roster.append(control);
   }
-  if (!data.privateAccess) familyForm(panel);
-  panel.append(roster, dialog, outfit, openShop);
+  crewView.append(roster);
+  if (!data.privateAccess) familyForm(optionsView);
+  optionsView.append(outfit);
+  views.actions.after(dialog);
+  const options = button('家庭选项', () => views.show(optionsView, [back, openShop]));
+  const back = button('回到来信', () => views.show(crewView, [options, openShop], options));
+  views.show(crewView, [options, openShop], null);
   rosterState();
 }
 
@@ -1327,17 +1628,31 @@ function receipt(item) {
   }, 'primary');
   const actions = element('div', null, 'row');
   actions.append(download, close);
-  dialog.append(banner, heading, element('p', detail), element('p', item.detail), actions);
+  dialog.append(banner, heading, element('p', detail), element('p', item.detail),
+    element('p', '兑换券保存在这个浏览器里，也可以下载带走。', 'store-note'), actions);
   stage.append(dialog);
   dialog.addEventListener('close', () => dialog.remove(), { once: true });
   dialog.showModal();
 }
 
+function scenePager(pages, view, noun) {
+  const pager = readingPager(view, selected => {
+    for (const page of pages) page.hidden = page !== selected;
+  }, noun);
+  pager.replace(pages);
+  pager.controls.classList.add('scene-pager');
+  return pager.controls;
+}
+
 function shop() {
   const ready = data.family.every(member => save.crew.includes(member.id));
   const panel = chapter('STAR SHOP', '生日体验商店', '用星核兑换你想和家人一起做的事。');
-  const grid = element('div', null, 'grid');
-  const status = element('p');
+  panel.classList.add('shop-chapter');
+  const views = immersiveViews(panel);
+  const rewards = views.add();
+  const giftView = views.add();
+  const cards = [];
+  const status = element('p', '', 'shop-status');
   status.setAttribute('role', 'status');
   for (const item of data.copy.shop) {
     const image = element('img', null, 'reward-art');
@@ -1363,8 +1678,13 @@ function shop() {
       ticket.focus({ preventScroll: true });
     });
     purchase.disabled = owned;
-    tile.append(image, element('span', item.label, 'mono'), element('h3', item.name), element('p', item.detail), purchase, ticket);
-    grid.append(tile);
+    tile.classList.toggle('reward-redeemed', owned);
+    const details = element('div', null, 'reward-details');
+    const actions = element('div', null, 'row');
+    actions.append(purchase, ticket);
+    details.append(element('span', item.label, 'mono'), element('h3', item.name), element('p', item.detail), actions);
+    tile.append(image, details);
+    cards.push(tile);
   }
   const gift = element('div', null, 'tile');
   const reveal = () => {
@@ -1385,34 +1705,41 @@ function shop() {
     gift.append(element('p', '已拥有', 'mono'), element('h3', '爸爸的礼物'), unlock);
     if (!ready) gift.append(element('p', '先召集全部家庭船员。'));
   }
-  panel.append(grid, status, gift, element('p', '兑换券保存在这台设备的浏览器里，也可以下载带走。', 'store-note'));
-  next(panel, 'finale', '走向最后一幕');
+  rewards.append(scenePager(cards, rewards, '件'), ...cards, status);
+  giftView.append(gift);
+  const advance = button('走向最后一幕', () => go('finale'), 'primary scene-next');
+  const showGift = button('生日礼物', () => views.show(giftView, [back, advance]));
+  const back = button('回到兑换', () => views.show(rewards, [showGift, advance], showGift));
+  views.show(rewards, [showGift, advance], null);
 }
 
 function finale() {
   const panel = chapter('THE END', '生日快乐，橙子', '你的十二岁，从这里开始。');
   panel.classList.add('finale');
-  const notes = element('ol', null, 'finale-notes');
+  const views = immersiveViews(panel);
+  const view = views.add();
+  const notes = element('ul', null, 'finale-notes');
   const wishes = data.copy.finale.map(line => ['', line]);
   if (data.privateAccess) {
     for (const member of data.family) {
       if (typeof member.text === 'string' && !member.text.startsWith('【待替换')) wishes.push([member.name, member.text]);
     }
   }
-  wishes.forEach(([from, line], index) => {
-    const entry = element('li', null, 'finale-note');
-    entry.append(element('p', line));
-    if (from) entry.append(element('span', from, 'mono'));
-    entry.style.setProperty('--wish-delay', Math.min(index * 280, 2750) + 'ms');
-    notes.append(entry);
-  });
-  const controls = element('div', null, 'row finale-actions');
+  for (const [from, line] of wishes) {
+    for (const paragraph of letterTextPages(line)) {
+      const entry = element('li', null, 'finale-note');
+      entry.append(paragraph);
+      if (from) entry.append(element('span', from, 'mono'));
+      notes.append(entry);
+    }
+  }
+  view.append(notes, scenePager([...notes.children], view, '页'));
   const again = button('重新播放', () => go('intro'), 'primary');
   const blessing = element('button', '送上祝福');
   blessing.type = 'button';
   blessing.dataset.openBlessings = '';
-  controls.append(again, button('回看兑换券', () => go('shop')), blessing);
-  panel.append(notes, controls);
+  views.actions.classList.add('finale-actions');
+  views.show(view, [again, button('回看兑换券', () => go('shop')), blessing], null);
   celebrate();
   const bursts = [setTimeout(celebrate, 950), setTimeout(celebrate, 2100)];
   stopChapter = () => bursts.forEach(timer => clearTimeout(timer));

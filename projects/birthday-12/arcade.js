@@ -38,7 +38,7 @@ const BirthdayArcade = (() => {
     ctx.fillText(text, x, y);
   }
 
-  function mount(host, config, onResult) {
+  function mount(host, config, onResult, onBack) {
     const root = document.createElement('section');
     root.className = 'cabinet';
     const header = document.createElement('div');
@@ -47,17 +47,33 @@ const BirthdayArcade = (() => {
     name.textContent = config.title;
     const reset = document.createElement('button');
     reset.textContent = '重新开局';
-    header.append(name, reset);
+    header.append(name);
+    const panel = document.createElement('aside');
+    panel.className = 'cabinet-panel';
+    panel.setAttribute('aria-label', '游戏操作');
+    const actions = document.createElement('div');
+    actions.className = 'cabinet-actions';
+    const back = document.createElement('button');
+    back.textContent = '返回';
+    reset.className = 'cabinet-restart';
+    actions.append(reset, back);
     const canvas = document.createElement('canvas');
     canvas.width = W;
     canvas.height = H;
     canvas.tabIndex = 0;
     canvas.setAttribute('aria-label', config.title + '游戏屏幕');
+    const hint = document.createElement('p');
+    hint.className = 'cabinet-hint';
     const feedback = document.createElement('p');
+    feedback.className = 'cabinet-result';
     feedback.setAttribute('role', 'status');
     const controls = document.createElement('div');
     controls.className = 'game-controls';
-    root.append(header, canvas, controls, feedback);
+    const screen = document.createElement('div');
+    screen.className = 'cabinet-screen';
+    screen.append(canvas);
+    panel.append(header, hint, controls, feedback, actions);
+    root.append(screen, panel);
     host.append(root);
 
     const ctx = canvas.getContext('2d');
@@ -77,12 +93,27 @@ const BirthdayArcade = (() => {
         (prize ? ' · 首通获得 2 星核' : '');
     }
 
+    function paint() {
+      ctx.clearRect(0, 0, W, H);
+      game.draw(ctx);
+    }
+
+    const resolution = new ResizeObserver(([entry]) => {
+      const ratio = Math.min(window.devicePixelRatio || 1, 2);
+      const width = Math.max(1, Math.round(entry.contentRect.width * ratio));
+      const height = Math.max(1, Math.round(entry.contentRect.height * ratio));
+      if (canvas.width === width && canvas.height === height) return;
+      canvas.width = width;
+      canvas.height = height;
+      ctx.setTransform(width / W, 0, 0, height / H, 0, 0);
+      if (game) paint();
+    });
+
     function draw(time) {
       const delta = previous ? Math.min(.035, (time - previous) / 1000) : 0;
       previous = time;
       if (active) game.update(delta, held);
-      ctx.clearRect(0, 0, W, H);
-      game.draw(ctx);
+      paint();
       if (active) animation = requestAnimationFrame(draw);
     }
 
@@ -92,7 +123,8 @@ const BirthdayArcade = (() => {
       active = true;
       previous = 0;
       game = config.create(finish);
-      feedback.textContent = game.hint;
+      hint.textContent = game.hint;
+      feedback.textContent = '';
       canvas.focus({ preventScroll: true });
       animation = requestAnimationFrame(draw);
     }
@@ -138,8 +170,11 @@ const BirthdayArcade = (() => {
     canvas.addEventListener('pointerdown', aim, { signal });
     canvas.addEventListener('pointermove', aim, { signal });
     reset.addEventListener('click', restart, { signal });
+    back.addEventListener('click', onBack, { signal });
     restart();
+    resolution.observe(canvas);
     return () => {
+      resolution.disconnect();
       listeners.abort();
       cancelAnimationFrame(animation);
       held.clear();

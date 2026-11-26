@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,interactive-widget=resizes-content">
   <meta name="theme-color" content="#071116">
   <title>橙子 12 岁生日隐藏关卡</title>
   <link rel="stylesheet" href="/birthday/style.css">
@@ -19,8 +19,11 @@
 </head>
 <body>
   <canvas id="sky" aria-hidden="true"></canvas>
+  <button id="page-fullscreen" type="button" aria-label="全屏" aria-pressed="false" hidden>
+    <span aria-hidden="true"></span>
+  </button>
   <header class="hud">
-    <a href="/">作品集</a>
+    <a href="/">橙子的作品集</a>
     <span class="mono">BIRTHDAY · LV.12</span>
     <div class="row hud-controls">
       <button id="fireworks" class="effect-toggle" type="button" aria-label="烟花" title="烟花" aria-pressed="true"><span aria-hidden="true">✷</span></button>
