@@ -230,6 +230,7 @@ function show(key, animate = false) {
   }
   document.body.classList.remove('compact-editor');
   syncImmersiveHeight();
+  PartyEffects.pauseSky(false);
   PartyEffects.focus(key === 'piano');
   renderers[key]();
   stage.classList.remove('page-turn');
@@ -407,6 +408,7 @@ function arcade() {
     history.rel = 'noopener noreferrer';
     const best = element('span', '最高分 ' + (highs[game.id] || 0), 'arcade-best');
     const launch = button('开始挑战', () => {
+      PartyEffects.pauseSky(true);
       cabinet.open(game, (score, victory) => {
         highs[game.id] = Math.max(highs[game.id] || 0, score);
         best.textContent = '最高分 ' + highs[game.id];
@@ -419,7 +421,10 @@ function arcade() {
         }
         persist();
         return firstWin;
-      }, () => showLocal(launch));
+      }, () => {
+        PartyEffects.pauseSky(false);
+        showLocal(launch);
+      });
     }, 'primary');
     const artwork = element('div', null, 'arcade-art');
     artwork.setAttribute('aria-hidden', 'true');
@@ -443,7 +448,10 @@ function arcade() {
   }
   classicsView.append(classics);
   showLocal(null);
-  stopChapter = cabinet.stop;
+  stopChapter = () => {
+    cabinet.stop();
+    PartyEffects.pauseSky(false);
+  };
 }
 
 function logs() {
@@ -1339,9 +1347,11 @@ function wishes() {
     views.show(premade, [openEditor, continueStory], focus);
   }
   function play(game, onResult, onBack) {
-    PartyEffects.focus(game.id === 'fireflies');
+    if (game.id === 'fireflies') PartyEffects.focus(true);
+    else PartyEffects.pauseSky(true);
     cabinet.open(game, onResult, () => {
       PartyEffects.focus(false);
+      PartyEffects.pauseSky(false);
       onBack();
     });
   }
@@ -1371,7 +1381,12 @@ function wishes() {
   }
   premade.append(cards);
   showEditor(null);
-  stopChapter = () => { cabinet.stop(); studio.stop(); };
+  stopChapter = () => {
+    cabinet.stop();
+    studio.stop();
+    PartyEffects.focus(false);
+    PartyEffects.pauseSky(false);
+  };
 }
 
 function familyForm(panel) {
@@ -1615,7 +1630,7 @@ function shop() {
       gift.focus();
       celebrate();
       shopTimers.push(setTimeout(celebrate, 620));
-      if (PartyEffects.isMusicEnabled?.() ?? get('#music')?.getAttribute('aria-pressed') === 'true') {
+      if (PartyEffects.isMusicEnabled?.()) {
         [72, 76, 79, 83, 86].forEach((note, index) => playNote(note, index * .09, .85));
       }
     }, 'primary');
