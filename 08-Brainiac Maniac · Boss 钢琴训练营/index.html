@@ -11,57 +11,90 @@
   <a class="skip-link" href="#lesson-panel">跳到今日训练</a>
 
   <header class="hero">
-    <nav class="topbar" aria-label="主要导航">
+    <nav class="topbar" aria-label="钢琴训练营">
       <div class="brand">
         <span class="brand-mark" aria-hidden="true">♩</span>
         <span>Boss 钢琴训练营</span>
       </div>
       <button class="sound-toggle" id="sound-toggle" type="button" aria-pressed="true">
-        <span aria-hidden="true">♪</span> 练习音效：开
+        <span aria-hidden="true">♪</span> 网页声音：开
       </button>
     </nav>
 
-    <div class="hero-grid">
-      <section class="hero-copy" aria-labelledby="page-title">
-        <p class="eyebrow">Brainiac Maniac · 8 周 · 每天 10 分钟</p>
-        <h1 id="page-title">不从零开始。<br><em>直接拆 Boss 战。</em></h1>
-        <p class="hero-lead">
-          为有 2 年基础、识谱较慢、正在练双手配合的你设计。从切分节奏、黑键半音和机械低音切入，
-          再逐步靠近 Laura Shigihara 的《Brainiac Maniac》Boss 战感觉。
-        </p>
-        <div class="hero-actions">
-          <button class="primary-button" id="start-today" type="button">开始今天的 10 分钟</button>
-          <button class="text-button" id="jump-route" type="button">查看 8 周路线 ↓</button>
-        </div>
-      </section>
-
-      <section class="roof-scene boss-scene" aria-label="训练进度：钢琴能量正在削弱 Boss 机甲">
-        <div class="moon" aria-hidden="true"></div>
-        <div class="roof-line" aria-hidden="true">
-          <div class="chimney"></div>
-          <div class="plant-pot"><span>♪</span></div>
-          <div class="zombie" id="hero-zombie"><span class="zombie-head">◉</span><span class="zombie-body"></span></div>
-        </div>
-        <div class="distance-card">
-          <div>
-            <span class="utility-label">Boss 能量</span>
-            <strong id="distance-number">100%</strong>
-          </div>
-          <div class="distance-track" aria-hidden="true"><span id="distance-fill"></span></div>
-          <p>每完成一次训练，Boss 能量下降一点。这里只有进度，没有失败惩罚。</p>
-        </div>
-      </section>
+    <div class="studio-intro">
+      <div>
+        <p class="eyebrow">BRAINIAC MANIAC · 八周训练</p>
+        <h1 id="page-title">Boss 钢琴训练营</h1>
+      </div>
+      <div class="studio-progress" aria-label="Boss 剩余能量">
+        <span>Boss 能量</span><strong id="distance-number">100%</strong>
+        <div class="distance-track" aria-hidden="true"><span id="distance-fill"></span></div>
+      </div>
     </div>
   </header>
 
   <main>
-    <section class="mission-strip" aria-label="教程重点">
-      <article><span>01</span><strong>先拆节奏</strong><small>切分和重音先单独练</small></article>
-      <article><span>02</span><strong>攻克黑键</strong><small>半音路线不靠临时猜</small></article>
-      <article><span>03</span><strong>组装双手</strong><small>机械低音对齐右手</small></article>
-      <article><span>04</span><strong>听琴纠错</strong><small>麦克风检查单音音高</small></article>
-    </section>
-
+    <div class="studio-stage">
+      <section class="studio" aria-labelledby="studio-title">
+        <div class="studio-toolbar">
+          <div>
+            <h2 id="studio-title">三角钢琴</h2>
+            <p id="audio-status" role="status">准备钢琴采样…</p>
+          </div>
+          <div class="studio-actions">
+            <button class="studio-mic" id="mic-toggle" type="button" aria-pressed="false">用真实钢琴跟练</button>
+            <button class="label-toggle" id="label-toggle" type="button" aria-pressed="true">音名</button>
+            <button class="label-toggle" id="sustain" type="button" aria-pressed="false">延音</button>
+            <a class="studio-link" href="#lesson-panel">八周训练 ↓</a>
+          </div>
+        </div>
+        <div class="studio-transport">
+          <label>示范曲目
+            <select id="piece">
+              <option value="lesson">本周练习</option>
+              <option value="engine" selected>机甲序曲</option>
+              <option value="moon">月下回声</option>
+              <option value="chase">午夜追击</option>
+            </select>
+          </label>
+          <label>演奏声部
+            <select id="parts">
+              <option value="both">双手</option>
+              <option value="right">右手</option>
+              <option value="left">左手</option>
+            </select>
+          </label>
+          <button class="studio-play" id="listen-button" type="button">▶ 播放</button>
+          <label class="tempo-control">
+            <span>速度 <strong id="tempo-value">84</strong> BPM</span>
+            <input id="tempo" type="range" min="40" max="144" value="84" step="2">
+          </label>
+          <button class="metronome-button" id="metronome" type="button" aria-pressed="false">节拍器</button>
+        </div>
+        <div class="studio-roll-heading">
+          <span id="piece-detail"></span>
+          <span class="hand-legend"><i></i>右手 <i></i>左手</span>
+          <div class="range-controls" aria-label="移动琴键音域">
+            <button id="range-low" type="button" aria-label="向低音移动">←</button>
+            <button id="range-high" type="button" aria-label="向高音移动">→</button>
+          </div>
+        </div>
+        <div class="keyboard-scroll" tabindex="0" aria-label="可横向滚动的琴台">
+          <div class="instrument">
+            <canvas id="note-roll" aria-hidden="true"></canvas>
+            <div class="piano" id="piano" aria-label="四组八度互动钢琴键盘"></div>
+          </div>
+        </div>
+        <div class="studio-feedback">
+          <p id="mic-guide" role="status">用麦克风听真实钢琴，逐音跟练。建议先松开踏板，一次弹一个音。音频只在本机分析。</p>
+          <span id="mic-heard" aria-hidden="true"></span>
+        </div>
+        <div class="studio-footer">
+          <button id="virtual-follow" type="button" aria-pressed="false">没有钢琴？用网页琴键跟练</button>
+          <span id="play-position" aria-live="off">第 1 小节</span>
+        </div>
+      </section>
+    </div>
     <section class="practice-shell" id="lesson-panel" tabindex="-1">
       <aside class="lesson-sidebar" aria-label="训练关卡">
         <div class="sidebar-heading">
@@ -110,24 +143,9 @@
             <div class="score-hint" id="score-hint"></div>
           </div>
 
-          <div class="playback-row">
-            <button class="secondary-button" id="listen-button" type="button">▶ 听示范</button>
-            <label class="tempo-control">
-              <span>速度 <strong id="tempo-value">60</strong> BPM</span>
-              <input id="tempo" type="range" min="40" max="100" value="60" step="2">
-            </label>
-            <button class="metronome-button" id="metronome" type="button" aria-pressed="false">节拍器：关</button>
-          </div>
-
-          <div class="keyboard-heading">
-            <div>
-              <strong>点琴键检查音高</strong>
-              <small id="keyboard-prompt">先找到中央 C（C4）</small>
-            </div>
-            <button class="label-toggle" id="label-toggle" type="button" aria-pressed="true">音名提示：开</button>
-          </div>
-          <div class="keyboard-scroll">
-            <div class="piano" id="piano" aria-label="两组八度互动钢琴键盘"></div>
+          <div class="lesson-playback">
+            <button class="secondary-button" id="lesson-preview" type="button">▶ 听本周练习</button>
+            <small id="keyboard-prompt"></small>
           </div>
 
           <div class="check-row">
@@ -138,26 +156,6 @@
             <button class="primary-button complete-button" id="complete-lesson" type="button" disabled>完成训练，削弱 Boss</button>
           </div>
         </div>
-
-        <section class="mic-trainer" aria-labelledby="mic-title">
-          <div class="mic-copy">
-            <p class="eyebrow">实验功能 · 单音识别</p>
-            <h3 id="mic-title">让网页听你弹一个音</h3>
-            <p>钢琴一次只弹一个音，并让它响 1 秒。网页会显示音名和音准；和弦、踏板混响、周围说话都会降低准确度。</p>
-            <button class="secondary-button" id="mic-toggle" type="button" aria-pressed="false">开启听琴模式</button>
-          </div>
-          <div class="pitch-display" id="pitch-display" aria-live="polite">
-            <span class="utility-label">本关目标音</span>
-            <strong id="mic-target">D4</strong>
-            <div class="detected-row">
-              <span>听到</span>
-              <b id="detected-note">—</b>
-              <small id="detected-cents">等待开始</small>
-            </div>
-            <div class="tuner-rail" aria-hidden="true"><span class="tuner-center"></span><i id="tuner-needle"></i></div>
-            <p id="mic-status">麦克风只在你开启后使用，声音不会上传。</p>
-          </div>
-        </section>
 
         <aside class="coach-note">
           <span class="coach-icon" aria-hidden="true">✦</span>
@@ -203,9 +201,12 @@
         第 7–8 周请配合你合法购买或获得授权的完整曲谱练习。这样既能真正学会，也尊重创作者。
       </p>
     </section>
+    <footer class="sample-credit">琴声采样 · Alexander Holm 的 Salamander Grand Piano · <a href="samples/UPSTREAM.txt">署名</a> · <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a></footer>
   </main>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="repertoire.js"></script>
+  <script src="studio.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -83,31 +83,27 @@ const lessons = [
   }
 ];
 
-const noteToMidi = { C2: 36, D2: 38, E2: 40, F2: 41, G2: 43, A2: 45, B2: 47, C3: 48, D3: 50, E3: 52, F3: 53, G3: 55, A3: 57, B3: 59, C4: 60, D4: 62, E4: 64, F4: 65, G4: 67, A4: 69, B4: 71, C5: 72 };
-const keyboardNotes = ["C3", "C#3", "D3", "D#3", "E3", "F3", "F#3", "G3", "G#3", "A3", "A#3", "B3", "C4", "C#4", "D4", "D#4", "E4", "F4", "F#4", "G4", "G#4", "A4", "A#4", "B4", "C5"];
-
 let state = loadState();
 let currentLesson = Math.min(state.completed, lessons.length - 1);
 let soundOn = true;
 let audioContext;
 let timerSeconds = 600;
 let timerId = null;
-let metronomeId = null;
-let micStream = null;
-let micSource = null;
-let micAnalyser = null;
-let micFrame = null;
-let micBuffer = null;
-let lastDetectedMidi = null;
+let micStream, micSource, micAnalyser, micSink, micTimer, micRequest;
+let studio;
 
 const els = Object.fromEntries([
   "week-list", "lesson-kicker", "lesson-title", "lesson-difficulty", "lesson-goal", "ten-minute-plan",
   "exercise-name", "staff-wrap", "number-score", "score-hint", "coach-note", "keyboard-prompt",
-  "piano", "practice-check", "complete-lesson", "tempo", "tempo-value", "listen-button", "metronome",
-  "timer-display", "timer-button", "timer-reset", "distance-number", "distance-fill", "hero-zombie",
-  "label-toggle", "sound-toggle", "toast", "score-card", "mic-toggle", "mic-target",
-  "detected-note", "detected-cents", "tuner-needle", "mic-status", "pitch-display"
+  "practice-check", "complete-lesson", "lesson-preview",
+  "timer-display", "timer-button", "timer-reset", "distance-number", "distance-fill",
+  "sound-toggle", "toast", "score-card", "mic-toggle", "mic-guide", "mic-heard"
 ].map(id => [id, document.getElementById(id)]));
+
+function getAudioContext() {
+  audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+  return audioContext;
+}
 
 function loadState() {
   try {
@@ -141,17 +137,16 @@ function renderLesson() {
   els["score-hint"].textContent = lesson.hint;
   els["coach-note"].textContent = lesson.coach;
   els["keyboard-prompt"].textContent = lesson.prompt;
-  els["mic-target"].textContent = lesson.target;
   els["ten-minute-plan"].innerHTML = lesson.plan.map(step => `
     <article class="plan-step"><span>${step[0]}</span><strong>${step[1]}</strong><small>${step[2]}</small></article>`).join("");
   renderStaff(lesson.notes);
   els["number-score"].innerHTML = lesson.numbers.map((note, i) => `<span class="number-note"><small>${i + 1}</small>${note}</span>`).join("");
-  document.querySelectorAll(".piano-key").forEach(key => key.classList.toggle("target", key.dataset.note === lesson.target));
+  studio.lessonChanged();
   els["practice-check"].checked = false;
   els["complete-lesson"].disabled = true;
   els["complete-lesson"].textContent = currentLesson < state.completed ? "这关已经完成" : currentLesson === 7 ? "完成演奏，击败 Boss" : "完成训练，削弱 Boss";
   renderSidebar();
-  updateProgressScene();
+  updateProgress();
 }
 
 function renderStaff(notes) {
@@ -173,80 +168,6 @@ function renderStaff(notes) {
     <text x="12" y="91" font-size="42" font-family="serif">𝄞</text>${lines}${noteShapes}</svg>`;
 }
 
-function renderPiano() {
-  const whites = keyboardNotes.filter(n => !n.includes("#"));
-  let html = whites.map(note => `<button class="piano-key white-key" data-note="${note}" type="button" aria-label="${note}"><span>${note}</span></button>`).join("");
-  const whiteIndex = { "C#": 1, "D#": 2, "F#": 4, "G#": 5, "A#": 6 };
-  keyboardNotes.filter(n => n.includes("#")).forEach(note => {
-    const octave = Number(note.slice(-1));
-    const pitch = note.slice(0, -1);
-    const index = (octave - 3) * 7 + whiteIndex[pitch];
-    const left = index / whites.length * 100;
-    html += `<button class="piano-key black-key" style="left:${left}%" data-note="${note}" type="button" aria-label="${note}"><span>${note}</span></button>`;
-  });
-  els.piano.innerHTML = html;
-}
-
-function midiFor(note) {
-  if (noteToMidi[note]) return noteToMidi[note];
-  const match = note.match(/^([A-G])#(\d)$/);
-  if (!match) return 60;
-  const natural = noteToMidi[`${match[1]}${match[2]}`];
-  return natural + 1;
-}
-
-function playTone(note, duration = .38, when = 0, volume = .16) {
-  if (!soundOn) return;
-  audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
-  const start = audioContext.currentTime + when;
-  const freq = 440 * 2 ** ((midiFor(note) - 69) / 12);
-  const gain = audioContext.createGain();
-  const osc = audioContext.createOscillator();
-  const overtone = audioContext.createOscillator();
-  osc.type = "triangle";
-  overtone.type = "sine";
-  osc.frequency.value = freq;
-  overtone.frequency.value = freq * 2;
-  gain.gain.setValueAtTime(.0001, start);
-  gain.gain.exponentialRampToValueAtTime(volume, start + .015);
-  gain.gain.exponentialRampToValueAtTime(.0001, start + duration);
-  osc.connect(gain); overtone.connect(gain); gain.connect(audioContext.destination);
-  osc.start(start); overtone.start(start);
-  osc.stop(start + duration + .03); overtone.stop(start + duration + .03);
-}
-
-function playSequence() {
-  const beat = 60 / Number(els.tempo.value);
-  const notes = lessons[currentLesson].notes;
-  els["listen-button"].disabled = true;
-  notes.forEach((note, i) => {
-    playTone(note, beat * .72, i * beat, .12);
-    setTimeout(() => flashKey(note), i * beat * 1000);
-  });
-  setTimeout(() => { els["listen-button"].disabled = false; }, notes.length * beat * 1000 + 200);
-}
-
-function flashKey(note) {
-  const key = document.querySelector(`[data-note="${note}"]`);
-  if (!key) return;
-  key.classList.add("active");
-  setTimeout(() => key.classList.remove("active"), 260);
-}
-
-function toggleMetronome() {
-  if (metronomeId) {
-    clearInterval(metronomeId); metronomeId = null;
-    els.metronome.textContent = "节拍器：关";
-    els.metronome.setAttribute("aria-pressed", "false");
-    return;
-  }
-  const tick = () => playTone("C5", .07, 0, .07);
-  tick();
-  metronomeId = setInterval(tick, 60000 / Number(els.tempo.value));
-  els.metronome.textContent = "节拍器：开";
-  els.metronome.setAttribute("aria-pressed", "true");
-}
-
 function updateTimer() {
   const minutes = String(Math.floor(timerSeconds / 60)).padStart(2, "0");
   const seconds = String(timerSeconds % 60).padStart(2, "0");
@@ -264,7 +185,7 @@ function toggleTimer() {
     if (timerSeconds <= 0) {
       clearInterval(timerId); timerId = null; els["timer-button"].textContent = "再练 10 分钟";
       showToast("十分钟到！先休息一下，再决定要不要继续。");
-      playTone("C5", .8, 0, .1);
+      studio.cue(["C5"]);
     }
   }, 1000);
 }
@@ -273,11 +194,10 @@ function resetTimer() {
   clearInterval(timerId); timerId = null; timerSeconds = 600; updateTimer(); els["timer-button"].textContent = "开始计时";
 }
 
-function updateProgressScene() {
-  const percent = state.completed / lessons.length * 100;
+function updateProgress() {
+  const percent = 100 * (1 - state.completed / lessons.length);
   els["distance-fill"].style.width = `${percent}%`;
-  els["distance-number"].textContent = `${100 - Math.round(percent)}%`;
-  els["hero-zombie"].style.right = `${18 - state.completed * 1.2}%`;
+  els["distance-number"].textContent = `${Math.round(percent)}%`;
 }
 
 function completeLesson() {
@@ -285,135 +205,71 @@ function completeLesson() {
   if (currentLesson !== state.completed) return;
   state.completed = Math.min(8, state.completed + 1); saveState();
   showToast(state.completed === 8 ? "Boss 能量清零！现在录下你的完整演奏吧。" : `Boss 被削弱！已解锁第 ${state.completed + 1} 周。`);
-  playTone("C4", .35, 0, .1); playTone("E4", .35, .18, .1); playTone("G4", .7, .36, .1);
+  studio.cue(["C4", "E4", "G4"]);
   if (state.completed < 8) currentLesson = state.completed;
   renderLesson();
 }
 
-function stopMic() {
-  if (micFrame) cancelAnimationFrame(micFrame);
-  micFrame = null;
-  if (micSource) micSource.disconnect();
-  micSource = null;
-  if (micStream) micStream.getTracks().forEach(track => track.stop());
-  micStream = null;
-  micAnalyser = null;
-  micBuffer = null;
-  lastDetectedMidi = null;
-  els["mic-toggle"].textContent = "开启听琴模式";
+function stopMic(message = "用麦克风听真实钢琴，逐音跟练。建议先松开踏板，一次弹一个音。音频只在本机分析。") {
+  micRequest = null;
+  clearInterval(micTimer);
+  micSource?.disconnect();
+  micAnalyser?.disconnect();
+  micSink?.disconnect();
+  micStream?.getTracks().forEach(track => track.stop());
+  micSource = micStream = micAnalyser = micSink = null;
+  els["mic-toggle"].textContent = "用真实钢琴跟练";
   els["mic-toggle"].setAttribute("aria-pressed", "false");
-  els["pitch-display"].classList.remove("listening", "matched");
-  els["mic-status"].textContent = "麦克风只在你开启后使用，声音不会上传。";
-  els["detected-note"].textContent = "—";
-  els["detected-cents"].textContent = "等待开始";
-  els["tuner-needle"].style.left = "50%";
+  studio.stopFollow();
+  els["mic-guide"].textContent = message;
+  els["mic-heard"].textContent = "";
 }
 
-async function toggleMic() {
-  if (micStream) { stopMic(); return; }
+async function startMic() {
+  if (micStream || micRequest) { stopMic(); return; }
   if (!navigator.mediaDevices?.getUserMedia) {
-    els["mic-status"].textContent = "这个浏览器无法使用麦克风识别，请换最新版 Chrome 或 Safari。";
+    els["mic-guide"].textContent = "请在 HTTPS 网页或 localhost 打开，再允许使用麦克风。";
     return;
   }
+  studio.stopFollow();
+  const request = {};
+  micRequest = request;
+  els["mic-toggle"].textContent = "取消开启麦克风";
+  els["mic-guide"].textContent = "请在浏览器提示里允许使用麦克风。";
   try {
-    micStream = await navigator.mediaDevices.getUserMedia({
+    const context = getAudioContext();
+    await context.resume();
+    if (micRequest !== request) return;
+    const stream = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
     });
-    audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
-    await audioContext.resume();
-    micSource = audioContext.createMediaStreamSource(micStream);
-    micAnalyser = audioContext.createAnalyser();
-    micAnalyser.fftSize = 2048;
-    micAnalyser.smoothingTimeConstant = 0;
-    micBuffer = new Float32Array(micAnalyser.fftSize);
-    micSource.connect(micAnalyser);
-    els["mic-toggle"].textContent = "停止听琴";
+    if (micRequest !== request) {
+      stream.getTracks().forEach(track => track.stop());
+      return;
+    }
+    micStream = stream;
+    stream.getAudioTracks()[0]?.addEventListener("ended", () => {
+      if (micStream === stream) stopMic("麦克风已断开，可以重新开启跟练。");
+    });
+    micSource = context.createMediaStreamSource(stream);
+    micAnalyser = context.createAnalyser();
+    micAnalyser.fftSize = 4096;
+    // Keep the input graph rendering without feeding the microphone to the speakers.
+    micSink = context.createGain();
+    micSink.gain.value = 0;
+    micSource.connect(micAnalyser).connect(micSink).connect(context.destination);
+    els["mic-toggle"].textContent = "结束麦克风跟练";
     els["mic-toggle"].setAttribute("aria-pressed", "true");
-    els["pitch-display"].classList.add("listening");
-    els["mic-status"].textContent = "正在听：一次弹一个音，让它自然响 1 秒。";
-    listenForPitch();
+    studio.startMicFollow();
+    micTimer = trackPianoPitch(context, micAnalyser, midi => {
+      if (studio.hear(midi) === "done") stopMic("本段已弹完，可以重新跟练或换一首。");
+    });
   } catch (error) {
-    stopMic();
-    if (error?.name === "NotAllowedError") {
-      els["mic-status"].textContent = "麦克风没有开启。请在浏览器地址栏旁允许麦克风后重试。";
-    } else {
-      els["mic-status"].textContent = "没有收到麦克风声音，请检查输入设备后重试。";
-    }
+    if (micRequest !== request) return;
+    stopMic(error.name === "NotAllowedError"
+      ? "麦克风权限未开启。可以在浏览器地址栏授权，或使用网页琴键。"
+      : "无法读取麦克风。请检查输入设备，或使用网页琴键。");
   }
-}
-
-function detectPitch(buffer, sampleRate) {
-  let power = 0;
-  let mean = 0;
-  for (const sample of buffer) mean += sample;
-  mean /= buffer.length;
-  for (const sample of buffer) power += (sample - mean) ** 2;
-  const rms = Math.sqrt(power / buffer.length);
-  if (rms < 0.012) return null;
-
-  const minLag = Math.floor(sampleRate / 1000);
-  const maxLag = Math.min(Math.floor(sampleRate / 65), buffer.length - 2);
-  const correlations = new Float32Array(maxLag + 1);
-  for (let lag = 0; lag <= maxLag; lag += 1) {
-    let correlation = 0;
-    for (let i = 0; i < buffer.length - lag; i += 1) {
-      correlation += (buffer[i] - mean) * (buffer[i + lag] - mean);
-    }
-    correlations[lag] = correlation;
-  }
-
-  let valley = minLag;
-  while (valley < maxLag - 1 && correlations[valley] > correlations[valley + 1]) valley += 1;
-  let bestLag = valley;
-  for (let lag = valley + 1; lag <= maxLag; lag += 1) {
-    if (correlations[lag] > correlations[bestLag]) bestLag = lag;
-  }
-  if (bestLag <= minLag || correlations[bestLag] < correlations[0] * 0.25) return null;
-
-  const left = correlations[bestLag - 1];
-  const center = correlations[bestLag];
-  const right = correlations[bestLag + 1];
-  const divisor = 2 * (2 * center - left - right);
-  const refinedLag = divisor ? bestLag + (right - left) / divisor : bestLag;
-  return sampleRate / refinedLag;
-}
-
-function pitchDetails(frequency) {
-  const midi = Math.round(69 + 12 * Math.log2(frequency / 440));
-  const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-  const name = `${names[(midi % 12 + 12) % 12]}${Math.floor(midi / 12) - 1}`;
-  const exactFrequency = 440 * 2 ** ((midi - 69) / 12);
-  const cents = Math.round(1200 * Math.log2(frequency / exactFrequency));
-  return { midi, name, cents };
-}
-
-let lastPitchCheck = 0;
-function listenForPitch(time = 0) {
-  if (!micAnalyser) return;
-  micFrame = requestAnimationFrame(listenForPitch);
-  if (time - lastPitchCheck < 90) return;
-  lastPitchCheck = time;
-  micAnalyser.getFloatTimeDomainData(micBuffer);
-  const frequency = detectPitch(micBuffer, audioContext.sampleRate);
-  if (!frequency) {
-    els["detected-cents"].textContent = "请弹一个清楚的单音";
-    return;
-  }
-
-  const result = pitchDetails(frequency);
-  const targetMidi = midiFor(lessons[currentLesson].target);
-  els["detected-note"].textContent = result.name;
-  els["detected-cents"].textContent = Math.abs(result.cents) <= 5 ? "音准很稳" : result.cents < 0 ? `偏低 ${Math.abs(result.cents)} 音分` : `偏高 ${result.cents} 音分`;
-  els["tuner-needle"].style.left = `${50 + Math.max(-45, Math.min(45, result.cents))}%`;
-  const matched = result.midi === targetMidi;
-  els["pitch-display"].classList.toggle("matched", matched);
-  if (matched && lastDetectedMidi !== result.midi) {
-    els["mic-status"].textContent = `音高正确：${result.name}。现在再连续弹对两次。`;
-    flashKey(lessons[currentLesson].target);
-  } else if (!matched) {
-    els["mic-status"].textContent = `目标是 ${lessons[currentLesson].target}，现在听到 ${result.name}。`;
-  }
-  lastDetectedMidi = result.midi;
 }
 
 let toastTimer;
@@ -432,49 +288,37 @@ function bindEvents() {
     if (index > state.completed) { showToast(`先完成第 ${state.completed + 1} 周，再进入下一阶段 Boss 战。`); return; }
     currentLesson = index; renderLesson();
   });
-  els.piano.addEventListener("pointerdown", event => {
-    const key = event.target.closest(".piano-key"); if (!key) return;
-    playTone(key.dataset.note); key.classList.add("active");
-    if (key.dataset.note === lessons[currentLesson].target) showToast("找对了。记住它和黑键的位置关系。 ");
-  });
-  ["pointerup", "pointerleave", "pointercancel"].forEach(type => els.piano.addEventListener(type, () => document.querySelectorAll(".piano-key.active").forEach(k => k.classList.remove("active"))));
   els["practice-check"].addEventListener("change", () => els["complete-lesson"].disabled = !els["practice-check"].checked);
   els["complete-lesson"].addEventListener("click", completeLesson);
-  els["listen-button"].addEventListener("click", playSequence);
-  els.tempo.addEventListener("input", () => {
-    els["tempo-value"].textContent = els.tempo.value;
-    if (metronomeId) { toggleMetronome(); toggleMetronome(); }
-  });
-  els.metronome.addEventListener("click", toggleMetronome);
-  els["mic-toggle"].addEventListener("click", toggleMic);
+  els["lesson-preview"].addEventListener("click", () => studio.previewLesson());
+  els["mic-toggle"].addEventListener("click", startMic);
   els["timer-button"].addEventListener("click", toggleTimer);
   els["timer-reset"].addEventListener("click", resetTimer);
-  els["label-toggle"].addEventListener("click", () => {
-    const hidden = els.piano.classList.toggle("hide-labels");
-    els["label-toggle"].textContent = `音名提示：${hidden ? "关" : "开"}`;
-    els["label-toggle"].setAttribute("aria-pressed", String(!hidden));
-  });
   els["sound-toggle"].addEventListener("click", () => {
     soundOn = !soundOn;
-    els["sound-toggle"].innerHTML = `<span aria-hidden="true">♪</span> 练习音效：${soundOn ? "开" : "关"}`;
+    els["sound-toggle"].innerHTML = `<span aria-hidden="true">♪</span> 网页声音：${soundOn ? "开" : "关"}`;
     els["sound-toggle"].setAttribute("aria-pressed", String(soundOn));
-    if (!soundOn && metronomeId) toggleMetronome();
+    if (!soundOn) studio.mute();
   });
   document.querySelectorAll(".mode-tab").forEach(tab => tab.addEventListener("click", () => {
     document.querySelectorAll(".mode-tab").forEach(t => { t.classList.toggle("active", t === tab); t.setAttribute("aria-selected", String(t === tab)); });
     els["score-card"].classList.toggle("staff-only", tab.dataset.mode === "staff");
     els["score-card"].classList.toggle("number-only", tab.dataset.mode === "number");
   }));
-  document.getElementById("start-today").addEventListener("click", () => { document.getElementById("lesson-panel").scrollIntoView(); setTimeout(() => document.getElementById("lesson-panel").focus(), 500); });
-  document.getElementById("jump-route").addEventListener("click", () => document.getElementById("route").scrollIntoView());
   document.getElementById("reset-progress").addEventListener("click", () => {
     const phrase = window.prompt("这是有风险的操作。输入“重新开始”才会清除 8 周进度：");
     if (phrase !== "重新开始") return;
     state.completed = 0; currentLesson = 0; saveState(); renderLesson(); showToast("进度已清除，从第 1 周重新开始。 ");
   });
-  window.addEventListener("pagehide", stopMic);
+  window.addEventListener("pagehide", () => { stopMic(); studio.mute(); });
 }
 
-renderPiano();
+studio = createStudio({
+  getContext: getAudioContext,
+  getLesson: () => lessons[currentLesson],
+  onMic: () => { if (micRequest || micStream) stopMic(); },
+  enabled: () => soundOn,
+  notify: showToast
+});
 bindEvents();
 renderLesson();

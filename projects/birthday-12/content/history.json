@@ -1,0 +1,180 @@
+[
+  {
+    "era": "1970s",
+    "title": "投币，游戏开始",
+    "summary": "从实验室里的电脑游戏，到出现在街角的投币机，再到接上电视的家用主机。",
+    "machines": [
+      {
+        "year": "1971",
+        "company": "Nutting Associates",
+        "model": "Computer Space",
+        "note": "把太空对战带进商业街机。",
+        "source": "https://www.museumofplay.org/games/computer-space/",
+        "art": "computer-space"
+      },
+      {
+        "year": "1972–77",
+        "company": "Atari",
+        "model": "Pong 街机 → Atari 2600",
+        "note": "从两根球拍和一个球，走到用卡带换游戏的客厅主机。",
+        "source": "https://www.museumofplay.org/games/computer-space/",
+        "art": "atari-pong"
+      },
+      {
+        "year": "1978",
+        "company": "Taito",
+        "model": "Space Invaders 街机",
+        "note": "波次和高分榜，让玩家想要再投一次币。",
+        "source": "https://www.museumofplay.org/games/space-invaders/",
+        "art": "space-invaders"
+      }
+    ]
+  },
+  {
+    "era": "1980s",
+    "title": "游戏进入客厅，也装进口袋",
+    "summary": "家用主机竞争升温，卡带、手柄和掌机改变了玩游戏的地点。",
+    "machines": [
+      {
+        "year": "1983 / 1985",
+        "company": "任天堂",
+        "model": "Family Computer / NES",
+        "note": "同一家族主机先在日本、后在北美推出。",
+        "source": "https://press.nintendo.com/CompanyHistory",
+        "art": "famicom"
+      },
+      {
+        "year": "1988",
+        "company": "世嘉",
+        "model": "Mega Drive / Genesis",
+        "note": "16 位家用主机，后来借《索尼克》打响名气。",
+        "source": "https://www.sega.jp/history/companyTimeline/en/",
+        "art": "mega-drive"
+      },
+      {
+        "year": "1989",
+        "company": "任天堂",
+        "model": "Game Boy",
+        "note": "可以换卡带，也能把同一款游戏带出门。",
+        "source": "https://press.nintendo.com/CompanyHistory",
+        "art": "game-boy"
+      }
+    ]
+  },
+  {
+    "era": "1990s",
+    "title": "从平面跳进三维世界",
+    "summary": "镜头、方向和空间感成为新课题，手柄和光盘也跟着变。",
+    "machines": [
+      {
+        "year": "1994",
+        "company": "索尼",
+        "model": "PlayStation",
+        "note": "实时 3D 与光盘游戏进入更多人的客厅。",
+        "source": "https://www.playstation.com/en-us/playstation-history/1994-ps-one/",
+        "art": "playstation"
+      },
+      {
+        "year": "1996",
+        "company": "任天堂",
+        "model": "Nintendo 64",
+        "note": "带模拟摇杆的手柄，让 3D 场景里的移动更细腻。",
+        "source": "https://www.nintendo.com/au/about/history/",
+        "art": "nintendo-64"
+      },
+      {
+        "year": "1998",
+        "company": "世嘉",
+        "model": "Dreamcast",
+        "note": "主机踏出联网游戏的早期一步。",
+        "source": "https://www.sega.jp/history/companyTimeline/en/",
+        "art": "dreamcast"
+      }
+    ]
+  },
+  {
+    "era": "2000s",
+    "title": "联机、体感和掌机各走一条路",
+    "summary": "同一时期，主机开始连接远方玩家，也开始理解手势和身体动作。",
+    "machines": [
+      {
+        "year": "2000 / 2004",
+        "company": "索尼",
+        "model": "PlayStation 2 / PSP",
+        "note": "客厅主机和便携设备平行发展，PSP 使用 UMD。",
+        "source": "https://www.playstation.com/en-us/playstation-history/2000-ps2-psp/",
+        "art": "ps2-psp"
+      },
+      {
+        "year": "2001 / 2002",
+        "company": "微软",
+        "model": "Xbox / Xbox Live",
+        "note": "首代 Xbox 后一年上线联机服务，支持远程对战。",
+        "source": "https://news.xbox.com/en-us/2012/11/15/happy-anniversary-to-xbox-live/",
+        "art": "xbox"
+      },
+      {
+        "year": "2006",
+        "company": "任天堂",
+        "model": "Wii",
+        "note": "挥一下控制器就能打网球，操作本身也成了游戏。",
+        "source": "https://www.nintendo.com/au/about/history/",
+        "art": "wii"
+      }
+    ]
+  },
+  {
+    "era": "2010s",
+    "title": "游戏可以分享，也能带出门",
+    "summary": "主机增加直播和分享功能，另一条路线是把电视和掌机合在一起。",
+    "machines": [
+      {
+        "year": "2013",
+        "company": "索尼",
+        "model": "PlayStation 4",
+        "note": "手柄加入分享键，游戏片段与直播更容易分享。",
+        "source": "https://www.playstation.com/en-us/playstation-history/2013-ps4-ps-vr/",
+        "art": "ps4"
+      },
+      {
+        "year": "2017",
+        "company": "任天堂",
+        "model": "Nintendo Switch",
+        "note": "接底座用电视玩，拔出来就变成掌机。",
+        "source": "https://www.nintendo.com/au/about/history/",
+        "art": "switch"
+      }
+    ]
+  },
+  {
+    "era": "2020s",
+    "title": "熟悉的游戏，新的输入方式",
+    "summary": "新机器一边提高画面和读盘速度，一边探索兼容和新的控制方式。",
+    "machines": [
+      {
+        "year": "2020",
+        "company": "索尼",
+        "model": "PlayStation 5",
+        "note": "SSD 加快读盘，DualSense 手柄用触觉反馈表现游戏中的动作。",
+        "source": "https://www.playstation.com/en-us/playstation-history/2020-ps5-ps-vr2/",
+        "art": "ps5"
+      },
+      {
+        "year": "2020",
+        "company": "微软",
+        "model": "Xbox Series X / S",
+        "note": "高速存储和向下兼容成为新一代的重要卖点。",
+        "source": "https://news.xbox.com/en-us/wp-content/uploads/sites/2/2020/09/FACT-SHEET_Gen9-Hardware.pdf",
+        "art": "xbox-series"
+      },
+      {
+        "year": "2025",
+        "company": "任天堂",
+        "model": "Nintendo Switch 2",
+        "note": "延续混合主机设计，Joy-Con 2 在支持的游戏里还能当鼠标。",
+        "source": "https://www.nintendo.com/us/whatsnew/nintendo-switch-2-launches-june-5-bringing-new-forms-of-game-communication-to-life/",
+        "art": "switch-2"
+      }
+    ]
+  }
+]

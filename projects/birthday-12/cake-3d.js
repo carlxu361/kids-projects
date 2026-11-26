@@ -1,0 +1,242 @@
+/* Cake glazing and berry profile adapted from Blow Candles (MIT).
+ * https://github.com/mileschintw/blow-candles/tree/ae0df83f76162ff5eafad386cd7edc903f7d778c
+ * Extruded layered sectors and frosting wall adapted from Birthday Bloom (MIT).
+ * https://github.com/naborajs/birthday-bloom/blob/660f59d3b5c49c134fd16b9be0ee101ca73e5e6c/src/components/birthday/Cake3D.tsx
+ * See blow-candles.LICENSE.txt and birthday-bloom.LICENSE.txt.
+ */
+import * as THREE from './three-0.160.0.min.js';
+
+const turn = Math.PI * 2;
+const top = .72;
+const base = .08;
+const recipes = {
+  orange: { crumb: 0x764029, cream: 0xffae67, glaze: 0x4b2217, pearl: 0xf0b05d },
+  strawberry: { crumb: 0xf5c896, cream: 0xf2899e, glaze: 0xffeee6, pearl: 0xfff2e6 },
+  vanilla: { crumb: 0xe2a965, cream: 0xffedbd, glaze: 0xffdfa4, pearl: 0xfff4d5 },
+  chocolate: { crumb: 0x6c372b, cream: 0xbe8667, glaze: 0x2e160b, pearl: 0xce9d74 },
+};
+
+function profile(points, segments = 64) {
+  return new THREE.LatheGeometry(points.map(([r, y]) => new THREE.Vector2(r, y)), segments);
+}
+
+function sector(radius, from, to, thickness = 0) {
+  const shape = new THREE.Shape();
+  if (!thickness) {
+    shape.moveTo(0, 0);
+    shape.lineTo(radius * Math.cos(from), radius * Math.sin(from));
+  }
+  shape.absarc(0, 0, radius, from, to, false);
+  if (thickness) {
+    const inner = radius - thickness;
+    shape.lineTo(inner * Math.cos(to), inner * Math.sin(to));
+    shape.absarc(0, 0, inner, to, from, true);
+  }
+  shape.closePath();
+  return shape;
+}
+
+function extrusion(shape, depth) {
+  return new THREE.ExtrudeGeometry(shape, { depth, curveSegments: 32, bevelEnabled: false }).rotateX(Math.PI / 2);
+}
+
+const material = (color, roughness = .48) => new THREE.MeshStandardMaterial({ color, roughness });
+function add(parent, geometry, paint, x = 0, y = 0, z = 0) {
+  const mesh = new THREE.Mesh(geometry, paint);
+  mesh.position.set(x, y, z);
+  parent.add(mesh);
+  return mesh;
+}
+
+function dispose(group) {
+  group.traverse(object => {
+    object.geometry?.dispose();
+    object.material?.dispose();
+  });
+  group.removeFromParent();
+}
+
+export function mountCake(board, onLayout, onLost) {
+  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  renderer.domElement.className = 'cake-webgl';
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+  renderer.setClearColor(0x000000, 0);
+  const scene = new THREE.Scene();
+  const camera = new THREE.OrthographicCamera(-2, 2, 2, -2, .1, 30);
+  camera.position.set(0, 3.5, 5.4);
+  camera.lookAt(0, .45, 0);
+  camera.updateMatrixWorld();
+  scene.add(new THREE.HemisphereLight(0xffeee7, 0x775057, 2.1));
+  const light = new THREE.DirectionalLight(0xffdeb5, 2.6);
+  light.position.set(-3, 6, 2);
+  scene.add(light);
+  const rim = new THREE.DirectionalLight(0xe1c6ff, 1.1);
+  rim.position.set(3, 2, -3);
+  scene.add(rim);
+
+  const plate = add(scene, profile([[0, .005], [1.06, .005], [1.23, .04], [1.27, .07],
+    [1.25, .10], [1.19, .10], [1.06, .055], [0, .055]]), material(0x51416e, .23));
+  plate.scale.set(1.19, 1, 1.19);
+
+  let cake = new THREE.Group();
+  let flavor = 'orange';
+  let frame = 0;
+  let destroyed = false;
+  const point = new THREE.Vector3();
+  const ray = new THREE.Raycaster();
+  const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -top);
+  const screen = new THREE.Vector2();
+
+  function render() { renderer.render(scene, camera); }
+
+  function decorations(group, from, to, recipe) {
+    for (let i = 0; i < 24; i++) {
+      const angle = (i + .35) * turn / 24;
+      if (((angle - from) % turn + turn) % turn >= to - from) continue;
+      const x = Math.cos(angle), z = Math.sin(angle);
+      const pearl = add(group, new THREE.SphereGeometry(.053, 10, 7), material(recipe.pearl), x * .93, top, z * .93);
+      pearl.scale.y = .82;
+      if (i % 3 !== 0) continue;
+      const place = [.77 * x, top + .01, .77 * z];
+      if (flavor === 'orange') {
+        const shape = new THREE.Shape();
+        shape.absarc(0, 0, .115, 0, Math.PI, false);
+        shape.closePath();
+        const orange = add(group, new THREE.ExtrudeGeometry(shape, { depth: .027, bevelEnabled: true,
+          bevelSize: .006, bevelThickness: .006, bevelSegments: 1 }), material(0xff981f), ...place);
+        orange.rotation.set(-.48, -angle, 0);
+        add(orange, new THREE.TorusGeometry(.114, .011, 5, 16, Math.PI), material(0xffc866), 0, 0, .032);
+        for (let s = 1; s < 5; s++) {
+          const a = s * Math.PI / 5;
+          const pith = add(orange, new THREE.BoxGeometry(.092, .004, .003), material(0xffd38a),
+            .049 * Math.cos(a), .049 * Math.sin(a), .035);
+          pith.rotation.z = a;
+        }
+      } else if (flavor === 'strawberry') {
+        const berry = profile([[0, 0], [.047, .008], [.068, .026], [.070, .054],
+          [.060, .086], [.041, .114], [.020, .137], [0, .147]], 14);
+        add(group, berry, material(0xe42c54, .32), ...place);
+        const leaf = add(group, new THREE.SphereGeometry(.055, 8, 5), material(0x458441), place[0], top + .024, place[2]);
+        leaf.scale.y = .22;
+      } else {
+        const chocolate = flavor === 'chocolate';
+        const topping = add(group, chocolate ? new THREE.BoxGeometry(.104, .04, .09) : new THREE.SphereGeometry(.083, 12, 9),
+          material(chocolate ? 0x9a5238 : 0xfff3d1), place[0], top + .04, place[2]);
+        topping.rotation.set(.28, -angle, .18);
+        if (!chocolate) add(group, new THREE.SphereGeometry(.034, 10, 7), material(0xc22f48), place[0], top + .12, place[2]);
+      }
+    }
+  }
+
+  function segment(parent, from, to) {
+    const recipe = recipes[flavor];
+    const group = new THREE.Group();
+    parent.add(group);
+    const whole = to - from >= turn;
+    if (whole) {
+      add(group, profile([[0, base], [.96, base], [1, base + .04], [1, top - .04],
+        [0, top - .04]]), material(recipe.glaze));
+      add(group, profile([[0, top], [.88, top - .005], [.98, top - .015],
+        [1.02, top - .045], [1.025, top - .075], [1, top - .085]]), material(recipe.glaze, .29));
+    } else {
+      const inner = sector(.975, from, to);
+      const layers = [recipe.crumb, recipe.cream, recipe.crumb, recipe.cream, recipe.crumb];
+      layers.forEach((color, i) => add(group, extrusion(inner, .116), material(color, .76), 0, base + .116 * (i + 1), 0));
+      add(group, extrusion(sector(1, from, to, .024), .58), material(recipe.glaze), 0, top - .06, 0);
+      add(group, extrusion(sector(1.025, from, to), .06), material(recipe.glaze, .29), 0, top, 0);
+    }
+
+    for (let i = 0; i < 24; i++) {
+      const angle = (i + .7) * turn / 24;
+      const phase = ((angle - from) % turn + turn) % turn;
+      if (phase < .06 || phase > to - from - .06) continue;
+      const drop = add(group, new THREE.SphereGeometry(.042, 10, 7), material(recipe.glaze, .29),
+        1.003 * Math.cos(angle), top - .065, 1.003 * Math.sin(angle));
+      drop.scale.set(1, 1 + (i % 5) * .45, 1);
+    }
+    decorations(group, from, to, recipe);
+    return group;
+  }
+
+  function replaceCake() {
+    cancelAnimationFrame(frame);
+    dispose(cake);
+    cake = new THREE.Group();
+    scene.add(cake);
+  }
+
+  function change(key) {
+    if (!Object.hasOwn(recipes, key)) return;
+    flavor = key;
+    replaceCake();
+    segment(cake, 0, turn);
+    render();
+  }
+
+  function cut(from, to) {
+    replaceCake();
+    segment(cake, to, from + turn);
+    const piece = segment(cake, from, to);
+    const middle = (from + to) / 2;
+    const slide = .58;
+    const targetX = slide * Math.cos(middle);
+    const targetZ = slide * Math.sin(middle);
+    const started = performance.now();
+    const instant = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function move(time) {
+      const t = instant ? 1 : Math.min(1, (time - started) / 720);
+      const eased = 1 - (1 - t) ** 3;
+      piece.position.set(targetX * eased, Math.sin(t * Math.PI) * .08, targetZ * eased);
+      render();
+      if (t < 1) frame = requestAnimationFrame(move);
+    }
+    move(started);
+  }
+
+  function project(x, z) {
+    point.set(x, top, z).project(camera);
+    return { x: point.x / 2, y: -point.y / 2 };
+  }
+
+  function intersect(x, y) {
+    ray.setFromCamera(screen.set(x * 2, -y * 2), camera);
+    ray.ray.intersectPlane(plane, point);
+    return { x: point.x / 2, y: point.z / 2 };
+  }
+
+  function resize() {
+    const width = board.clientWidth, height = board.clientHeight;
+    if (!width || !height || destroyed) return;
+    const halfWidth = Math.max(1.78, (width / height) * 1.42);
+    camera.left = -halfWidth;
+    camera.right = halfWidth;
+    camera.top = halfWidth * height / width;
+    camera.bottom = -camera.top;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height, false);
+    onLayout();
+    render();
+  }
+
+  function lose() { onLost(); }
+
+  function destroy() {
+    if (destroyed) return;
+    destroyed = true;
+    cancelAnimationFrame(frame);
+    observer.disconnect();
+    renderer.domElement.removeEventListener('webglcontextlost', lose);
+    dispose(cake);
+    dispose(scene);
+    renderer.dispose();
+    renderer.forceContextLoss();
+    renderer.domElement.remove();
+  }
+
+  const observer = new ResizeObserver(resize);
+  board.prepend(renderer.domElement);
+  renderer.domElement.addEventListener('webglcontextlost', lose);
+  observer.observe(board);
+  resize();
+  return { change, cut, project, intersect, destroy };
+}

@@ -1,0 +1,73 @@
+# 生日关卡
+
+## 本地预览
+
+在包含 `package.json` 的 `kids-projects` 仓库根目录用 Node.js 22 运行。这个工作区里，从外层 `stevesBirth12` 先执行 `cd kids-projects`。
+
+```sh
+npm run build
+BIRTHDAY_DATE=2099-11-28 BIRTHDAY_PREVIEW_KEY=local-preview-only npm run birthday:preview
+```
+
+打开 http://127.0.0.1:8787 检查 19 张卡片。打开 http://127.0.0.1:8787/birthday?preview=local-preview-only 预览整段旅程，返回首页可看到第 20 张卡。用无痕窗口验证普通访客。将日期设成过去日期并另开窗口，可验证解锁后的状态。上面的密钥只用于本地。
+
+## Vercel 部署
+
+先在本地或受保护的预览环境验收。生产上线由爸爸确认后，将本分支的改动合入现有作品集项目的部署分支。保留当前的域名及项目 Root Directory。项目使用 Node.js 22、Other 框架、`node scripts/build-portfolio.mjs` 构建及 `dist` 输出，由仓库根的 `vercel.json` 声明。若 Dashboard 有旧的构建或输出覆盖设置，预览时核对。静态构建只复制首页、卡片脚本、现有编号作品。生日内容通过 Functions 提供，不需要复制到静态目录或添加 `.publish`。
+
+| 环境变量 | 用途 |
+| --- | --- |
+| `BIRTHDAY_DATE` | 默认 `2026-11-28`，香港时间零点解锁 |
+| `BIRTHDAY_PREVIEW_KEY` | 爸爸用来提前预览的随机密钥 |
+| `BIRTHDAY_FAMILY_KEY` | 生日后查看家庭私密素材的独立随机口令 |
+| `BIRTHDAY_SESSION_SECRET` | 建议设置随机会话签名密钥，缺省使用预览密钥 |
+| `BIRTHDAY_CHATLOG_JSON`、`BIRTHDAY_FAMILY_JSON` | 家庭可访问的真实日志和留言 |
+| `BIRTHDAY_MEDIA_BASE`、`BIRTHDAY_MEDIA_TOKEN`、`BIRTHDAY_MEDIA_JSON` | 私密文件源 HTTPS 基础地址、Bearer 凭据和允许访问的文件映射 |
+| `BIRTHDAY_GUIDE_MEDIA` | 可选授权向导图片在媒体映射里的 .webp 文件名 |
+| `BIRTHDAY_SONGS_JSON` | 可选家庭会话短谱覆盖，结构与 `content/songs.json` 相同 |
+| `AI_API_BASE`、`AI_API_KEY`、`AI_MODEL` | 许愿工作台的 OpenAI 兼容服务地址、服务端密钥和模型 ID |
+| `BIRTHDAY_REDIS_URL`、`BIRTHDAY_REDIS_TOKEN` | 服务端 Redis REST 与令牌，用于原子限流 |
+| `AI_MINUTE_LIMIT`、`AI_DAILY_LIMIT`、`AI_TOTAL_LIMIT` | 可选，默认每分钟 3 次、每日 20 次、活动 60 次 |
+| `BIRTHDAY_CREDITS_JSON` | 可选真实制作统计，以字段名覆盖彩蛋面板的样稿 |
+
+预览链接为 `/birthday?preview=预览密钥`。成功后服务端写入签名会话 Cookie 并重定向到 `/birthday`，会话四小时过期。预览链接本身相当于口令，可能被浏览器或接入层记录，只给爸爸使用。生日后可在船员页输入独立家庭口令。所有私密变量只配置在服务端。真实内容应在测试通过后填入生产环境。
+
+## 替换内容
+
+- `content/chatlog.json` 是日志样稿，按相同结构把真实 JSON 配入服务端。只选已授权的段落，并填写每条真实日期、对应作品链接和爸爸的旁白。对话总数与首日需有原始记录。
+- `content/songs.json` 收录四首指定曲目的四句单手改编与曲谱参考，试听时长约 17–20 秒。当前键盘支持 MIDI 60–76。按对音高即可前进，通关后自动进下一首，末曲后进入切蛋糕。家庭需要换成手头版本时可按同一结构覆盖。
+- `content/family/index.json` 是五人样稿。家庭真实 JSON 保留相同的五个 ID 和顺序。需要音视频时，在成员项加 `"media":"mom.m4a"`，并在媒体映射填 `{"mom.m4a":"private-file.m4a"}`。私密源要求凭据，并支持 Range 请求。随信照片可加 `"photo":"mom.webp"` 及可选描述 `photoAlt`，再把图片加入同一媒体映射。支持 WebP、JPEG 和 PNG。建议压缩短视频为 H.264/AAC MP4。
+- `content/copy.json` 可调整关卡文案和商店。样稿是新写的示例，爸爸可以换成自己会对橙子说的话。小八授权素材用私密媒体源，当前保留原创橙子视觉。
+
+## 发布前彩排
+
+- 从普通浏览器核对生日之前 19 张卡、关卡与所有素材请求 404。
+- 预览会话和解锁后的普通会话分别打开首页，核对第 20 张卡。普通会话没有真实日志和家庭媒体。
+- Chrome 与 Safari 用键盘点亮 12 根蜡烛，验证自动换曲与切蛋糕，断网后继续玩已打开页面的愿望关，并检查家庭口令、图文来信、媒体播放、礼物与彩蛋。
+- 在授权的预览环境验证真实媒体源和浏览器控制台。
+
+## 生日街机厅
+
+开场点击会启用合成生日背景音乐和三轮烟花，页首可分别关闭音乐和动态烟花。琴台及打开家书时会暂停背景音乐。开场主视觉为原创生成的 WebP。舞台参考了 [Birthday Bloom](https://github.com/naborajs/birthday-bloom) 的蛋糕与烟花节拍，以及 [Afterglow](https://github.com/bayojuvikas/afterglow-v2) 的声音和庆祝转场。与 [Google 19 周年互动 Doodle](https://doodles.google/doodle/googles-19th-birthday/) 一样，生日入口后可以立即挑游戏。
+
+三款街机为本项目编写。历史节点分别引用 The Strong 的 [Pong](https://www.museumofplay.org/games/pong/)、[Space Invaders](https://www.museumofplay.org/games/space-invaders/) 和 [Tetris 名人堂记录](https://www.museumofplay.org/blog/the-first-class-of-the-world-video-game-hall-of-fame/)。可用键盘、屏幕按钮或游戏支持时用指针控制。每款首通得 2 星核，最高分留在本机。兑换价格与券面可编辑 `content/copy.json` 中的 `shop`。
+
+街机厅时间轴从 1970s 投币机展开到 2020s，资料来源随各机型附上。许愿关提供节奏、航道避障和图形记忆三款常驻游戏，所需逻辑都在浏览器内运行。体验券和切蛋糕使用原创配图，保持出生日前的访问保护。
+
+时间轴配图是辨识机型特征的原创插画，随各卡的 `art` 命名，放在 `machines/`。生日愿望工作台需要家庭或预览会话。模型只返回受校验的玩法配置与简短设计理由，客户端用三个本地引擎运行原型。每次修改可对照上一版。AI 未配置或暂时失败时，仍可打开两版示例和三个预制原型。服务端仅向模型发送当前输入及上一版游戏配置，发起生成会扣一次限额。
+
+## 幕间引导与兑换券
+
+点亮派对后直接显示第一幕旁白。之后依次是游戏史、经典试玩、橙子的作品、钢琴、吹蜡烛与切蛋糕、许愿、来信、兑换和谢幕。每幕开始前会显示旁白，也可以跳过。章节按钮可回看。换装在后续旁白、顶部向导和谢幕前提示里显示。
+
+吹蜡烛仅在点击麦克风按钮后申请权限，等待时可取消。吹气使用实时音量检测，音频留在设备。吹灭或离开蛋糕页会释放音频流。可按住屏幕上的「吹气」代替。蜡烛熄灭后可逐根拔下，也可一次收起剩余蜡烛。用鼠标或触屏从中心光圈向外缘划两刀。反向划和划出外缘也有效，还可以点「用按钮切一块」。
+
+星核、体验券、向导装扮和当前章节保存在同一地址下的同一浏览器。刷新和重播保留兑换结果。兑换后可下载文字券，换设备时可拿下载的券与家人确认。下载券不会在另一台设备恢复游戏余额。真实朋友来信可以和家庭素材一起填写，放在爸爸来信之前。
+
+### 生日琴台
+
+《生日快乐》《月下回声》《机甲序曲》《午夜追击》依次从旋律、分解和弦进入切分和半音。每首可切换双手、左手或右手，可调整 BPM 和开启节拍器。跟弹时节拍器闪光，试听或网页琴键弹奏时有节拍声。
+
+使用真实钢琴时，一次弹一个音。同一拍亮起多键时，逐个弹完本组即可继续。网页琴键支持鼠标、触屏和电脑键盘。用 Tab 聚焦琴键区后，可按标注键位弹奏，按 `[` 或 `]` 换八度。四首主线曲目每首首次完成可收集星核，旧曲可在「加演」中选择。
+
+琴声使用 Alexander Holm 的 Salamander Grand Piano，依照 CC BY 3.0 使用。采样、署名和双手示范复用作品墙训练营资源。

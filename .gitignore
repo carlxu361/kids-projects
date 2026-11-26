@@ -8,3 +8,7 @@ coverage/
 test-results/
 playwright-report/
 *.log
+
+/dist/
+/projects/birthday-12/content/private/
+.env*

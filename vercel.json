@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "node scripts/build-portfolio.mjs",
+  "outputDirectory": "dist",
+  "functions": {"api/mission.js": {"includeFiles": "projects/birthday-12/**", "maxDuration": 20}},
+  "rewrites": [
+    {"source": "/birthday", "destination": "/api/mission?part=page"},
+    {"source": "/birthday/:part*", "destination": "/api/mission?part=:part*"}
+  ]
+}

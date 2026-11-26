@@ -1202,6 +1202,7 @@ EOF_INDEX
   </main>
 
   <footer>更新作品后运行发布脚本，作品集会重新整理首页和项目文件。</footer>
+  <script defer src="/birthday-card.js"></script>
 </body>
 </html>
 EOF_INDEX

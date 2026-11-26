@@ -1,0 +1,9 @@
+{
+  "name": "kids-projects",
+  "private": true,
+  "engines": { "node": "22.x" },
+  "scripts": {
+    "build": "node scripts/build-portfolio.mjs",
+    "birthday:preview": "node scripts/preview-birthday.cjs"
+  }
+}

@@ -50,3 +50,5 @@ pnpm dev
 ```
 
 更新作品后运行 `/Users/xjc/Developer/games/发布到作品集.command`。
+
+生日关卡的本地预览、Vercel 配置和素材替换步骤见开发分支中的 [生日关卡说明](./projects/birthday-12/README.md)。
