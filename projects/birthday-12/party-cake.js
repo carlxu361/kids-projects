@@ -295,6 +295,60 @@ const PartyCake = (() => {
     removeButton.addEventListener('click', () => removeCandles(1), { signal });
     clearCandles.addEventListener('click', () => removeCandles(candles.length), { signal });
 
+    const crumbPalettes = {
+      orange: ['#ffae67', '#ff981f', '#ffd89a'],
+      strawberry: ['#f2899e', '#fff0ec', '#ff759e'],
+      vanilla: ['#ffedbd', '#fff6dc', '#f0be7a'],
+      chocolate: ['#ce9d74', '#8c533e', '#ffe0b5'],
+    };
+
+    function burstCrumbs(middle) {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !Element.prototype.animate) return;
+      const palette = crumbPalettes[flavor] || crumbPalettes.orange;
+      const layer = document.createElement('div');
+      layer.className = 'cake-crumbs';
+      layer.setAttribute('aria-hidden', 'true');
+      board.append(layer);
+      const centerPt = surfacePoint(0, 0);
+      const tipPt = surfacePoint(Math.cos(middle), Math.sin(middle));
+      const baseAngle = Math.atan2((tipPt.y - centerPt.y) * .84, tipPt.x - centerPt.x);
+      for (let i = 0; i < 18; i++) {
+        const piece = document.createElement('i');
+        piece.className = 'cake-crumb';
+        const size = (4 + Math.random() * 3).toFixed(1) + 'px';
+        piece.style.width = size;
+        piece.style.height = size;
+        piece.style.backgroundColor = palette[i % palette.length];
+        const spawnRadius = .14 + Math.random() * .44;
+        const spawnAngle = middle + (Math.random() - .5) * .45;
+        const startPt = surfacePoint(spawnRadius * Math.cos(spawnAngle), spawnRadius * Math.sin(spawnAngle));
+        piece.style.left = (startPt.x + .5) * 100 + '%';
+        piece.style.top = (startPt.y + .5) * 84 + '%';
+        layer.append(piece);
+        const spread = baseAngle + (Math.random() - .5) * 1.15;
+        const dist = 28 + Math.random() * 58;
+        const dx = Math.cos(spread) * dist;
+        const dy = Math.sin(spread) * dist;
+        const lift = 18 + Math.random() * 26;
+        const gravity = 32 + Math.random() * 28;
+        const rot = Math.round((Math.random() - .5) * 260);
+        piece.animate([
+          { transform: 'translate(-50%, -50%) scale(.55)', opacity: 0 },
+          { transform: 'translate(calc(-50% + ' + (dx * .42).toFixed(1) + 'px), calc(-50% + ' + (dy * .42 - lift).toFixed(1) + 'px)) scale(1.1) rotate(' + Math.round(rot * .5) + 'deg)', opacity: 1, offset: .32 },
+          { transform: 'translate(calc(-50% + ' + dx.toFixed(1) + 'px), calc(-50% + ' + (dy + gravity).toFixed(1) + 'px)) scale(.4)', opacity: 0 },
+        ], { duration: 720, delay: (i % 4) * 16, easing: 'cubic-bezier(.2, .65, .35, 1)', fill: 'both' });
+      }
+      const onAbort = () => {
+        clearTimeout(timer);
+        layer.remove();
+      };
+      const timer = setTimeout(() => {
+        signal.removeEventListener('abort', onAbort);
+        layer.remove();
+      }, 820);
+      signal.addEventListener('abort', onAbort, { once: true });
+    }
+
     function serve(from, to) {
       if (!canCut || served) return;
       const [piece, remainder] = splitCake(from, to);
@@ -328,6 +382,7 @@ const PartyCake = (() => {
       board.classList.add('is-served');
       for (const control of flavorButtons) control.disabled = true;
       model?.cut(from, to);
+      burstCrumbs(middle);
       label();
       fallback.hidden = true;
       finish();

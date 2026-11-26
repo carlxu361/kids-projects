@@ -1918,3 +1918,24 @@ html[data-turn="daybreak"][data-turn-dir="back"]::view-transition-new(stage) {
     opacity: 0;
   }
 }
+
+/* ===== P1-2: Cake slice crumb burst layer ===== */
+.cake-crumbs {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+  overflow: visible;
+}
+.cake-crumb {
+  position: absolute;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 1px 2px #1a0b2166;
+  will-change: transform, opacity;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cake-crumbs {
+    display: none;
+  }
+}
