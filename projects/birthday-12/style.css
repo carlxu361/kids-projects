@@ -1977,6 +1977,7 @@ html[data-turn="daybreak"][data-turn-dir="back"]::view-transition-new(stage) {
 }
 
 /* The WebGL set sits behind the existing, interactive HTML stage. */
+#world-3d { display: none; }
 body.cinema-ready { background: transparent; }
 body.cinema-ready #world-3d {
   position: fixed;
