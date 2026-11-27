@@ -193,6 +193,7 @@ module.exports = async (req, res) => {
     if (artwork.includes(part)) return reply(res, 200, await readFile(join(root, part)), 'image/webp');
     // Keep browser modules as text in the function bundle so Vercel serves their original ESM.
     const files = { 'cake-3d.js': ['cake-3d.js.txt', 'text/javascript'],
+      'stage-3d.js': ['stage-3d.js.txt', 'text/javascript'],
       'three-0.160.0.min.js': ['three-0.160.0.min.js.txt', 'text/javascript'],
       'blow-detector.js': ['blow-detector.js', 'text/javascript'], 'cake-geometry.js': ['cake-geometry.js', 'text/javascript'],
       'blessings.js': ['blessings.js', 'text/javascript'],

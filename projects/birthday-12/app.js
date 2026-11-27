@@ -1,5 +1,7 @@
 const get = selector => document.querySelector(selector);
 const stage = get('#stage');
+const worldCanvas = get('#world-3d');
+worldCanvas.hidden = true;
 const fullscreenControl = get('#page-fullscreen');
 fullscreenControl.hidden = !document.fullscreenEnabled;
 function syncFullscreenControl() {
@@ -119,6 +121,140 @@ let sceneTarget;
 let sceneTimer;
 let turning = null;
 const guide = get('#scene-guide');
+const cinemaRequested = new URLSearchParams(location.search).get('cinema') !== '0';
+let world3d = null;
+let warmingWorld = null;
+let worldRendered = false;
+let worldGeneration = 0;
+let cinemaState = 'idle';
+let cinemaTurn = null;
+let cabinetOpen = false;
+
+function syncWorldPlayback() {
+  if (!world3d) {
+    if (document.hidden) warmingWorld?.pause();
+    else warmingWorld?.resume();
+    return;
+  }
+  if (document.hidden || cabinetOpen || save.chapter === 'cake') world3d.pause();
+  else world3d.resume();
+}
+
+function setCabinetOpen(value) {
+  if (cabinetOpen === value) return;
+  cabinetOpen = value;
+  syncWorldPlayback();
+}
+
+function activateCinema() {
+  if (!worldRendered || !warmingWorld || turning || (guide.open && !sceneTarget)) return;
+  world3d = warmingWorld;
+  warmingWorld = null;
+  worldRendered = false;
+  world3d.snapTo(save.chapter);
+  PartyEffects.onFireworksChange(value => world3d?.setFireworksEnabled(value));
+  world3d.setFireworksEnabled(PartyEffects.allowsFireworks());
+  worldCanvas.hidden = false;
+  document.body.classList.add('cinema-ready');
+  PartyEffects.setExternalSky(true);
+  syncWorldPlayback();
+  if (sceneTarget) {
+    cinemaState = 'reading';
+    world3d.preview(save.chapter, sceneTarget);
+  }
+}
+
+function finishTravel() {
+  cinemaState = 'idle';
+  cinemaTurn = null;
+  stage.classList.remove('stage-exiting');
+  const focus = document.activeElement;
+  if ((!focus || focus === document.body) && !get('dialog[open]')) stage.focus({ preventScroll: true });
+}
+
+function fallbackTo2D() {
+  worldGeneration++;
+  const pending = cinemaTurn;
+  world3d?.destroy();
+  warmingWorld?.destroy();
+  world3d = warmingWorld = null;
+  worldRendered = false;
+  worldCanvas.hidden = true;
+  document.body.classList.remove('cinema-ready');
+  stage.classList.remove('cake-daybreak');
+  PartyEffects.onFireworksChange(null);
+  PartyEffects.setExternalSky(false);
+  finishTravel();
+  if (pending && !pending.committed) turnTo(pending.key);
+}
+
+async function startWorld() {
+  if (!cinemaRequested || reduceMotion.matches || !data || world3d || warmingWorld) return;
+  const generation = ++worldGeneration;
+  try {
+    const { mountWorld3D } = await import('/birthday/stage-3d.js');
+    if (generation !== worldGeneration) return;
+    warmingWorld = mountWorld3D(worldCanvas, {
+      initialChapter: save.chapter,
+      fireworksAllowed: PartyEffects.allowsFireworks(),
+      onReady() {
+        worldRendered = true;
+        activateCinema();
+      },
+      onFallback: fallbackTo2D,
+    });
+  } catch {
+    if (generation === worldGeneration) fallbackTo2D();
+  }
+}
+
+reduceMotion.addEventListener('change', event => {
+  if (event.matches) fallbackTo2D();
+  else startWorld();
+});
+document.addEventListener('visibilitychange', syncWorldPlayback);
+
+function travelTo(key) {
+  const world = world3d;
+  const from = save.chapter;
+  const turn = { key, committed: false };
+  cinemaTurn = turn;
+  cinemaState = 'travelling';
+  stage.classList.remove('cake-daybreak');
+  stage.classList.add('stage-exiting');
+  PartyEffects.playTurnSfx?.(key === 'cake' || key === 'finale' ? 'daybreak' : 'book');
+  world.travel({
+    from,
+    to: key,
+    onCommit() {
+      if (turn.committed) return;
+      turn.committed = true;
+      if (key === 'cake') world.pause();
+      show(key, false);
+      stage.classList.remove('stage-exiting');
+      stage.querySelector('.chapter')?.classList.add('copy-entrance');
+      if (from === 'piano' && key === 'cake') stage.classList.add('cake-daybreak');
+      world.setAct(key);
+      if (from === 'cake') {
+        requestAnimationFrame(() => {
+          if (world3d === world) syncWorldPlayback();
+        });
+        setTimeout(() => {
+          if (world3d === world && world.isContextLost()) fallbackTo2D();
+        }, 500);
+      }
+    },
+    onDone: finishTravel,
+  });
+}
+
+document.addEventListener('click', () => {
+  if (cinemaState === 'travelling') world3d?.accelerate();
+}, true);
+document.addEventListener('keydown', event => {
+  if (cinemaState !== 'travelling' || !['Enter', ' ', 'Escape'].includes(event.key) || get('dialog[open]')) return;
+  world3d?.accelerate();
+}, true);
 function guideAppearance() {
   const looks = { '🎩 魔法帽': '🎩', '🎧 耳机': '🎧', '🧢 船员帽': '🧢' };
   const look = looks[save.outfit];
@@ -134,6 +270,7 @@ function turnTo(key) {
   if (reduceMotion.matches || !document.startViewTransition) {
     if (!reduceMotion.matches) PartyEffects.playTurnSfx?.(turnKind);
     show(key, true);
+    activateCinema();
     return;
   }
   const root = document.documentElement;
@@ -150,16 +287,34 @@ function turnTo(key) {
       turning = null;
       delete root.dataset.turn;
       delete root.dataset.turnDir;
+      activateCinema();
     }
   });
 }
 
 function go(key) {
+  if (cinemaState === 'travelling') {
+    if (!cinemaTurn?.committed) {
+      world3d?.accelerate();
+      return;
+    }
+    world3d?.cancel();
+    finishTravel();
+  }
   if (guide.open || key === save.chapter) return;
   if (turning) turning.skipTransition();
   if (key === 'cake') import('/birthday/cake-3d.js').catch(() => {});
+  if (save.chapter === 'cake' || save.chapter === 'piano') stopChapter.suspend?.();
   const cue = data.copy.scenes[key];
-  if (!cue) { turnTo(key); return; }
+  if (!cue) {
+    if (world3d) travelTo(key);
+    else turnTo(key);
+    return;
+  }
+  if (world3d) {
+    cinemaState = 'reading';
+    world3d.preview(save.chapter, key);
+  }
   sceneTarget = key;
   document.body.classList.add('guide-active');
   guide.classList.toggle('scene-premiere', Boolean(stage.querySelector('.premiere.party-live')));
@@ -174,7 +329,6 @@ function go(key) {
   get('#scene-title').textContent = cue[0];
   get('#scene-narration').textContent = cue[1];
   get('#scene-continue').textContent = cue[2];
-  if (save.chapter === 'cake') stopChapter.suspend?.();
   guide.showModal();
   get('#scene-continue').focus();
 }
@@ -189,9 +343,10 @@ function finishGuide() {
     const card = guide.querySelector('.scene-card');
     if (card) delete card.dataset.act;
     document.body.classList.remove('guide-active');
-    turnTo(key);
+    if (world3d && !reduceMotion.matches) travelTo(key);
+    else turnTo(key);
   };
-  if (reduceMotion.matches) { turn(); return; }
+  if (world3d || reduceMotion.matches) { turn(); return; }
   guide.classList.add('scene-leaving');
   sceneTimer = setTimeout(turn, 230);
 }
@@ -218,6 +373,8 @@ function show(key, animate = false) {
   stopChapter();
   stopChapter = () => {};
   save.chapter = key;
+  warmingWorld?.snapTo(key);
+  PartyEffects.setChapter?.(key);
   persist();
   stage.replaceChildren();
   nav.hidden = key === 'intro';
@@ -258,7 +415,7 @@ function show(key, animate = false) {
     stage.classList.add('page-turn');
   }
   if (animate) window.scrollTo({ top: 0, behavior: 'instant' });
-  stage.focus({ preventScroll: true });
+  if (cinemaState !== 'travelling') stage.focus({ preventScroll: true });
 }
 
 const visualViewport = window.visualViewport;
@@ -288,7 +445,8 @@ function intro() {
   get('#skip-intro').addEventListener('click', () => { PartyEffects.startMusic(); go('history'); });
   start.addEventListener('click', () => {
     PartyEffects.startMusic();
-    celebrate();
+    if (world3d) world3d.triggerPartyLight();
+    else celebrate();
     stage.querySelector('.premiere').classList.add('party-live');
     briefing.hidden = false;
     briefing.textContent = data.copy.intro[0] + '。生日灯光已点亮。';
@@ -428,6 +586,7 @@ function arcade() {
     const best = element('span', '最高分 ' + (highs[game.id] || 0), 'arcade-best');
     const launch = button('开始挑战', () => {
       PartyEffects.pauseSky(true);
+      setCabinetOpen(true);
       cabinet.open(game, (score, victory) => {
         highs[game.id] = Math.max(highs[game.id] || 0, score);
         best.textContent = '最高分 ' + highs[game.id];
@@ -442,6 +601,7 @@ function arcade() {
         return firstWin;
       }, () => {
         PartyEffects.pauseSky(false);
+        setCabinetOpen(false);
         showLocal(launch);
       });
     }, 'primary');
@@ -469,6 +629,7 @@ function arcade() {
   showLocal(null);
   stopChapter = () => {
     cabinet.stop();
+    setCabinetOpen(false);
     PartyEffects.pauseSky(false);
   };
 }
@@ -1090,6 +1251,12 @@ function piano() {
     sampler.silence();
     for (const timer of flashes.values()) clearTimeout(timer);
   };
+  stopChapter.suspend = () => {
+    clearTimeout(advance);
+    stopMetronome();
+    stopPreview();
+    stopMic();
+  };
   picker.addEventListener('change', () => {
     clearTimeout(advance);
     stopPreview();
@@ -1366,11 +1533,13 @@ function wishes() {
     views.show(premade, [openEditor, continueStory], focus);
   }
   function play(game, onResult, onBack) {
+    setCabinetOpen(true);
     if (game.id === 'fireflies') PartyEffects.focus(true);
     else PartyEffects.pauseSky(true);
     cabinet.open(game, onResult, () => {
       PartyEffects.focus(false);
       PartyEffects.pauseSky(false);
+      setCabinetOpen(false);
       onBack();
     });
   }
@@ -1402,6 +1571,7 @@ function wishes() {
   showEditor(null);
   stopChapter = () => {
     cabinet.stop();
+    setCabinetOpen(false);
     studio.stop();
     PartyEffects.focus(false);
     PartyEffects.pauseSky(false);
@@ -1647,8 +1817,11 @@ function shop() {
       reveal();
       gift.classList.add('gift-ceremony');
       gift.focus();
-      celebrate();
-      shopTimers.push(setTimeout(celebrate, 620));
+      if (world3d) world3d.triggerGiftBurst();
+      else {
+        celebrate();
+        shopTimers.push(setTimeout(celebrate, 620));
+      }
       if (PartyEffects.isMusicEnabled?.()) {
         [72, 76, 79, 83, 86].forEach((note, index) => playNote(note, index * .09, .85));
       }
@@ -1858,6 +2031,7 @@ fetchData().then(value => {
   data = value;
   show(save.chapter);
   get('#loading').hidden = true;
+  startWorld();
 }).catch(() => {
   const status = get('#loading');
   status.textContent = '存档暂时读不到。';
