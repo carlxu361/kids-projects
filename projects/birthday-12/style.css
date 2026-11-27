@@ -1975,3 +1975,130 @@ html[data-turn="daybreak"][data-turn-dir="back"]::view-transition-new(stage) {
     transform: none;
   }
 }
+
+/* The WebGL set sits behind the existing, interactive HTML stage. */
+body.cinema-ready { background: transparent; }
+body.cinema-ready #world-3d {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  display: block;
+}
+body.cinema-ready #sky { display: none; }
+body.cinema-ready #stage > :is(.chapter, .hero, .finale) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+body.cinema-ready:has(.cabinet),
+body.cinema-ready #stage > :is(.arcade-chapter, .wish-chapter):has(.cabinet) { background: #07050b; }
+body.cinema-ready #stage > .finale.finale-tilted {
+  border-color: #ffd7887a;
+  box-shadow: 0 28px 80px #06020ee0, 0 0 0 1px #ffe2a833, inset 0 1px 0 #fff1d129;
+}
+
+body.cinema-ready .premiere::before {
+  background: linear-gradient(90deg, #11091ae8 0%, #11091ab3 31%, #11091a45 48%, transparent 63%);
+  filter: none;
+}
+body.cinema-ready .premiere::after { opacity: 0; }
+body.cinema-ready .premiere-caption { display: none; }
+body.cinema-ready .premiere .hero-copy {
+  max-width: 51%;
+  text-shadow: 0 2px 18px #100818, 0 0 3px #100818;
+}
+@media (max-width: 680px) {
+  body.cinema-ready #stage > .premiere { align-items: end; }
+  body.cinema-ready .premiere .hero-copy { max-width: 100%; }
+  body.cinema-ready .premiere::before {
+    background: linear-gradient(0deg, #11091af7, #11091ab3 30%, transparent 67%);
+  }
+}
+
+body.cinema-ready > :is(header, footer).hud {
+  padding-inline-start: .65rem;
+  border-color: #c797b438;
+  border-radius: .8rem;
+  background: #171020df;
+  backdrop-filter: blur(9px);
+}
+body.cinema-ready > footer.hud { padding-inline-end: .65rem; }
+body.cinema-ready #mission :is(.history-machine, .era-banner, .arcade-card, .wish-card, .wish-studio, .wish-output,
+  .growth-log article, .growth-medals li, .envelope, .tile:not(.gift-revealed), .finale-note, .piano-control-panel,
+  .cake-controls, .crew-display form, .shop-status:not(:empty)) {
+  background: #1b1328ed;
+  backdrop-filter: blur(7px);
+}
+body.cinema-ready #stage .chapter > :is(h2, .lead, .mono),
+body.cinema-ready .piano-toolbar h2 {
+  text-shadow: 0 1px 3px #090613, 0 2px 14px #090613;
+}
+body.cinema-ready #stage .chapter > .lead { color: #f3e7f3; }
+
+body.cinema-ready #scene-guide[open] {
+  inset: auto 0 clamp(.8rem, 6dvh, 4.5rem);
+  width: min(36rem, calc(100% - 2rem));
+  max-height: calc(100dvh - 2rem);
+  margin: 0 auto;
+  border-color: #e5b7ba55;
+  border-radius: .95rem;
+  box-shadow: 0 12px 40px #05030a91;
+  animation: none;
+}
+body.cinema-ready #scene-guide::backdrop {
+  background: rgba(8, 5, 16, .18);
+  backdrop-filter: none;
+}
+body.cinema-ready #scene-guide > .scene-card {
+  gap: .55rem .75rem;
+  padding: clamp(.9rem, 2.6vw, 1.35rem);
+  background: linear-gradient(130deg, #23162beb, #181021df);
+  backdrop-filter: blur(10px);
+}
+body.cinema-ready #scene-guide > .scene-card h2 {
+  font-size: clamp(1.12rem, 3.45vw, 1.55rem);
+  padding-inline-end: 3.25rem;
+  animation: cinema-copy-rise 270ms ease-out both;
+}
+body.cinema-ready #scene-guide > .scene-card p {
+  font-size: .97rem;
+  animation: cinema-copy-rise 290ms 50ms ease-out both;
+}
+body.cinema-ready #scene-guide #scene-continue { justify-self: center; }
+body.cinema-ready #scene-guide.scene-history #scene-continue { grid-column: 1 / -1; }
+
+body.cinema-ready #stage.stage-exiting { animation: cinema-copy-exit 180ms ease-out both; }
+body.cinema-ready .copy-entrance > :is(h2, .lead, .showcase-stage, .finale-notes),
+body.cinema-ready .copy-entrance .finale-notes {
+  animation: cinema-copy-rise 310ms ease-out both;
+}
+body.cinema-ready .copy-entrance > .lead { animation-delay: 50ms; }
+body.cinema-ready .copy-entrance > :is(.showcase-stage, .finale-notes),
+body.cinema-ready .copy-entrance .finale-notes { animation-delay: 110ms; }
+body.cinema-ready .copy-entrance > .showcase-stage:has(:is(form, textarea, canvas)) { animation-name: cinema-fade-in; }
+
+body.cinema-ready #stage.cake-daybreak::after {
+  content: "";
+  position: fixed;
+  z-index: 4;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 51%, #ffcfa879, #efab7248 27%, transparent 68%);
+  animation: cinema-daybreak-tail 385ms ease-out both;
+}
+@keyframes cinema-copy-exit { to { opacity: 0; } }
+@keyframes cinema-copy-rise { from { opacity: 0; transform: translateY(12px); } }
+@keyframes cinema-fade-in { from { opacity: 0; } }
+@keyframes cinema-daybreak-tail { to { opacity: 0; transform: scale(.7); } }
+
+@media (prefers-reduced-motion: reduce) {
+  body.cinema-ready #world-3d { display: none; }
+  body.cinema-ready #scene-guide > .scene-card :is(h2, p),
+  body.cinema-ready #stage.stage-exiting,
+  body.cinema-ready .copy-entrance > :is(h2, .lead, .showcase-stage, .finale-notes),
+  body.cinema-ready .copy-entrance .finale-notes { animation: none; }
+  body.cinema-ready #stage.cake-daybreak::after { content: none; }
+}
