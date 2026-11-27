@@ -294,8 +294,12 @@ function turnTo(key) {
 
 function go(key) {
   if (cinemaState === 'travelling') {
-    world3d?.accelerate();
-    return;
+    if (!cinemaTurn?.committed) {
+      world3d?.accelerate();
+      return;
+    }
+    world3d?.cancel();
+    finishTravel();
   }
   if (guide.open || key === save.chapter) return;
   if (turning) turning.skipTransition();
