@@ -187,10 +187,15 @@ module.exports = async (req, res) => {
     if (part.startsWith('media/') && scope) return await media(req, res, part.slice(6));
     if (/^machines\/[a-z0-9-]+\.webp$/.test(part)) {
       const image = await readFile(join(root, part)).catch(() => null);
-      return image ? reply(res, 200, image, 'image/webp') : reply(res, 404, { error: 'Not found' });
+      if (!image) return reply(res, 404, { error: 'Not found' });
+      res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=3600, stale-while-revalidate=600');
+      return reply(res, 200, image, 'image/webp');
     }
     const artwork = ['hero.webp', 'cake.webp', 'game-time.webp', 'weekend-hike.webp', 'food-choice.webp'];
-    if (artwork.includes(part)) return reply(res, 200, await readFile(join(root, part)), 'image/webp');
+    if (artwork.includes(part)) {
+      res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=3600, stale-while-revalidate=600');
+      return reply(res, 200, await readFile(join(root, part)), 'image/webp');
+    }
     // Keep browser modules as text in the function bundle so Vercel serves their original ESM.
     const files = { 'cake-3d.js': ['cake-3d.js.txt', 'text/javascript'],
       'stage-3d.js': ['stage-3d.js.txt', 'text/javascript'],
@@ -201,6 +206,11 @@ module.exports = async (req, res) => {
       'style.css': ['style.css', 'text/css'] };
     if (Object.hasOwn(files, part)) {
       const [file, type] = files[part];
+      if (part === 'three-0.160.0.min.js') {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      } else if (part !== 'page') {
+        res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=3600, stale-while-revalidate=600');
+      }
       res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; frame-src 'none'; media-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");
       return reply(res, 200, await readFile(join(root, file)), type + '; charset=utf-8');
     }
