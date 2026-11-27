@@ -18,6 +18,10 @@ const PartyEffects = (() => {
   try { optedOut = localStorage.getItem('orange-birthday-music-off') === 'true'; } catch {}
   let paused = false;
   let skyPaused = false;
+  let externalSky = false;
+  let chapter = 'intro';
+  const climaxChapters = new Set(['intro', 'cake', 'shop', 'finale']);
+  let fireworksListener = null;
   let animation = 0;
   let last = 0;
   let next = 0;
@@ -100,7 +104,7 @@ const PartyEffects = (() => {
     const dt = last ? Math.min((time - last) / 1000, .05) : 0;
     const firstFrame = last === 0;
     last = time;
-    if (time > next) {
+    if (climaxChapters.has(chapter) && time > next) {
       launch(firstFrame);
       next = time + 1050 + Math.random() * 900;
     }
@@ -199,7 +203,7 @@ const PartyEffects = (() => {
     fireworks.setAttribute('aria-pressed', String(skyOn));
     fireworks.setAttribute('aria-disabled', String(!allowed));
     fireworks.title = allowed ? (skyOn ? '关闭烟花' : '开启烟花') : '系统已开启减少动态效果';
-    if (skyOn && !paused && !skyPaused && !document.hidden) {
+    if (skyOn && !externalSky && !paused && !skyPaused && !document.hidden) {
       last = next = 0;
       animation = requestAnimationFrame(paint);
     }
@@ -325,9 +329,13 @@ const PartyEffects = (() => {
   fireworks.addEventListener('click', () => {
     if (reduced.matches) return;
     video = !video;
-    updateSky();
+    updateFireworks();
   });
-  reduced.addEventListener('change', updateSky);
+  function updateFireworks() {
+    updateSky();
+    fireworksListener?.(allowsFireworks());
+  }
+  reduced.addEventListener('change', updateFireworks);
   document.addEventListener('visibilitychange', () => { updateSky(); updateMusic(); });
   addEventListener('resize', resize);
   resize();
@@ -335,6 +343,18 @@ const PartyEffects = (() => {
   updateMusic();
   return {
     allowsFireworks,
+    setExternalSky(value) {
+      const owned = Boolean(value);
+      if (externalSky === owned) return;
+      externalSky = owned;
+      updateSky();
+    },
+    setChapter(key) {
+      if (chapter === key) return;
+      chapter = key;
+      updateSky();
+    },
+    onFireworksChange(fn) { fireworksListener = fn; },
     startMusic: () => { if (!optedOut) setMusic(true); },
     focus: value => { paused = value; updateSky(); updateMusic(); },
     pauseSky: value => {
