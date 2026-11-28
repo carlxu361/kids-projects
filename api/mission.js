@@ -188,7 +188,7 @@ module.exports = async (req, res) => {
       });
     }
     if (part.startsWith('media/') && scope) return await media(req, res, part.slice(6));
-    if (/^machines\/[a-z0-9-]+\.webp$/.test(part)) {
+    if (/^(?:machines|hachi)\/[a-z0-9-]+\.webp$/.test(part)) {
       const image = await readFile(join(root, part)).catch(() => null);
       if (!image) return reply(res, 404, { error: 'Not found' });
       res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=3600, stale-while-revalidate=600');
@@ -204,6 +204,7 @@ module.exports = async (req, res) => {
       'stage-3d.js': ['stage-3d.js.txt', 'text/javascript'],
       'three-0.160.0.min.js': ['three-0.160.0.min.js.txt', 'text/javascript'],
       'blow-detector.js': ['blow-detector.js', 'text/javascript'], 'cake-geometry.js': ['cake-geometry.js', 'text/javascript'],
+      'piano-library.js': ['piano-library.js', 'text/javascript'],
       'blessings.js': ['blessings.js', 'text/javascript'],
       'party-cake.js': ['party-cake.js', 'text/javascript'], 'effects.js': ['effects.js', 'text/javascript'], 'wishes.js': ['wishes.js', 'text/javascript'], 'arcade.js': ['arcade.js', 'text/javascript'], page: ['index.html', 'text/html'], 'app.js': ['app.js', 'text/javascript'],
       'style.css': ['style.css', 'text/css'] };

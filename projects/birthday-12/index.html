@@ -16,6 +16,7 @@
   <script defer src="/birthday/party-cake.js"></script>
   <script defer src="/08-Brainiac%20Maniac%20%C2%B7%20Boss%20%E9%92%A2%E7%90%B4%E8%AE%AD%E7%BB%83%E8%90%A5/studio.js"></script>
   <script defer src="/08-Brainiac%20Maniac%20%C2%B7%20Boss%20%E9%92%A2%E7%90%B4%E8%AE%AD%E7%BB%83%E8%90%A5/repertoire.js"></script>
+  <script defer src="/birthday/piano-library.js"></script>
   <script defer src="/birthday/app.js"></script>
   <script defer src="/birthday/blessings.js"></script>
 </head>
@@ -35,15 +36,23 @@
     </div>
   </header>
   <main id="mission">
-    <div class="journey-top" id="journey-top" hidden><span id="guide-look" aria-hidden="true">🍊</span><span id="scene-progress"></span></div>
+    <div class="journey-top" id="journey-top" hidden><button id="guide-look" type="button" aria-label="召唤向导小八" aria-controls="hachi-assistant" aria-expanded="false"><img class="hachi-sprite" src="/birthday/hachi/guide.webp" alt="向导小八"></button><span id="scene-progress"></span></div>
     <nav id="chapters" aria-label="关卡" hidden></nav>
     <section id="stage" tabindex="-1"></section>
     <p id="loading" role="status">正在读取存档…</p>
   </main>
   <footer class="hud"><span>橙子的生日存档</span><button type="button" data-open-blessings>送上祝福</button><button id="systems" aria-haspopup="dialog">版本与致谢</button></footer>
+  <aside id="hachi-assistant" aria-label="小八的提示" hidden>
+    <div class="hachi-bubble">
+      <button type="button" class="hachi-close" aria-label="收起小八">×</button>
+      <p class="hachi-message" role="status"></p>
+      <button type="button" class="hachi-action"></button>
+    </div>
+    <div class="hachi-portrait" aria-hidden="true"></div>
+  </aside>
   <dialog id="scene-guide" class="scene-guide" aria-labelledby="scene-title" aria-describedby="scene-narration">
     <div class="scene-card">
-      <div class="scene-avatar" id="scene-avatar" aria-hidden="true">🍊</div>
+      <div class="scene-avatar" id="scene-avatar"><img class="hachi-sprite" src="/birthday/hachi/guide.webp" alt="向导小八"></div>
       <h2 id="scene-title"></h2>
       <p id="scene-narration"></p>
       <button id="scene-continue" class="primary" type="button"><span class="guide-btn-label"></span><span class="guide-btn-progress" aria-hidden="true"></span></button>

@@ -353,8 +353,19 @@ nav .next-scene { border-color: var(--act-accent-2, #a87467); position: relative
   .page-turn, .scene-guide[open], .scene-guide.scene-leaving, .cake-candle::before, .cake-candle.candle-out::after, .finale-note { animation: none; }
 }
 .scene-avatar, #guide-look { position: relative; isolation: isolate; }
-.guide-orange { position: relative; display: inline-block; }
-.guide-accessory { position: absolute; font-size: .8em; left: 54%; top: 8%; transform: rotate(-15deg); }
+.hachi-sprite { display: block; width: auto; height: 100%; object-fit: contain; }
+#guide-look { display: grid; place-items: center; padding: .12rem .38rem; }
+#guide-look img { height: 1.65rem; }
+.scene-avatar img { height: 3.2rem; }
+.guide-accessory {
+  position: absolute;
+  left: 59%;
+  top: 1%;
+  transform: translateX(-50%) rotate(12deg);
+  font-size: .8em;
+  line-height: 1;
+  pointer-events: none;
+}
 .cake-knife { position: absolute; transform: translate(-5%, -75%) rotate(-8deg); font-style: normal; font-size: 2rem; line-height: 1; pointer-events: none; z-index: 2; filter: drop-shadow(1px 2px 4px #26152a); }
 .cake-chapter { padding: clamp(1rem, 3vw, 2.05rem); gap: .8rem; }
 .cake-board { width: min(100%, 385px, 43vh); }
@@ -525,7 +536,7 @@ body.guide-active :is(#world-3d, #sky, #mission) { filter: blur(9px) brightness(
 .birthday-roll-note.roll-left { background: #bcadff; box-shadow: 0 0 9px #bcadff44; }
 .piano-studio .note-rain { inset: 0 0 auto; height: clamp(100px, 18vh, 190px); }
 .piano-studio .concert-keys {
-  grid-template-columns: repeat(29, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--white-keys, 29), minmax(0, 1fr));
   gap: 0;
   height: clamp(108px, 17vh, 175px);
   border-top: 4px solid #ab5671;
@@ -539,7 +550,7 @@ body.guide-active :is(#world-3d, #sky, #mission) { filter: blur(9px) brightness(
   box-shadow: inset 0 -4px #bfb1b7;
 }
 .piano-studio .black-key {
-  left: calc(var(--after) * 100% / 29);
+  left: calc(var(--after) * 100% / var(--white-keys, 29));
   width: 2.1%;
   transform: translateX(-50%);
   border: 1px solid #171020;
@@ -2663,11 +2674,35 @@ body.history-mode .history-chapter > :is(.mono, h2, .lead, .immersive-actions) {
 .history-slide .history-machine time,
 .history-slide .history-machine a { color: var(--act-accent); }
 .scene-next.is-ready-next {
-  animation: ready-next-pulse 1.5s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+  padding-inline-end: 2rem;
+  border-color: #ffe6b6;
+  box-shadow: 0 0 14px var(--act-glow, #ffd69a60);
+  animation: ready-next-pulse 2.8s ease-in-out infinite;
+}
+.scene-next.is-ready-next::before {
+  content: "→" / "";
+  position: absolute;
+  inset-inline-end: .65rem;
+  animation: ready-next-arrow 2.8s ease-in-out infinite;
+}
+.scene-next.is-ready-next::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 34%, #fff9e97a 50%, transparent 64%);
+  transform: translateX(-110%);
+  animation: ready-next-sheen 5s ease-in-out infinite;
+  pointer-events: none;
 }
 @keyframes ready-next-pulse {
-  0%, 100% { box-shadow: 0 0 18px var(--act-glow); transform: scale(1); }
-  50% { box-shadow: 0 0 34px var(--act-accent), 0 0 12px #fff6; transform: scale(1.03); }
+  50% { box-shadow: 0 0 22px var(--act-glow, #ffd69a80), 0 0 8px #fff3; transform: translateY(-2px); }
+}
+@keyframes ready-next-arrow { 50% { transform: translateX(3px); } }
+@keyframes ready-next-sheen {
+  0%, 60% { transform: translateX(-110%); }
+  87%, 100% { transform: translateX(110%); }
 }
 @media (max-width: 560px) {
   .history-timeline-axis { padding: .35rem .55rem .4rem; gap: .32rem; }
@@ -2680,7 +2715,8 @@ body.history-mode .history-chapter > :is(.mono, h2, .lead, .immersive-actions) {
   .history-track, .history-track-fill, .history-node, .history-node-dot, .history-slide {
     transition: none;
   }
-  .scene-next.is-ready-next { animation: none; }
+  .scene-next.is-ready-next, .scene-next.is-ready-next::before,
+  .scene-next.is-ready-next::after { animation: none; }
 }
 
 /* ===== V12.2: Two-hand Piano & Difficulty UI ===== */
@@ -2851,3 +2887,115 @@ body.history-mode .history-chapter > :is(.mono, h2, .lead, .immersive-actions) {
 }
 .wish-history-meta span { font-size: .76rem; color: var(--muted); }
 .wish-history-actions button { padding: .32rem .65rem; font-size: .84rem; }
+
+#hachi-assistant {
+  --hachi-size: clamp(3rem, 12vw, 6.25rem);
+  position: fixed;
+  z-index: 25;
+  display: flex;
+  align-items: flex-end;
+  gap: .65rem;
+  width: max-content;
+  padding-bottom: max(0px, env(safe-area-inset-bottom) - 12px);
+  font-size: .9rem;
+  animation: hachi-arrive .38s cubic-bezier(.22, 1.28, .36, 1) both;
+}
+#hachi-assistant[hidden] { display: none; }
+.hachi-bubble {
+  position: relative;
+  min-width: 0;
+  max-width: 16.5rem;
+  padding: .68rem .8rem .62rem;
+  border: 1.5px solid #2b213a;
+  border-radius: 15px 17px 13px 16px;
+  background: #fffdf7;
+  color: #231a2e;
+  box-shadow: 0 4px 14px #20132238;
+}
+.hachi-bubble::after {
+  content: "";
+  position: absolute;
+  right: -7px;
+  bottom: 1rem;
+  width: 11px;
+  height: 11px;
+  border-top: 1.5px solid #2b213a;
+  border-right: 1.5px solid #2b213a;
+  background: inherit;
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+.hachi-message { margin: 0; padding-inline-end: 1.3rem; line-height: 1.4; }
+.hachi-bubble button { color: #231a2e; }
+.hachi-close {
+  position: absolute;
+  top: .24rem;
+  right: .26rem;
+  padding: 0;
+  min-width: 1.65rem;
+  min-height: 1.65rem;
+  background: transparent;
+  border-color: transparent;
+  line-height: 1;
+}
+.hachi-action {
+  max-width: 100%;
+  margin-top: .4rem;
+  padding: .25rem .48rem;
+  background: #f5e8cf;
+  border-color: #d5bf98;
+  font-size: .82rem;
+  text-align: left;
+}
+.hachi-portrait {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 var(--hachi-size);
+  height: var(--hachi-size);
+  font-size: clamp(1rem, 4vw, 1.8rem);
+  filter: drop-shadow(0 3px 2px #1d162b44);
+  animation: hachi-idle 3.5s .45s ease-in-out infinite;
+}
+.hachi-portrait img { width: 100%; }
+@keyframes hachi-arrive { from { opacity: 0; transform: translateY(8px); } }
+@keyframes hachi-idle { 50% { transform: translateY(-2px); } }
+@media (max-height: 450px) and (orientation: landscape) {
+  #hachi-assistant { --hachi-size: 3.2rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #hachi-assistant, .hachi-portrait { animation: none; }
+}
+
+.piano-library-dialog {
+  box-sizing: border-box;
+  width: min(56rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 1.5rem);
+  padding: clamp(.75rem, 3vw, 1.5rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #82687f;
+  border-radius: 16px;
+  background: #251b2f;
+  color: #fff8f3;
+}
+.piano-library-dialog::backdrop { background: #130f1ccc; }
+.piano-library-dialog h3, .piano-library-card h4 { margin: 0; }
+.piano-library-filters { margin-block: .8rem .35rem; }
+.piano-library-filters button[aria-pressed="true"] { border-color: #f4cc98; background: #51405a; }
+.piano-library-count { margin: .55rem 0; color: #e7d6ed; font-size: .85rem; }
+.piano-library-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: .65rem; }
+.piano-library-card { display: flex; flex-direction: column; gap: .55rem; min-width: 0; overflow-wrap: anywhere; }
+.piano-library-card.is-selected { border-color: #f4cc98; }
+.piano-library-card p { margin: 0; }
+.piano-library-card > .row:last-child { margin-top: auto; }
+.piano-library-tags { gap: .3rem; font-size: .76rem; }
+.piano-library-tags span { border-radius: 6px; padding: .18rem .36rem; background: #48374f; }
+.history-slide:last-child { padding-bottom: 5.75rem; }
+@media (max-width: 560px) {
+  #hachi-assistant { --hachi-size: 3.6rem; font-size: .82rem; gap: .45rem; }
+  .hachi-bubble { max-width: 13.8rem; padding: .5rem .68rem .46rem; }
+  .hachi-action { font-size: .78rem; padding: .22rem .42rem; }
+  .piano-library-filters { flex-wrap: nowrap; overflow-x: auto; padding-bottom: .3rem; scrollbar-width: thin; }
+  .piano-library-filters button { flex: 0 0 auto; white-space: nowrap; }
+}

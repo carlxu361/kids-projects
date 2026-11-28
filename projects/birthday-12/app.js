@@ -148,6 +148,7 @@ function syncWorldPlayback() {
 function setCabinetOpen(value) {
   if (cabinetOpen === value) return;
   cabinetOpen = value;
+  queueAssistant();
   syncWorldPlayback();
 }
 
@@ -172,6 +173,7 @@ function activateCinema() {
 function finishTravel() {
   cinemaState = 'idle';
   cinemaTurn = null;
+  queueAssistant();
   stage.classList.remove('stage-exiting');
   const focus = document.activeElement;
   if ((!focus || focus === document.body) && !get('dialog[open]')) stage.focus({ preventScroll: true });
@@ -225,6 +227,7 @@ function travelTo(key) {
   const turn = { key, committed: false };
   cinemaTurn = turn;
   cinemaState = 'travelling';
+  queueAssistant();
   stage.classList.remove('cake-daybreak');
   stage.classList.add('stage-exiting');
   PartyEffects.playTurnSfx?.(key === 'cake' || key === 'finale' ? 'daybreak' : 'book');
@@ -260,14 +263,150 @@ document.addEventListener('keydown', event => {
   if (cinemaState !== 'travelling' || !['Enter', ' ', 'Escape'].includes(event.key) || get('dialog[open]')) return;
   world3d?.accelerate();
 }, true);
-function guideAppearance() {
-  const looks = { '🎩 魔法帽': '🎩', '🎧 耳机': '🎧', '🧢 船员帽': '🧢' };
-  const look = looks[save.outfit];
-  for (const avatar of [get('#guide-look'), get('#scene-avatar')]) {
-    avatar.replaceChildren(element('span', '🍊', 'guide-orange'));
-    if (look) avatar.append(element('span', look, 'guide-accessory'));
+const guideLook = get('#guide-look');
+const assistant = get('#hachi-assistant');
+const assistantMessage = assistant.querySelector('.hachi-message');
+const assistantAction = assistant.querySelector('.hachi-action');
+const assistantClose = assistant.querySelector('.hachi-close');
+const assistantPortrait = assistant.querySelector('.hachi-portrait');
+const actHints = {
+  history: ['cheer', '看完游戏史啦！去试试手吧！', '点一个年代可以回看，也可以让时间轴自己走。'],
+  arcade: ['cheer', '一起玩真开心！去看看你做过的作品吧？', '选一台游戏舱试试，玩完可以回到这里。'],
+  logs: ['star', '送你一颗星！接下来，我想听你弹琴。', '可以给作品鼓掌，也可以翻翻作品档案。'],
+  piano: ['cheer', '好听！还想弹就再选一首。想吹蜡烛了，我也陪你去！', '选一首喜欢的曲子，先试听也可以。'],
+  cake: ['star', '第一块切好啦！该把愿望悄悄想好咯。', '先吹灭蜡烛，再切下第一块蛋糕。'],
+  wishes: ['guide', '有能玩的点子啦！还有几封信等着你呢。', '想个游戏规则，或者先打开一个示例。'],
+  crew: ['star', '信都读完啦！带上星核，一起去看看吧。', '按顺序拆信吧。每封都是写给你的。'],
+  shop: ['star', '收好这份惊喜！还有最后一幕等着我们。', '看看想兑换什么，旁边还有爸爸的礼物。'],
+  finale: ['wave', '生日快乐！下方也能送上祝福。还想一起走一遍吗？', '慢慢看祝福吧。你也可以在下方留一句话。'],
+};
+let actReady = null;
+let assistantDismissed = false;
+let assistantRequested = false;
+let assistantFrame = 0;
+let assistantTarget = null;
+let assistantKey = '';
+
+function hachiAppearance(container, pose) {
+  const image = element('img', null, 'hachi-sprite');
+  image.src = '/birthday/hachi/' + pose + '.webp';
+  image.alt = '向导小八';
+  container.replaceChildren(image);
+  const look = { '🎩 魔法帽': '🎩', '🎧 耳机': '🎧', '🧢 船员帽': '🧢' }[save.outfit];
+  if (look) {
+    const accessory = element('span', look, 'guide-accessory');
+    accessory.setAttribute('aria-hidden', 'true');
+    container.append(accessory);
   }
 }
+
+function guideAppearance(pose = 'guide') {
+  hachiAppearance(guideLook, 'guide');
+  hachiAppearance(get('#scene-avatar'), pose);
+  assistantKey = '';
+  queueAssistant();
+}
+
+function hideAssistant() {
+  if (assistant.contains(document.activeElement) && !get('dialog[open]') && !cabinetOpen) {
+    guideLook.focus({ preventScroll: true });
+  }
+  assistant.hidden = true;
+  guideLook.setAttribute('aria-expanded', 'false');
+}
+
+function positionAssistant(targetEl) {
+  const left = visualViewport?.offsetLeft || 0;
+  const top = visualViewport?.offsetTop || 0;
+  const width = visualViewport?.width || document.documentElement.clientWidth;
+  const height = visualViewport?.height || document.documentElement.clientHeight;
+  const bounds = targetEl?.getBoundingClientRect();
+  const bottomEdge = top + height;
+  const rightEdge = left + width;
+  assistant.style.right = 'max(env(safe-area-inset-right), ' + Math.max(12, innerWidth - rightEdge + 12) + 'px)';
+  assistant.style.maxWidth = Math.max(0, width - 24) + 'px';
+  const ceiling = bounds && bounds.width > 0 ? Math.min(bottomEdge - 8, bounds.top - 8) : bottomEdge - 14;
+  assistant.style.bottom = (innerHeight - ceiling) + 'px';
+  return ceiling - assistant.offsetHeight >= top + 8 && (!bounds || bounds.bottom > top && bounds.top < bottomEdge);
+}
+
+function syncAssistant() {
+  const hint = actHints[save.chapter];
+  const keyboardOpen = document.body.classList.contains('compact-editor') ||
+    Boolean(document.body.style.getPropertyValue('--immersive-height') &&
+      document.documentElement.clientHeight - (visualViewport?.height ?? innerHeight) > 100);
+  if (!hint || cinemaState === 'travelling' || cabinetOpen || get('dialog[open]') || keyboardOpen ||
+      assistantDismissed || (!actReady && !assistantRequested)) {
+    hideAssistant();
+    return;
+  }
+  const ready = actReady?.button;
+  if (ready && (!ready.isConnected || ready.disabled || !ready.getClientRects().length)) {
+    hideAssistant();
+    return;
+  }
+  assistantTarget = ready || null;
+  const [pose, finished, prompt] = hint;
+  const key = save.chapter + ':' + Boolean(ready);
+  if (assistantKey !== key) {
+    assistantKey = key;
+    assistantMessage.textContent = ready ? actReady.message || finished : prompt;
+    assistantAction.hidden = !ready;
+    assistantAction.textContent = ready ? '点这里 → ' + ready.textContent : '';
+    hachiAppearance(assistantPortrait, ready ? actReady.pose || pose : 'guide');
+  }
+  assistant.hidden = false;
+  if (!positionAssistant(ready || stage.querySelector('.immersive-actions, .cake-controls > .row:not(.cake-flavors)'))) {
+    hideAssistant();
+    return;
+  }
+  guideLook.setAttribute('aria-expanded', 'true');
+}
+
+function queueAssistant() {
+  if (assistantFrame) return;
+  assistantFrame = requestAnimationFrame(() => {
+    assistantFrame = 0;
+    syncAssistant();
+  });
+}
+
+function markActReady(targetBtn, options = {}) {
+  if (!targetBtn?.isConnected) return;
+  if (actReady?.button === targetBtn) return;
+  actReady?.button.classList.remove('is-ready-next');
+  actReady = { ...options, button: targetBtn };
+  targetBtn.classList.add('is-ready-next');
+  assistantKey = '';
+  queueAssistant();
+}
+
+function clearActReady() {
+  actReady?.button.classList.remove('is-ready-next');
+  actReady = null;
+  assistantTarget = null;
+  assistantRequested = assistantDismissed = false;
+  assistantKey = '';
+  hideAssistant();
+}
+
+guideLook.addEventListener('click', () => {
+  assistantDismissed = false;
+  assistantRequested = true;
+  syncAssistant();
+});
+assistantClose.addEventListener('click', () => {
+  assistantDismissed = true;
+  hideAssistant();
+});
+assistantAction.addEventListener('click', () => {
+  if (assistantTarget?.isConnected && !assistantTarget.disabled) assistantTarget.click();
+});
+new MutationObserver(queueAssistant).observe(document.body, {
+  subtree: true, attributes: true, attributeFilter: ['open'],
+});
+window.addEventListener('resize', queueAssistant);
+document.addEventListener('scroll', queueAssistant, { capture: true, passive: true });
 
 function turnTo(key) {
   if (turning) turning.skipTransition();
@@ -378,7 +517,7 @@ function go(key) {
     if (idx > 0) card.dataset.act = 'ACT ' + String(idx).padStart(2, '0');
     else delete card.dataset.act;
   }
-  guideAppearance();
+  guideAppearance(({ history: 'wave', arcade: 'cheer', logs: 'star', crew: 'star', shop: 'star', finale: 'wave' })[key]);
   get('#scene-title').textContent = cue[0];
   get('#scene-narration').textContent = cue[1];
   guideBaseText = cue[2];
@@ -439,6 +578,7 @@ function show(key, animate = false) {
   guide.classList.remove('scene-leaving', 'scene-premiere');
   document.body.classList.remove('guide-active');
   stopChapter();
+  clearActReady();
   stopChapter = () => {};
   save.chapter = key;
   document.body.dataset.chapter = key;
@@ -497,6 +637,7 @@ function syncImmersiveHeight() {
   const keyboardTakesSpace = reducedViewport && visualViewport.height < 400 &&
     document.documentElement.clientHeight - visualViewport.height > 100;
   document.body.classList.toggle('compact-editor', Boolean(keyboardTakesSpace));
+  queueAssistant();
   if (reducedViewport) {
     document.body.style.setProperty('--immersive-height', visualViewport.height + 'px');
   } else {
@@ -524,7 +665,7 @@ function intro() {
   }, { once: true });
 }
 
-function timeline(eras, view, nextButton) {
+function timeline(eras, view, onComplete, onResume) {
   const SLIDE_INTERVAL = 3000;
   const listeners = new AbortController();
   const { signal } = listeners;
@@ -556,7 +697,8 @@ function timeline(eras, view, nextButton) {
   const counter = element('span', '1 / ' + eras.length, 'history-counter mono');
   const prevBtn = button('‹ 上一年代', () => { goToSlide(activeIndex - 1); }, 'history-prev');
   const toggleBtn = button('暂停滚动', () => {
-    setPaused(!paused);
+    if (finished) goToSlide(0);
+    else setPaused(!paused);
   }, 'history-toggle');
   toggleBtn.setAttribute('aria-pressed', 'false');
   const nextEraBtn = button('下一年代 ›', () => { goToSlide(activeIndex + 1); }, 'history-next');
@@ -573,6 +715,7 @@ function timeline(eras, view, nextButton) {
   const nodeButtons = [];
   const slides = [];
   let activeIndex = 0;
+  let finished = false;
   let paused = false;
   let elapsed = 0;
   let cycleStartedAt = 0;
@@ -605,7 +748,7 @@ function timeline(eras, view, nextButton) {
 
   function scheduleCycle() {
     clearTimers();
-    if (!alive || paused || document.hidden || eras.length <= 1) {
+    if (!alive || finished || paused || document.hidden || eras.length <= 1) {
       cycleStartedAt = 0;
       dwellFill.style.transform = 'scaleX(' + Math.min(1, elapsed / SLIDE_INTERVAL).toFixed(4) + ')';
       return;
@@ -684,7 +827,18 @@ function timeline(eras, view, nextButton) {
 
   function goToSlide(index, resetCycle = true) {
     if (!eras.length) return;
-    activeIndex = ((index % eras.length) + eras.length) % eras.length;
+    const wasFinished = finished;
+    activeIndex = Math.max(0, Math.min(eras.length - 1, index));
+    finished = activeIndex === eras.length - 1;
+    prevBtn.disabled = activeIndex <= 0;
+    nextEraBtn.disabled = finished;
+    axis.classList.toggle('is-finished', finished);
+    if (finished || wasFinished) {
+      paused = false;
+      axis.classList.remove('is-paused');
+      toggleBtn.setAttribute('aria-pressed', 'false');
+      toggleBtn.textContent = finished ? '重播时间轴' : '暂停滚动';
+    }
     track.style.transform = 'translateX(-' + (activeIndex * 100) + '%)';
     trackFill.style.width = (eras.length > 1 ? (activeIndex / (eras.length - 1)) * 100 : 100) + '%';
     counter.textContent = (activeIndex + 1) + ' / ' + eras.length;
@@ -706,7 +860,15 @@ function timeline(eras, view, nextButton) {
       if (current) slide.scrollTop = 0;
     });
 
-    nextButton?.classList.toggle('is-ready-next', activeIndex === eras.length - 1);
+    if (finished) {
+      clearTimers();
+      cycleStartedAt = 0;
+      elapsed = SLIDE_INTERVAL;
+      dwellFill.style.transform = 'scaleX(1)';
+      if (!wasFinished) onComplete?.();
+      return;
+    }
+    if (wasFinished) onResume?.();
     if (resetCycle) {
       elapsed = 0;
       cycleStartedAt = 0;
@@ -770,7 +932,7 @@ function history() {
   const view = views.add(element('section', null, 'history-stage-view'));
   views.show(view, [], null);
   const nextBtn = next(views.actions, 'arcade', '试玩一下经典游戏');
-  const exhibit = timeline(data.history, view, nextBtn);
+  const exhibit = timeline(data.history, view, () => markActReady(nextBtn), clearActReady);
   view.before(exhibit.axis);
   stopChapter = exhibit.stop;
 }
@@ -844,9 +1006,11 @@ function arcade() {
     history.rel = 'noopener noreferrer';
     const best = element('span', '最高分 ' + (highs[game.id] || 0), 'arcade-best');
     const launch = button('开始挑战', () => {
+      let playedRound = false;
       PartyEffects.pauseSky(true);
       setCabinetOpen(true);
       cabinet.open(game, (score, victory) => {
+        playedRound = true;
         highs[game.id] = Math.max(highs[game.id] || 0, score);
         best.textContent = '最高分 ' + highs[game.id];
         const wins = save.arcadeWins ||= [];
@@ -862,6 +1026,7 @@ function arcade() {
         PartyEffects.pauseSky(false);
         setCabinetOpen(false);
         showLocal(launch);
+        if (playedRound) markActReady(continueStory);
       });
     }, 'primary');
     const artwork = element('div', null, 'arcade-art');
@@ -881,11 +1046,13 @@ function arcade() {
     launch.href = href;
     launch.target = '_blank';
     launch.rel = 'noopener noreferrer';
+    launch.addEventListener('click', () => markActReady(continueStory));
     tile.append(element('h3', title), element('p', prompt), launch);
     classics.append(tile);
   }
   classicsView.append(classics);
   showLocal(null);
+  if (Object.keys(highs).length || save.arcadeWins?.length) markActReady(continueStory);
   stopChapter = () => {
     cabinet.stop();
     setCabinetOpen(false);
@@ -905,10 +1072,11 @@ function logs() {
   views.actions.before(categories);
   const continueStory = button('听听你的钢琴', () => go('piano'), 'primary scene-next');
 
-  function addCategory(label, view, extra = []) {
+  function addCategory(label, view, extra = [], onView) {
     const control = button(label, () => {
       for (const tab of categories.children) tab.setAttribute('aria-pressed', String(tab === control));
       views.show(view, [...extra, continueStory], null);
+      onView?.();
     });
     categories.append(control);
   }
@@ -925,6 +1093,7 @@ function logs() {
   });
   const applause = button('为你的作品鼓掌', () => {
     celebrate();
+    markActReady(continueStory);
     applause.textContent = '再鼓一次掌';
     ovation.textContent = '掌声送给你，也送给每一次愿意动手试试的你。';
   }, 'primary');
@@ -1002,7 +1171,20 @@ function logs() {
     renderWorks(false);
     archive.append(controls, groups);
     archiveView.append(archive);
-    addCategory('作品档案', archiveView);
+    const logListeners = new AbortController();
+    archiveView.addEventListener('scroll', () => {
+      if (!archiveView.isConnected || archiveView.hidden || archiveView.scrollHeight <= 0) return;
+      if (archiveView.scrollTop + archiveView.clientHeight >= archiveView.scrollHeight - 2) {
+        markActReady(continueStory);
+      }
+    }, { signal: logListeners.signal });
+    addCategory('作品档案', archiveView, [], () => {
+      if (archiveView.isConnected && archiveView.scrollHeight > 0 &&
+          archiveView.scrollHeight <= archiveView.clientHeight + 2) {
+        markActReady(continueStory);
+      }
+    });
+    stopChapter = () => logListeners.abort();
   }
 
   const memoryView = views.add();
@@ -1018,7 +1200,7 @@ function logs() {
   memories.append(...memoryPages);
   if (memoryPages.length) memoryView.append(memories);
   memoryView.append(element('p', '还记得哪个点子是你最想试的吗？有空就挑一个，做个小版本，看看会发生什么。生日快乐，橙子。', 'growth-sendoff'));
-  addCategory(entries.length ? '对话回忆' : '寄语', memoryView);
+  addCategory(entries.length ? '对话回忆' : '寄语', memoryView, [], () => markActReady(continueStory));
   categories.firstElementChild.click();
 }
 
@@ -1090,12 +1272,26 @@ function piano() {
       [[0, ['D3', 'F3', 'A3'], 3.5, .95]],
     ],
   };
+  const asMidi = note => {
+    try {
+      const midi = typeof note === 'number' ? note : midiFor(note);
+      return Number.isInteger(midi) && midi >= 36 && midi <= 84 ? midi : null;
+    } catch { return null; }
+  };
+  const hasLeftHand = song => Boolean(song?.events?.some(event => event.hand === 'left'));
   function arrange(song, description = song.description) {
-    const meter = song.meter || 4;
+    const meter = Number.isFinite(song.meter) && song.meter > 0 ? song.meter : 4;
     const events = ['left', 'right'].flatMap(hand => song[hand].flatMap((bar, i) =>
-      bar.flatMap(([offset, chord, length, velocity = hand === 'left' ? .58 : .79]) =>
-        [chord].flat().map(note => ({note: midiFor(note), at: i * meter + offset, length, velocity, hand})))));
-    return {title: song.name, bpm: song.tempo, meter, description, events, duration: song.right.length * meter};
+      bar.flatMap(([offset, chord, length, velocity = hand === 'left' ? .58 : .79]) => {
+        if (!Number.isFinite(offset) || offset < 0 || !Number.isFinite(length) || length <= 0) return [];
+        return [chord].flat().flatMap(note => {
+          const midi = asMidi(note);
+          return midi == null ? [] : [{ note: midi, at: i * meter + offset, length, velocity, hand }];
+        });
+      })));
+    const bars = Math.max(song.left.length, song.right.length);
+    const duration = events.reduce((end, event) => Math.max(end, event.at + event.length), bars * meter);
+    return { ...song, title: song.title || song.name, bpm: song.tempo ?? song.bpm, meter, description, events, duration };
   }
   const tracks = [
     arrange(birthday),
@@ -1105,17 +1301,35 @@ function piano() {
     arrange(boss),
   ];
   const encores = data.songs.map(song => {
-    const phrases = song.phrases || [{notes: song.notes, beats: song.notes.map(() => 1)}];
+    if (Array.isArray(song.left) && Array.isArray(song.right)) return arrange(song);
+    const phrases = Array.isArray(song.phrases) && song.phrases.length
+      ? song.phrases
+      : [{ notes: Array.isArray(song.notes) ? song.notes : [], beats: [] }];
     let at = 0;
-    const events = phrases.flatMap(phrase => phrase.notes.map((note, index) => {
-      const beats = phrase.beats[index];
-      const event = {note, at, length: beats * .89, velocity: index % 4 ? .67 : .86, hand: 'right'};
+    const events = phrases.flatMap(phrase => (Array.isArray(phrase.notes) ? phrase.notes : []).flatMap((note, index) => {
+      const rawBeat = Number(phrase.beats?.[index]);
+      const beats = Number.isFinite(rawBeat) && rawBeat > 0 ? rawBeat : 1;
+      const midi = asMidi(note);
+      const event = midi == null ? null : { note: midi, at, length: beats * .89, velocity: index % 4 ? .67 : .86, hand: 'right' };
       at += beats;
-      return event;
+      return event ? [event] : [];
     }));
-    return {...song, meter: 4, description: '加演 · 单手旋律', events, duration: at};
+    return {...song, title: song.title || song.name, bpm: song.bpm ?? song.tempo, meter: song.meter || 4, description: song.description || '加演 · 单手旋律', events, duration: at};
   });
   const completed = new Set(Array.isArray(save.pianoLevels) ? save.pianoLevels : []);
+  const extraCompleted = new Set(Array.isArray(save.pianoExtraCompleted) ? save.pianoExtraCompleted : []);
+  const library = Array.isArray(window.BirthdayPianoLibrary) ? window.BirthdayPianoLibrary : [];
+  const songGroups = [
+    { id: 'main', label: '生日主线 · 收集星核（5 首双手）',
+      entries: tracks.map((song, index) => [String(index), song]) },
+    ...library.map(group => ({ id: 'lib-' + group.id, label: group.label,
+      entries: group.songs.map(song => ['lib-' + group.id + '-' + song.id, arrange(song)]) })),
+    { id: 'encore', label: '加演 · 特选曲目',
+      entries: encores.map((song, index) => ['extra-' + index, song]) },
+  ].filter(group => group.entries.length);
+  const allSongs = new Map(songGroups.flatMap(group => group.entries));
+  const mainLevels = ['入门', '初级', '进阶', '挑战', 'Boss'];
+  const isMain = id => /^[0-4]$/.test(id);
   const panel = element('div', null, 'piano-studio');
   stage.append(panel);
   const top = element('div', null, 'piano-toolbar');
@@ -1210,20 +1424,16 @@ function piano() {
   picker.setAttribute('aria-label', '选择曲目');
   picker.append(element('option', '自由弹奏'));
   picker.options[0].value = '';
-  tracks.forEach((song, index) => {
-    const option = element('option', (index + 1) + ' · ' + song.title);
-    option.value = String(index);
-    picker.append(option);
-  });
-  if (encores.length) {
-    const extras = element('optgroup');
-    extras.label = '加演 · 原生日曲目';
-    encores.forEach((song, index) => {
-      const option = element('option', song.title + (song.draft ? ' · 样谱' : ''));
-      option.value = 'extra-' + index;
-      extras.append(option);
-    });
-    picker.append(extras);
+  for (const { label, entries } of songGroups) {
+    const group = element('optgroup');
+    group.label = label;
+    for (const [id, song] of entries) {
+      const prefix = isMain(id) ? (Number(id) + 1) + ' · ' : '';
+      const option = element('option', prefix + song.title + (song.draft ? ' · 样谱' : ''));
+      option.value = id;
+      group.append(option);
+    }
+    picker.append(group);
   }
   const status = element('p', null, 'piano-status');
   const source = element('a', '曲谱来源', 'piano-source');
@@ -1400,22 +1610,8 @@ function piano() {
       const weighted = total ? (run.perfect + run.good * .7) / total : 1;
       const grade = weighted >= .88 && run.miss <= 2 ? 'S' : hitRate >= 72 ? 'A' : hitRate >= 50 ? 'B' : 'C';
       const passed = grade !== 'C';
-      let rewardNote = '';
-      if (passed && !isEncore()) {
-        const index = Number(picker.value);
-        if (!completed.has(index)) {
-          completed.add(index);
-          save.pianoLevels = [...completed];
-          if (!save.songs.includes(index)) {
-            save.songs.push(index);
-            save.stars += 3;
-            rewardNote = ' · 获得 3 星核';
-          }
-          persist();
-          celebrate();
-        }
-        candles.textContent = Math.min(12, completed.size * 3) + ' / 12 根蜡烛';
-      }
+      const rewardNote = passed && completeSong() ? ' · 获得 3 星核' : '';
+      candles.textContent = Math.min(12, completed.size * 3) + ' / 12 根蜡烛';
       rhythmCue.textContent = '评级 ' + grade + ' · ' + run.score + ' 分';
       rhythmCue.className = 'piano-judge-cue is-grade';
       rhythmCue.hidden = false;
@@ -1511,7 +1707,11 @@ function piano() {
     playback.voices = events.map(event => sampler.play(event.note, start + event.at * scale, event.length * scale, event.velocity));
     function animate() {
       const now = (context.currentTime - start) / scale;
-      if (now > song.duration + .8) { stopPreview(); return; }
+      if (now > song.duration + .8) {
+        stopPreview();
+        markActReady(cakeButton);
+        return;
+      }
       for (const key of controls.values()) key.classList.remove('demo-key', 'demo-left');
       const visible = [];
       for (const event of events) {
@@ -1562,8 +1762,32 @@ function piano() {
   roll.setAttribute('aria-hidden', 'true');
   const rhythmCue = element('div', null, 'piano-judge-cue');
   rhythmCue.hidden = true;
-  const isEncore = () => picker.value.startsWith('extra-');
-  const selectedSong = () => isEncore() ? encores[Number(picker.value.slice(6))] : picker.value !== '' ? tracks[Number(picker.value)] : null;
+  const selectedSong = () => allSongs.get(picker.value);
+  function completeSong() {
+    const id = picker.value;
+    markActReady(cakeButton);
+    if (!isMain(id)) {
+      if (!extraCompleted.has(id)) {
+        extraCompleted.add(id);
+        save.pianoExtraCompleted = [...extraCompleted];
+        persist();
+        celebrate();
+      }
+      return false;
+    }
+    const index = Number(id);
+    if (completed.has(index)) return false;
+    completed.add(index);
+    save.pianoLevels = [...completed];
+    const earnsStars = !save.songs.includes(index);
+    if (earnsStars) {
+      save.songs.push(index);
+      save.stars += 3;
+    }
+    persist();
+    celebrate();
+    return earnsStars;
+  }
   const selectedEvents = song => song.events.filter(event => hands.value === 'both' || event.hand === hands.value);
   function autoAlignKeyboard(song) {
     if (!song) {
@@ -1595,10 +1819,11 @@ function piano() {
     stopRhythm();
     rhythmCue.hidden = true;
     const song = selectedSong();
-    const wasEncore = hands.options[0].disabled;
-    hands.options[0].disabled = hands.options[2].disabled = isEncore();
-    if (isEncore()) hands.value = 'right';
-    else if (wasEncore) hands.value = 'both';
+    const wasSingle = hands.options[0].disabled;
+    const hasLeft = hasLeftHand(song);
+    hands.options[0].disabled = hands.options[2].disabled = !hasLeft;
+    if (!hasLeft) hands.value = 'right';
+    else if (wasSingle) hands.value = 'both';
     const byBeat = new Map();
     for (const event of song ? selectedEvents(song) : []) {
       if (!byBeat.has(event.at)) byBeat.set(event.at, []);
@@ -1807,23 +2032,13 @@ function piano() {
     playedNotes.clear();
     position++;
     if (position < groups.length) { refresh(); return; }
-    if (isEncore()) { refresh(song.title + ' · 加演完成'); return; }
-    const index = Number(picker.value);
-    if (!completed.has(index)) {
-      completed.add(index);
-      save.pianoLevels = [...completed];
-      if (!save.songs.includes(index)) {
-        save.songs.push(index);
-        save.stars += 3;
-      }
-      persist();
-    }
+    completeSong();
+    const following = isMain(picker.value) ? tracks[Number(picker.value) + 1] : null;
+    refresh(song.title + ' 完成' + (following ? ' · 下一首 ' + following.title : ''));
+    if (!following) return;
     transitioning = true;
-    const following = tracks[index + 1];
-    refresh(song.title + ' 完成 · ' + (following ? '下一首 ' + following.title : '前往切蛋糕'));
     advance = setTimeout(() => {
-      if (!following) { go('cake'); return; }
-      picker.value = String(index + 1);
+      picker.value = String(Number(picker.value) + 1);
       transitioning = false;
       prepareSong(true);
     }, 850);
@@ -1908,8 +2123,17 @@ function piano() {
       key.setAttribute('aria-label', label + (letter ? ' ' + letter : ''));
     }
   }
+  let lowest = 36;
+  let highest = 88;
+  for (const song of allSongs.values()) {
+    for (const { note } of song.events) {
+      lowest = Math.min(lowest, note);
+      highest = Math.max(highest, note);
+    }
+  }
+  lowest = Math.floor(lowest / 12) * 12;
   let white = 0;
-  for (let note = 36; note <= 84; note++) {
+  for (let note = lowest; note <= highest; note++) {
     const label = nameFor(note).replace('#', '♯');
     const black = label.includes('♯');
     const key = element('button', null, (black ? 'concert-key black-key' : 'concert-key white-key') + (note === 60 ? ' middle-c' : ''));
@@ -1921,6 +2145,7 @@ function piano() {
     controls.set(note, key);
     keyboard.append(key);
   }
+  keyboard.style.setProperty('--white-keys', white);
   keyboard.addEventListener('pointerdown', event => {
     const key = event.target.closest('.concert-key');
     if (!key || (event.pointerType === 'mouse' && event.button !== 0)) return;
@@ -1992,13 +2217,14 @@ function piano() {
     stopPreview();
     stopMic();
   };
-  picker.addEventListener('change', () => {
+  function changeSong() {
     clearTimeout(advance);
     stopPreview();
     if (picker.value === '') stopMic();
     transitioning = false;
     prepareSong(true);
-  });
+  }
+  picker.addEventListener('change', changeSong);
   hands.addEventListener('change', () => {
     clearTimeout(advance);
     transitioning = false;
@@ -2015,7 +2241,71 @@ function piano() {
   picker.value = String(Math.max(first, 0));
   top.append(heading, candles);
   const transport = element('div', null, 'birthday-piano-transport');
-  transport.append(picker, hands, modeSelect, rhythmButton, preview, micButton);
+  const browser = element('dialog', null, 'piano-library-dialog');
+  const libraryTitle = element('h3', '双手曲库');
+  libraryTitle.id = 'piano-library-title';
+  browser.setAttribute('aria-labelledby', libraryTitle.id);
+  const libraryTop = element('div', null, 'panel-top');
+  const closeLibrary = button('关闭', () => browser.close());
+  libraryTop.append(libraryTitle, closeLibrary);
+  const filters = element('div', null, 'row piano-library-filters');
+  filters.setAttribute('role', 'group');
+  filters.setAttribute('aria-label', '曲目分类');
+  const songCount = element('p', null, 'piano-library-count');
+  songCount.setAttribute('aria-live', 'polite');
+  const songCards = element('div', null, 'piano-library-grid');
+  let filter = '';
+  for (const [id, label] of [['', '全部'], ...songGroups.map(group => [group.id, group.label])]) {
+    const filterButton = button(label, () => {
+      filter = id;
+      renderLibrary();
+    });
+    filterButton.dataset.category = id;
+    filters.append(filterButton);
+  }
+  function chooseLibrarySong(id, listen) {
+    picker.value = id;
+    if (listen && hasLeftHand(selectedSong())) hands.value = 'both';
+    changeSong();
+    browser.close();
+    keyboardWindow.focus({ preventScroll: true });
+    if (listen) playDemo(selectedSong());
+  }
+  function renderLibrary() {
+    const entries = filter ? songGroups.find(group => group.id === filter).entries : [...allSongs];
+    for (const control of filters.children) {
+      control.setAttribute('aria-pressed', String(control.dataset.category === filter));
+    }
+    songCount.textContent = '显示 ' + entries.length + ' 首 · 共 ' + allSongs.size + ' 首';
+    songCards.replaceChildren(...entries.map(([id, song]) => {
+      const card = element('article', null, 'tile piano-library-card');
+      const main = isMain(id);
+      const selected = id === picker.value;
+      const cleared = main ? completed.has(Number(id)) : extraCompleted.has(id);
+      card.classList.toggle('is-selected', selected);
+      const tags = element('div', null, 'row piano-library-tags');
+      const level = song.level || (main ? mainLevels[Number(id)] : '初级');
+      for (const label of [level, hasLeftHand(song) ? '双手 L+R' : '单手',
+        (song.meter || 4) + '/4 · ' + song.bpm + ' BPM',
+        selected && '当前曲目', cleared && '已通关'].filter(Boolean)) {
+        tags.append(element('span', label));
+      }
+      const controls = element('div', null, 'row');
+      controls.append(button('选择练习', () => chooseLibrarySong(id, false), 'primary'),
+        button('试听', () => chooseLibrarySong(id, true)));
+      card.append(element('h4', song.title), tags);
+      if (song.description) card.append(element('p', song.description));
+      card.append(controls);
+      return card;
+    }));
+  }
+  browser.append(libraryTop, filters, songCount, songCards);
+  const openLibrary = button('双手曲库（' + allSongs.size + ' 首）', () => {
+    renderLibrary();
+    browser.showModal();
+  });
+  openLibrary.setAttribute('aria-haspopup', 'dialog');
+  transport.append(picker, openLibrary, hands, modeSelect, rhythmButton, preview, micButton);
   scoreHeader.append(status, detail, legend);
   queueBar.append(syncBadge, sequence, metricsBadge);
   stand.append(scoreHeader, phrases, progress, queueBar);
@@ -2044,15 +2334,16 @@ function piano() {
   settings.append(settingsTop, settingsControls, fallback);
   const actions = element('div', null, 'row immersive-actions piano-actions');
   actions.append(button('演奏设置', () => settings.showModal()));
-  next(actions, 'cake', '去吹蜡烛');
+  const cakeButton = next(actions, 'cake', '去吹蜡烛');
   const pianoMain = element('div', null, 'piano-play-area');
   pianoMain.append(stand, zoneGuide, keyboardWindow);
   const pianoControls = element('div', null, 'piano-control-panel');
   pianoControls.append(transport, micStatus);
   const workspace = element('div', null, 'piano-workspace');
   workspace.append(pianoControls, pianoMain);
-  panel.append(top, workspace, actions, settings);
+  panel.append(top, workspace, actions, settings, browser);
   prepareSong(true);
+  if (completed.size) markActReady(cakeButton);
 }
 
 function cake() {
@@ -2129,6 +2420,7 @@ function cake() {
       save.cakeCut = true;
       persist();
       wishLink.hidden = false;
+      markActReady(wishLink);
       wishLink.focus({ preventScroll: true });
     },
   });
@@ -2335,19 +2627,25 @@ function wishes() {
   }
   function showResults(focus) {
     views.show(results, [openEditor, openPremade, continueStory], focus);
+    markActReady(continueStory);
   }
   function showPremade(focus) {
     views.show(premade, [openEditor, continueStory], focus);
   }
-  function play(game, onResult, onBack) {
+  function play(game, onResult, onBack, readyOptions = {}) {
+    let completedRound = false;
     setCabinetOpen(true);
     if (game.id === 'fireflies') PartyEffects.focus(true);
     else PartyEffects.pauseSky(true);
-    cabinet.open(game, onResult, () => {
+    cabinet.open(game, (score, victory) => {
+      completedRound = true;
+      return onResult(score, victory);
+    }, () => {
       PartyEffects.focus(false);
       PartyEffects.pauseSky(false);
       setCabinetOpen(false);
       onBack();
+      if (completedRound) markActReady(continueStory, readyOptions);
     });
   }
   const studio = wishStudio(editor, results, showEditor, showResults, (result, opener) => {
@@ -2368,7 +2666,7 @@ function wishes() {
         if (first) { wins.push(game.id); save.stars += 2; celebrate(); }
         persist();
         return first;
-      }, () => showPremade(open));
+      }, () => showPremade(open), save.wishes?.length || studio.hasResult() ? {} : { message: '这局玩得真不错！还有几封信等着你呢。' });
     }, 'primary');
     card.append(element('div', game.icon, 'wish-mark ' + game.id), element('h3', game.title),
       element('p', game.summary), element('p', game.lesson, 'history-lesson'), best, open);
@@ -2376,6 +2674,10 @@ function wishes() {
   }
   premade.append(cards);
   showEditor(null);
+  if (save.wishes?.length) markActReady(continueStory);
+  else if (Object.keys(records).length || save.wishWins?.length) {
+    markActReady(continueStory, { message: '玩过一轮啦！还有几封信等着你呢。' });
+  }
   stopChapter = () => {
     cabinet.stop();
     setCabinetOpen(false);
@@ -2420,12 +2722,12 @@ function crew() {
   const views = immersiveViews(panel);
   const crewView = views.add(element('section', null, 'showcase-stage crew-display'));
   const optionsView = views.add();
-  if (data.guideArt && /^[\w.-]+\.webp$/.test(data.guideArt)) {
-    const guide = element('img', null, 'guide-art');
-    guide.alt = '生日向导';
-    guide.src = '/birthday/media/' + encodeURIComponent(data.guideArt);
-    crewView.append(guide);
-  }
+  const portrait = element('img', null, 'guide-art');
+  portrait.alt = '向导小八';
+  portrait.src = data.guideArt && /^[\w.-]+\.webp$/.test(data.guideArt)
+    ? '/birthday/media/' + encodeURIComponent(data.guideArt)
+    : '/birthday/hachi/wave.webp';
+  crewView.append(portrait);
   const roster = element('div', null, 'letter-roster showcase');
   const dialog = element('dialog', null, 'letter-dialog');
   dialog.setAttribute('aria-labelledby', 'letter-title');
@@ -2501,7 +2803,10 @@ function crew() {
     outfit.append(control);
   }
   outfit.prepend(outfitText);
-  const openShop = button('进入星核商店', () => go('shop'), 'primary');
+  const openShop = button('进入星核商店', () => go('shop'), 'primary scene-next');
+  dialog.addEventListener('close', () => {
+    if (openShop.isConnected && !openShop.disabled && !dialog.open) markActReady(openShop);
+  });
   function rosterState() {
     let nextIndex = data.family.findIndex(member => !save.crew.includes(member.id));
     if (nextIndex < 0) nextIndex = data.family.length;
@@ -2536,6 +2841,7 @@ function crew() {
   const back = button('回到来信', () => views.show(crewView, [options, openShop], options));
   views.show(crewView, [options, openShop], null);
   rosterState();
+  if (!openShop.disabled) markActReady(openShop);
 }
 
 function receipt(item) {
@@ -2598,6 +2904,7 @@ function shop() {
       tile.classList.add('reward-redeemed', 'reward-just-redeemed');
       status.textContent = stored ? '兑换成功。刷新或重播后还可以查看这张券。' : '这次兑换还在当前页面，请打开兑换券下载留存。';
       ticket.focus({ preventScroll: true });
+      markActReady(advance);
     });
     purchase.disabled = owned;
     tile.classList.toggle('reward-redeemed', owned);
@@ -2633,6 +2940,7 @@ function shop() {
         [72, 76, 79, 83, 86].forEach((note, index) => playNote(note, index * .09, .85));
       }
       PartyEffects.playGiftSfx?.();
+      markActReady(advance);
     }, 'primary');
     unlock.disabled = !ready;
     gift.append(element('p', '已拥有', 'mono'), element('h3', '爸爸的礼物'), unlock);
@@ -2641,9 +2949,13 @@ function shop() {
   rewards.append(cards, status);
   giftView.append(gift);
   const advance = button('走向最后一幕', () => go('finale'), 'primary scene-next');
-  const showGift = button('生日礼物', () => views.show(giftView, [back, advance]));
+  const showGift = button('生日礼物', () => {
+    views.show(giftView, [back, advance]);
+    if (ready && save.gift) markActReady(advance);
+  });
   const back = button('回到兑换', () => views.show(rewards, [showGift, advance], showGift));
   views.show(rewards, [showGift, advance], null);
+  if ((ready && save.gift) || save.purchases?.length) markActReady(advance);
   stopChapter = () => shopTimers.forEach(clearTimeout);
 }
 
@@ -2701,6 +3013,7 @@ function finale() {
     stopRoll = startTextScroll(view, () => {
       pause();
       scheduleTilt();
+      markActReady(again);
     });
   }
   function interact() {
@@ -2708,7 +3021,9 @@ function finale() {
     clearTilt(true);
     scheduleTilt();
   }
-  for (const event of ['wheel', 'pointerdown', 'keydown']) view.addEventListener(event, interact);
+  const finaleListeners = new AbortController();
+  const { signal } = finaleListeners;
+  for (const event of ['wheel', 'pointerdown', 'keydown']) view.addEventListener(event, interact, { signal });
   const motion = event => {
     if (event.matches) {
       pause();
@@ -2716,16 +3031,26 @@ function finale() {
     }
   };
   reduceMotion.addEventListener('change', motion);
-  const again = button('重新播放', () => go('intro'), 'primary');
+  const again = button('重新播放', () => go('intro'), 'primary scene-next');
   views.actions.classList.add('finale-actions');
   views.show(view, [playback, again, button('回看兑换券', () => go('shop'))], null);
-  if (!reduceMotion.matches) play();
-  if (view.scrollHeight <= view.clientHeight + 2) scheduleTilt();
+  const fits = view.scrollHeight <= view.clientHeight + 2;
+  let readyTimer;
+  if (fits) {
+    scheduleTilt();
+    readyTimer = setTimeout(() => markActReady(again), 3000);
+  } else if (!reduceMotion.matches) play();
+  view.addEventListener('scroll', () => {
+    if (!view.isConnected || view.scrollHeight <= 0) return;
+    if (!fits && view.scrollTop + view.clientHeight >= view.scrollHeight - 1) markActReady(again);
+  }, { signal });
   celebrate();
   const bursts = [setTimeout(celebrate, 950), setTimeout(celebrate, 2100)];
   stopChapter = () => {
+    finaleListeners.abort();
     pause();
     clearTilt(true);
+    clearTimeout(readyTimer);
     reduceMotion.removeEventListener('change', motion);
     bursts.forEach(timer => clearTimeout(timer));
   };
