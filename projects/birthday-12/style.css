@@ -2856,6 +2856,15 @@ body.history-mode .history-chapter > :is(.mono, h2, .lead, .immersive-actions) {
   background: #4ef2df;
   box-shadow: 0 0 10px #4ef2df;
 }
+.wish-ai-badge.is-exhausted {
+  border-color: rgba(245, 185, 98, .5);
+  background: rgba(61, 40, 24, .72);
+  color: #ffdda6;
+}
+.wish-ai-badge.is-exhausted .wish-ai-dot {
+  background: #efb75f;
+  box-shadow: 0 0 8px rgba(239, 183, 95, .55);
+}
 .wish-history {
   display: grid;
   gap: .55rem;

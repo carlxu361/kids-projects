@@ -2450,11 +2450,11 @@ function wishStudio(view, results, showEditor, showResults, playPrototype) {
   const studio = element('section', null, 'wish-studio');
   const aiReady = data.wishAiConfigured === true;
   const aiBadge = element('p', null, 'wish-ai-badge' + (aiReady ? ' is-ready' : ''));
+  aiBadge.setAttribute('aria-live', 'polite');
   const aiDot = element('span', null, 'wish-ai-dot');
   aiDot.setAttribute('aria-hidden', 'true');
-  aiBadge.append(aiDot, element('span', aiReady
-    ? '✨ AI 许愿接口已就绪'
-    : '本地示例模式（配置 Vercel 环境变量 AI_API_BASE / AI_API_KEY 后启用实时 AI）'));
+  const aiBadgeText = element('span');
+  aiBadge.append(aiDot, aiBadgeText);
   const form = element('form');
   const label = element('label', '你想做一个什么游戏？');
   label.htmlFor = 'wish-idea';
@@ -2474,8 +2474,64 @@ function wishStudio(view, results, showEditor, showResults, playPrototype) {
   let current;
   let last;
   let cancel;
+  let refreshing = false;
+  let submitLabel = send.textContent;
   const settings = ['轻松', '标准', '进阶'];
+  const prototypeFields = ['title', 'template', 'palette', 'difficulty', 'goal', 'pitch', 'choice', 'reason', 'nextPrompt'];
+  function cleanPrototype(item) {
+    if (!item || typeof item !== 'object') return null;
+    const clean = {};
+    for (const key of prototypeFields) {
+      if (Object.hasOwn(item, key)) clean[key] = item[key];
+    }
+    return clean;
+  }
+  const refreshQuota = button('刷新余量', async () => {
+    if (refreshing) return;
+    refreshing = true;
+    renderQuota();
+    status.textContent = '正在核对当前网络剩余次数…';
+    try {
+      const response = await fetch('/birthday/data', { cache: 'no-store' });
+      const fresh = response.ok ? await response.json().catch(() => null) : null;
+      if (fresh && Object.hasOwn(fresh, 'wishQuota')) {
+        data.wishQuota = fresh.wishQuota;
+        const { limit = 3, remaining } = data.wishQuota || {};
+        status.textContent = remaining === 0
+          ? `当前网络 ${limit} 次 AI 许愿仍已用完，可以打开示例或试玩历史原型。`
+          : remaining == null
+            ? '暂未查到精确余量，可以直接重新提交试试。'
+            : `已更新：当前网络剩余 ${remaining} / ${limit} 次，可以继续生成。`;
+      } else {
+        status.textContent = '暂时无法刷新余量，请稍后再试。';
+      }
+    } catch {
+      status.textContent = '暂时无法刷新余量，请稍后再试。';
+    } finally {
+      refreshing = false;
+      renderQuota();
+    }
+  });
+  function renderQuota() {
+    const { limit = 3, remaining } = data.wishQuota || {};
+    const exhausted = aiReady && remaining === 0;
+    aiBadge.classList.toggle('is-ready', aiReady && !exhausted);
+    aiBadge.classList.toggle('is-exhausted', exhausted);
+    if (!aiReady) {
+      aiBadgeText.textContent = '本地示例模式（配置 Vercel 环境变量 AI_API_BASE / AI_API_KEY 后启用实时 AI）';
+    } else if (exhausted) {
+      aiBadgeText.textContent = `当前网络 ${limit} 次 AI 许愿已用完 · 可继续回看原型或打开示例`;
+    } else {
+      aiBadgeText.textContent = '✨ AI 许愿接口已就绪 · 当前网络' +
+        (remaining == null ? `最多可生成 ${limit} 次` : `剩余 ${remaining} / ${limit} 次`);
+    }
+    send.textContent = exhausted ? `本网络 ${limit} 次机会已用完` : submitLabel;
+    send.disabled = !aiReady || exhausted || Boolean(cancel);
+    refreshQuota.hidden = !exhausted;
+    refreshQuota.disabled = refreshing;
+  }
   const examples = button('打开示例', () => {
+    cancel?.abort();
     if (!prompt.value.trim()) prompt.value = '做一个要躲暗礁、收集星核的太空运输游戏。';
     present(wishExample, '示例 · 第一版', true);
     status.textContent = '先试玩第一版，再查看放慢速度后的区别。';
@@ -2534,7 +2590,8 @@ function wishStudio(view, results, showEditor, showResults, playPrototype) {
     const usable = button('试玩这一版', () => playPrototype(result, usable), 'primary');
     tools.append(usable, button('把改法填进输入框', () => {
       prompt.value = result.nextPrompt;
-      send.textContent = '用这句反馈再做一版';
+      submitLabel = '用这句反馈再做一版';
+      renderQuota();
       showEditor(prompt);
     }));
     if (example && result === wishExample) tools.append(button('查看示例第二版', () => {
@@ -2549,55 +2606,53 @@ function wishStudio(view, results, showEditor, showResults, playPrototype) {
     output.replaceChildren(element('p', badge, 'mono'), element('h3', result.title), tools,
       element('p', '难度 ' + settings[(result.difficulty || 2) - 1] + ' · 过关目标 ' + result.goal), details);
     results.scrollTop = 0;
-    send.textContent = '用这句反馈再做一版';
+    submitLabel = '用这句反馈再做一版';
+    renderQuota();
     if (!view.hidden || !results.hidden) showResults();
   }
   form.addEventListener('submit', async event => {
     event.preventDefault();
-    if (cancel) return;
+    if (send.disabled) return;
     const idea = prompt.value.trim();
     if (!idea) return;
-    cancel = new AbortController();
-    send.disabled = true;
-    examples.disabled = true;
+    const controller = new AbortController();
+    cancel = controller;
+    renderQuota();
     status.textContent = '正在把你的想法变成玩法…';
     try {
       const response = await fetch('/birthday/wish', {
-        method: 'POST', signal: cancel.signal, headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idea, original: current || null }),
+        method: 'POST', signal: controller.signal, headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idea, original: cleanPrototype(current) }),
       });
-      const result = await response.json();
-      if (cancel.signal.aborted) return;
-      if (!response.ok) { status.textContent = result.message || '这一版还没生成，可以打开示例。'; return; }
-      const entry = {
-        title: result.title,
-        template: result.template,
-        difficulty: result.difficulty,
-        goal: result.goal,
-        palette: result.palette,
-        pitch: result.pitch,
-        choice: result.choice,
-        reason: result.reason,
-        nextPrompt: result.nextPrompt,
-        idea,
-      };
+      const { quota, ...result } = (await response.json().catch(() => ({}))) || {};
+      if (controller.signal.aborted) return;
+      if (quota) {
+        data.wishQuota = quota;
+        renderQuota();
+      }
+      if (!response.ok || !result.title) {
+        status.textContent = result.message || '这一版还没生成，可以打开示例。';
+        return;
+      }
+      const cleanResult = cleanPrototype(result);
+      const entry = { ...cleanResult, idea };
       const existing = Array.isArray(save.wishes) ? save.wishes : [];
       save.wishes = [entry, ...existing.filter(item => !(item.title === entry.title && item.idea === entry.idea))].slice(0, 8);
       persist();
       renderHistory();
-      present(result, 'AI 原型', false);
+      present(cleanResult, 'AI 原型', false);
       status.textContent = '这一版已经可以试玩。';
     } catch (error) {
       if (error.name !== 'AbortError') status.textContent = '暂时连不上 AI，可以打开示例。';
     } finally {
-      cancel = null;
-      send.disabled = false;
-      examples.disabled = false;
+      if (cancel === controller) cancel = null;
+      renderQuota();
     }
   });
-  actions.append(send, examples);
+  actions.append(send, refreshQuota, examples);
   form.append(label, prompt, actions, status);
   studio.append(element('h3', '一句话，做出第一版'), aiBadge, form, historyBox);
+  renderQuota();
   renderHistory();
   view.append(studio);
   results.append(output);

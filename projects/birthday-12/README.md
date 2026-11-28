@@ -30,11 +30,12 @@ BIRTHDAY_DATE=2099-11-28 BIRTHDAY_PREVIEW_KEY=local-preview-only npm run birthda
 | `BIRTHDAY_CHATLOG_JSON`、`BIRTHDAY_FAMILY_JSON` | 家庭可访问的真实日志和留言 |
 | `BIRTHDAY_MEDIA_BASE`、`BIRTHDAY_MEDIA_TOKEN`、`BIRTHDAY_MEDIA_JSON` | 私密文件源 HTTPS 基础地址、Bearer 凭据和允许访问的文件映射 |
 | `BIRTHDAY_SONGS_JSON` | 可选家庭会话短谱覆盖，结构与 `content/songs.json` 相同 |
-| `AI_API_BASE`、`AI_API_KEY`、`AI_MODEL` | 许愿工作台的 OpenAI 兼容服务地址、服务端密钥与可选模型 ID（`AI_MODEL` 缺省默认使用 `gpt-4o-mini`；未配置地址或密钥时前端自动切回本地示例模式） |
+| `AI_API_BASE`、`AI_API_KEY`、`AI_MODEL` | 许愿工作台的 OpenAI 兼容服务地址、服务端密钥和模型 ID。支持兼容网关上的思考模型，默认模型为 `gpt-4o-mini`。未配置地址或密钥时显示本地示例模式。 |
 | `WISH_REQUIRE_SESSION` | 可选，`1` / `true` 时强制要求家庭或预览会话才能调用许愿 AI 接口；不配或设为关闭时允许访客体验并受限流保护 |
-| `BIRTHDAY_REDIS_URL`、`BIRTHDAY_REDIS_TOKEN` | 服务端 Redis REST 地址和写入令牌，供祝福存储和愿望工作台限流（未配置 Redis 时许愿接口降级为进程内内存限流） |
+| `BIRTHDAY_REDIS_URL`、`BIRTHDAY_REDIS_TOKEN` | 服务端 Redis REST 地址和写入令牌，供祝福存储和许愿限流。在 Vercel 上两项都须配置才能生成。本地两项均未配置时使用进程内配额。 |
 | `BIRTHDAY_MODERATOR_KEY` | 独立家长审核口令，至少 8 个字符，建议使用自己记得住、他人难猜的口令 |
 | `AI_MINUTE_LIMIT`、`AI_DAILY_LIMIT`、`AI_TOTAL_LIMIT` | 可选，默认每分钟 3 次、每日 20 次、活动 60 次 |
+| `AI_IP_LIMIT`、`AI_IP_MINUTE_LIMIT` | 可选，默认同一 IP 在活动期间共 3 次、每分钟 3 次。上游失败会尝试退回预扣配额。模型要求换题的请求会计次。 |
 | `BIRTHDAY_CREDITS_JSON` | 可选真实制作统计，以字段名覆盖彩蛋面板的样稿 |
 
 预览链接为 `/birthday?preview=预览密钥`。成功后服务端写入签名会话 Cookie 并重定向到 `/birthday`，会话四小时过期。预览链接本身相当于口令，可能被浏览器或接入层记录，只给爸爸使用。生日后可在船员页输入独立家庭口令。所有私密变量只配置在服务端。真实内容应在测试通过后填入生产环境。

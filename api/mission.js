@@ -1,5 +1,5 @@
 const { handleBlessings, checkModeratorAttempt } = require('../lib/birthday-blessings.cjs');
-const { generate, isConfigured } = require('../lib/wish-ai.cjs');
+const { generate, getQuotaStatus, isConfigured } = require('../lib/wish-ai.cjs');
 const { createHmac, timingSafeEqual } = require('node:crypto');
 const { readFile } = require('node:fs/promises');
 const { extname, join } = require('node:path');
@@ -176,9 +176,11 @@ module.exports = async (req, res) => {
       copy.credits = { ...copy.credits, ...privateContent('BIRTHDAY_CREDITS_JSON', {}) };
       const logs = await sample('chatlog.json');
       const family = await sample('family/index.json');
+      const wishAiConfigured = isConfigured();
       return reply(res, 200, {
         privateAccess: !!scope,
-        wishAiConfigured: isConfigured(),
+        wishAiConfigured,
+        wishQuota: wishAiConfigured ? await getQuotaStatus(visitorAddress(req)) : null,
         copy,
         guideArt: scope ? process.env.BIRTHDAY_GUIDE_MEDIA || null : null,
         songs: scope ? privateContent('BIRTHDAY_SONGS_JSON', await sample('songs.json')) : await sample('songs.json'),
