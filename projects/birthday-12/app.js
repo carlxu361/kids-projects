@@ -119,6 +119,11 @@ function next(panel, key, text = chapters[key]) {
 
 let sceneTarget;
 let sceneTimer;
+let guideDeadline = 0;
+let guideTimeout = 0;
+let guideFrame = 0;
+let guideBaseText = '';
+const GUIDE_DURATION = 3000;
 let turning = null;
 const guide = get('#scene-guide');
 const cinemaRequested = new URLSearchParams(location.search).get('cinema') !== '0';
@@ -232,7 +237,7 @@ function travelTo(key) {
       if (key === 'cake') world.pause();
       show(key, false);
       stage.classList.remove('stage-exiting');
-      stage.querySelector('.chapter')?.classList.add('copy-entrance');
+      stage.firstElementChild?.classList.add('copy-entrance');
       if (from === 'piano' && key === 'cake') stage.classList.add('cake-daybreak');
       world.setAct(key);
       if (from === 'cake') {
@@ -292,6 +297,52 @@ function turnTo(key) {
   });
 }
 
+function clearGuideCountdown() {
+  clearTimeout(guideTimeout);
+  guideTimeout = 0;
+  cancelAnimationFrame(guideFrame);
+  guideFrame = 0;
+}
+
+function renderGuideContinue(secs, progress) {
+  const control = get('#scene-continue');
+  let label = control.querySelector('.guide-btn-label');
+  let bar = control.querySelector('.guide-btn-progress');
+  if (!label || !bar) {
+    label = element('span', '', 'guide-btn-label');
+    bar = element('span', '', 'guide-btn-progress');
+    bar.setAttribute('aria-hidden', 'true');
+    control.replaceChildren(label, bar);
+  }
+  const nextText = secs > 0 ? guideBaseText + ' · ' + secs + 's' : guideBaseText;
+  if (label.textContent !== nextText) label.textContent = nextText;
+  control.style.setProperty('--guide-progress', String(Math.max(0, Math.min(1, progress))));
+}
+
+function startGuideCountdown() {
+  clearGuideCountdown();
+  guideDeadline = performance.now() + GUIDE_DURATION;
+  let lastSecs = 3;
+  renderGuideContinue(3, 0);
+  guideTimeout = setTimeout(() => {
+    clearGuideCountdown();
+    finishGuide();
+  }, GUIDE_DURATION);
+  function tick() {
+    if (!guide.open || !sceneTarget) {
+      clearGuideCountdown();
+      return;
+    }
+    const remainingMs = Math.max(0, guideDeadline - performance.now());
+    const secs = Math.max(1, Math.ceil(remainingMs / 1000));
+    const progress = Math.min(1, (GUIDE_DURATION - remainingMs) / GUIDE_DURATION);
+    if (secs !== lastSecs) lastSecs = secs;
+    renderGuideContinue(secs, progress);
+    if (remainingMs > 0) guideFrame = requestAnimationFrame(tick);
+  }
+  guideFrame = requestAnimationFrame(tick);
+}
+
 function go(key) {
   if (cinemaState === 'travelling') {
     if (!cinemaTurn?.committed) {
@@ -311,14 +362,16 @@ function go(key) {
     else turnTo(key);
     return;
   }
+  clearGuideCountdown();
+  clearTimeout(sceneTimer);
   if (world3d) {
     cinemaState = 'reading';
     world3d.preview(save.chapter, key);
   }
   sceneTarget = key;
   document.body.classList.add('guide-active');
+  guide.dataset.actKey = key;
   guide.classList.toggle('scene-premiere', Boolean(stage.querySelector('.premiere.party-live')));
-  guide.classList.toggle('scene-history', key === 'history');
   const idx = Object.keys(chapters).indexOf(key) + 1;
   const card = guide.querySelector('.scene-card');
   if (card) {
@@ -328,18 +381,21 @@ function go(key) {
   guideAppearance();
   get('#scene-title').textContent = cue[0];
   get('#scene-narration').textContent = cue[1];
-  get('#scene-continue').textContent = cue[2];
+  guideBaseText = cue[2];
   guide.showModal();
+  startGuideCountdown();
   get('#scene-continue').focus();
 }
 
 function finishGuide() {
+  clearGuideCountdown();
   if (!sceneTarget) return;
   const key = sceneTarget;
   sceneTarget = null;
   const turn = () => {
-    guide.close();
-    guide.classList.remove('scene-leaving', 'scene-premiere', 'scene-history');
+    if (guide.open) guide.close();
+    delete guide.dataset.actKey;
+    guide.classList.remove('scene-leaving', 'scene-premiere');
     const card = guide.querySelector('.scene-card');
     if (card) delete card.dataset.act;
     document.body.classList.remove('guide-active');
@@ -365,14 +421,27 @@ guide.addEventListener('click', event => {
   if (pressedBackdrop && onGuideBackdrop(event)) finishGuide();
   pressedBackdrop = false;
 });
+guide.addEventListener('keydown', event => {
+  if (event.key === 'Enter' && event.target !== get('#scene-continue')) {
+    event.preventDefault();
+    finishGuide();
+  }
+});
 guide.addEventListener('cancel', event => { event.preventDefault(); finishGuide(); });
 
 function show(key, animate = false) {
   if (!Object.hasOwn(renderers, key)) key = 'intro';
+  clearGuideCountdown();
   clearTimeout(sceneTimer);
+  sceneTarget = null;
+  if (guide.open) guide.close();
+  delete guide.dataset.actKey;
+  guide.classList.remove('scene-leaving', 'scene-premiere');
+  document.body.classList.remove('guide-active');
   stopChapter();
   stopChapter = () => {};
   save.chapter = key;
+  document.body.dataset.chapter = key;
   warmingWorld?.snapTo(key);
   PartyEffects.setChapter?.(key);
   persist();
@@ -396,6 +465,7 @@ function show(key, animate = false) {
     return tab;
   }));
   document.body.classList.toggle('piano-mode', key === 'piano');
+  document.body.classList.toggle('history-mode', key === 'history');
   document.body.classList.add('immersive-stage');
   document.body.classList.toggle('intro-mode', key === 'intro');
   const activeTab = nav.querySelector('[aria-current]');
@@ -454,17 +524,140 @@ function intro() {
   }, { once: true });
 }
 
-function timeline(eras, view) {
-  const section = element('section', null, 'history');
-  const rail = element('div', null, 'history-rail reading-controls');
-  rail.setAttribute('role', 'group');
-  rail.setAttribute('aria-label', '年代');
-  const exhibit = element('div', null, 'history-exhibit');
-  exhibit.id = 'history-exhibit';
-  const machines = element('div', null, 'history-machines showcase');
-  function select(era) {
-    [...rail.children].forEach(tab => tab.setAttribute('aria-expanded', String(tab.textContent === era.era)));
-    const cards = [];
+function timeline(eras, view, nextButton) {
+  const SLIDE_INTERVAL = 3000;
+  const listeners = new AbortController();
+  const { signal } = listeners;
+
+  function eraSpan(era) {
+    const years = era.machines.flatMap(item => String(item.year).match(/\d{4}/g) || []).map(Number);
+    if (!years.length) return era.era;
+    const min = Math.min(...years);
+    const max = Math.max(...years);
+    return min === max ? String(min) : min + '–' + max;
+  }
+
+  const axis = element('div', null, 'history-timeline-axis');
+  const nodesWrap = element('div', null, 'history-nodes');
+  nodesWrap.setAttribute('role', 'group');
+  nodesWrap.setAttribute('aria-label', '游戏史年代时间轴');
+  const trackLine = element('div', null, 'history-track-line');
+  trackLine.setAttribute('aria-hidden', 'true');
+  const trackFill = element('span', null, 'history-track-fill');
+  trackLine.append(trackFill);
+  nodesWrap.append(trackLine);
+
+  const dwellBar = element('div', null, 'history-dwell-bar');
+  dwellBar.setAttribute('aria-hidden', 'true');
+  const dwellFill = element('span', null, 'history-dwell-fill');
+  dwellBar.append(dwellFill);
+
+  const controls = element('div', null, 'history-controls');
+  const counter = element('span', '1 / ' + eras.length, 'history-counter mono');
+  const prevBtn = button('‹ 上一年代', () => { goToSlide(activeIndex - 1); }, 'history-prev');
+  const toggleBtn = button('暂停滚动', () => {
+    setPaused(!paused);
+  }, 'history-toggle');
+  toggleBtn.setAttribute('aria-pressed', 'false');
+  const nextEraBtn = button('下一年代 ›', () => { goToSlide(activeIndex + 1); }, 'history-next');
+  controls.append(counter, prevBtn, toggleBtn, nextEraBtn);
+
+  axis.append(nodesWrap, dwellBar, controls);
+
+  const viewport = element('div', null, 'history-track-viewport');
+  viewport.tabIndex = 0;
+  viewport.setAttribute('aria-label', '游戏史年代展品滑轨');
+  const track = element('div', null, 'history-track');
+  viewport.append(track);
+
+  const nodeButtons = [];
+  const slides = [];
+  let activeIndex = 0;
+  let paused = false;
+  let elapsed = 0;
+  let cycleStartedAt = 0;
+  let slideTimer = 0;
+  let rafId = 0;
+  let alive = true;
+
+  function clearTimers() {
+    clearTimeout(slideTimer);
+    slideTimer = 0;
+    cancelAnimationFrame(rafId);
+    rafId = 0;
+  }
+
+  function currentElapsed() {
+    if (!cycleStartedAt) return elapsed;
+    return Math.min(SLIDE_INTERVAL, elapsed + Math.max(0, performance.now() - cycleStartedAt));
+  }
+
+  function paintProgress() {
+    if (!alive) return;
+    const progress = Math.min(1, currentElapsed() / SLIDE_INTERVAL);
+    dwellFill.style.transform = 'scaleX(' + progress.toFixed(4) + ')';
+    if (!paused && !document.hidden && eras.length > 1 && cycleStartedAt) {
+      rafId = requestAnimationFrame(paintProgress);
+    } else {
+      rafId = 0;
+    }
+  }
+
+  function scheduleCycle() {
+    clearTimers();
+    if (!alive || paused || document.hidden || eras.length <= 1) {
+      cycleStartedAt = 0;
+      dwellFill.style.transform = 'scaleX(' + Math.min(1, elapsed / SLIDE_INTERVAL).toFixed(4) + ')';
+      return;
+    }
+    const remaining = Math.max(16, SLIDE_INTERVAL - elapsed);
+    cycleStartedAt = performance.now();
+    slideTimer = setTimeout(() => {
+      slideTimer = 0;
+      cycleStartedAt = 0;
+      elapsed = 0;
+      if (!alive || paused || document.hidden) return;
+      goToSlide(activeIndex + 1, true);
+    }, remaining);
+    rafId = requestAnimationFrame(paintProgress);
+  }
+
+  function setPaused(nextPaused) {
+    if (paused === nextPaused) return;
+    if (nextPaused) {
+      elapsed = currentElapsed();
+      cycleStartedAt = 0;
+      clearTimers();
+    }
+    paused = nextPaused;
+    toggleBtn.textContent = paused ? '继续滚动' : '暂停滚动';
+    toggleBtn.setAttribute('aria-pressed', String(paused));
+    axis.classList.toggle('is-paused', paused);
+    if (!paused) scheduleCycle();
+  }
+
+  eras.forEach((era, index) => {
+    const span = eraSpan(era);
+    const node = element('button', null, 'history-node');
+    node.type = 'button';
+    const dot = element('span', null, 'history-node-dot');
+    dot.setAttribute('aria-hidden', 'true');
+    node.append(dot, element('strong', era.era, 'history-node-era'), element('span', span, 'history-node-span'));
+    node.setAttribute('aria-label', era.era + '（' + span + '）：' + era.title);
+    node.addEventListener('click', () => goToSlide(index), { signal });
+    nodesWrap.append(node);
+    nodeButtons.push(node);
+
+    const slide = element('article', null, 'history-slide');
+    slide.dataset.era = era.era;
+    const banner = element('div', null, 'era-banner');
+    const story = element('div', null, 'era-story');
+    story.append(element('h4', era.title), element('p', era.summary, 'era-summary-text'));
+    const eraMeta = element('div', null, 'era-heading');
+    eraMeta.append(element('strong', era.era), element('span', span, 'era-span-tag mono'));
+    banner.append(eraMeta, story);
+
+    const machines = element('div', null, 'history-machines');
     for (const item of era.machines) {
       const machine = element('article', null, 'history-machine');
       const citation = element('a', item.company);
@@ -481,39 +674,105 @@ function timeline(eras, view) {
       const masthead = element('div', null, 'machine-masthead');
       masthead.append(picture, identity);
       machine.append(masthead, element('p', item.note));
-      cards.push(machine);
+      machines.append(machine);
     }
-    const banner = element('div', null, 'era-banner');
-    const story = element('div', null, 'era-story');
-    const details = element('details', null, 'era-summary');
-    details.append(element('summary', '年代导览'), element('p', era.summary));
-    story.append(element('h4', era.title), details);
-    banner.append(element('strong', era.era), story);
-    exhibit.replaceChildren(banner, machines);
-    machines.replaceChildren(...cards);
-    view.scrollTop = 0;
-    exhibit.classList.remove('history-in');
-    requestAnimationFrame(() => exhibit.classList.add('history-in'));
+
+    slide.append(banner, machines);
+    track.append(slide);
+    slides.push(slide);
+  });
+
+  function goToSlide(index, resetCycle = true) {
+    if (!eras.length) return;
+    activeIndex = ((index % eras.length) + eras.length) % eras.length;
+    track.style.transform = 'translateX(-' + (activeIndex * 100) + '%)';
+    trackFill.style.width = (eras.length > 1 ? (activeIndex / (eras.length - 1)) * 100 : 100) + '%';
+    counter.textContent = (activeIndex + 1) + ' / ' + eras.length;
+
+    nodeButtons.forEach((btn, i) => {
+      const current = i === activeIndex;
+      btn.classList.toggle('is-active', current);
+      btn.classList.toggle('is-passed', i < activeIndex);
+      btn.setAttribute('aria-pressed', String(current));
+      if (current) btn.setAttribute('aria-current', 'step');
+      else btn.removeAttribute('aria-current');
+    });
+
+    slides.forEach((slide, i) => {
+      const current = i === activeIndex;
+      slide.classList.toggle('is-active', current);
+      slide.setAttribute('aria-hidden', String(!current));
+      slide.inert = !current;
+      if (current) slide.scrollTop = 0;
+    });
+
+    nextButton?.classList.toggle('is-ready-next', activeIndex === eras.length - 1);
+    if (resetCycle) {
+      elapsed = 0;
+      cycleStartedAt = 0;
+      dwellFill.style.transform = 'scaleX(0)';
+      scheduleCycle();
+    }
   }
-  for (const era of eras) {
-    const control = button(era.era, () => select(era));
-    control.setAttribute('aria-controls', exhibit.id);
-    rail.append(control);
-  }
-  section.append(exhibit);
-  if (eras[0]) select(eras[0]);
-  view.append(section);
-  return rail;
+
+  let swipeStart = null;
+  viewport.addEventListener('pointerdown', event => {
+    if (event.pointerType === 'mouse') return;
+    swipeStart = { id: event.pointerId, x: event.clientX, y: event.clientY };
+  }, { signal });
+  viewport.addEventListener('pointerup', event => {
+    if (!swipeStart || event.pointerId !== swipeStart.id) return;
+    const dx = event.clientX - swipeStart.x;
+    const dy = event.clientY - swipeStart.y;
+    swipeStart = null;
+    if (Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+      goToSlide(dx < 0 ? activeIndex + 1 : activeIndex - 1);
+    }
+  }, { signal });
+  viewport.addEventListener('pointercancel', () => { swipeStart = null; }, { signal });
+
+  axis.addEventListener('keydown', event => {
+    if (event.key === 'ArrowLeft') { event.preventDefault(); goToSlide(activeIndex - 1); }
+    else if (event.key === 'ArrowRight') { event.preventDefault(); goToSlide(activeIndex + 1); }
+  }, { signal });
+  viewport.addEventListener('keydown', event => {
+    if (event.key === 'ArrowLeft') { event.preventDefault(); goToSlide(activeIndex - 1); }
+    else if (event.key === 'ArrowRight') { event.preventDefault(); goToSlide(activeIndex + 1); }
+  }, { signal });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      elapsed = currentElapsed();
+      cycleStartedAt = 0;
+      clearTimers();
+    } else if (!paused) {
+      scheduleCycle();
+    }
+  }, { signal });
+
+  view.append(viewport);
+  goToSlide(0, true);
+
+  return {
+    axis,
+    stop() {
+      alive = false;
+      clearTimers();
+      listeners.abort();
+    },
+  };
 }
 
 function history() {
   const panel = chapter('GAME HISTORY', '游戏是怎样走到今天的');
   panel.classList.add('history-chapter');
   const views = immersiveViews(panel);
-  const view = views.add(element('section', null, 'showcase-stage'));
-  view.before(timeline(data.history, view));
+  const view = views.add(element('section', null, 'history-stage-view'));
   views.show(view, [], null);
-  next(views.actions, 'arcade', '试玩一下经典游戏');
+  const nextBtn = next(views.actions, 'arcade', '试玩一下经典游戏');
+  const exhibit = timeline(data.history, view, nextBtn);
+  view.before(exhibit.axis);
+  stopChapter = exhibit.stop;
 }
 
 function immersiveViews(panel) {
@@ -763,21 +1022,73 @@ function logs() {
   categories.firstElementChild.click();
 }
 
-const whiteKeys = { a: 60, s: 62, d: 64, f: 65, g: 67, h: 69, j: 71, k: 72, l: 74, ';': 76 };
-const blackKeys = { w: 61, e: 63, t: 66, y: 68, u: 70, o: 73, p: 75 };
-const pianoKeys = { ...whiteKeys, ...blackKeys };
+const leftKeyOffsets = {
+  KeyZ: 0, KeyS: 1, KeyX: 2, KeyD: 3, KeyC: 4, KeyV: 5, KeyG: 6,
+  KeyB: 7, KeyH: 8, KeyN: 9, KeyJ: 10, KeyM: 11,
+};
+const leftKeyLabels = {
+  0: 'Z', 1: 'S', 2: 'X', 3: 'D', 4: 'C', 5: 'V', 6: 'G',
+  7: 'B', 8: 'H', 9: 'N', 10: 'J', 11: 'M',
+};
+const rightKeyOffsets = {
+  KeyQ: 0, Digit2: 1, KeyW: 2, Digit3: 3, KeyE: 4, KeyR: 5, Digit5: 6,
+  KeyT: 7, Digit6: 8, KeyY: 9, Digit7: 10, KeyU: 11,
+  KeyI: 12, Digit9: 13, KeyO: 14, Digit0: 15, KeyP: 16,
+};
+const rightKeyLabels = {
+  0: 'Q', 1: '2', 2: 'W', 3: '3', 4: 'E', 5: 'R', 6: '5',
+  7: 'T', 8: '6', 9: 'Y', 10: '7', 11: 'U',
+  12: 'I', 13: '9', 14: 'O', 15: '0', 16: 'P',
+};
 
 function piano() {
   const birthday = {
-    name: '生日快乐', tempo: 64, meter: 3, description: '入门 · 右手旋律，后半段加入低音',
+    name: '生日快乐 · 双手华尔兹', tempo: 76, meter: 3, description: '入门 · 3/4 拍全曲双手华尔兹',
     right: [
-      [[2,"G4",.5],[2.5,"G4",.5]], [[0,"A4",1],[1,"G4",1],[2,"C5",1]],
-      [[0,"B4",2],[2,"G4",.5],[2.5,"G4",.5]], [[0,"A4",1],[1,"G4",1],[2,"D5",1]],
-      [[0,"C5",2],[2,"G4",.5],[2.5,"G4",.5]], [[0,"G5",1],[1,"E5",1],[2,"C5",1]],
-      [[0,"B4",1],[1,"A4",1],[2,"F5",.5],[2.5,"F5",.5]], [[0,"E5",1],[1,"C5",1],[2,"D5",1]],
-      [[0,"C5",2.8]]
+      [[2, 'G4', .5], [2.5, 'G4', .5]],
+      [[0, 'A4', 1], [1, 'G4', 1], [2, 'C5', 1]],
+      [[0, 'B4', 2], [2, 'G4', .5], [2.5, 'G4', .5]],
+      [[0, 'A4', 1], [1, 'G4', 1], [2, 'D5', 1]],
+      [[0, 'C5', 2], [2, 'G4', .5], [2.5, 'G4', .5]],
+      [[0, 'G5', 1], [1, 'E5', 1], [2, 'C5', 1]],
+      [[0, 'B4', 1], [1, 'A4', 1], [2, 'F5', .5], [2.5, 'F5', .5]],
+      [[0, 'E5', 1], [1, 'C5', 1], [2, 'D5', 1]],
+      [[0, 'C5', 2.8]],
     ],
-    left: [[], [], [], [], [], [[0,"C3",2.6]], [[0,"F3",2.6]], [[0,"G3",2.6]], [[0,"C3",2.8]]]
+    left: [
+      [[0, 'C3', .8, .56], [1, 'E3', .8, .48], [2, 'G3', .8, .52]],
+      [[0, 'C3', .9, .62], [1, 'E3', .8, .48], [2, 'G3', .8, .48]],
+      [[0, 'G3', .9, .62], [1, 'D3', .8, .48], [2, 'B3', .8, .48]],
+      [[0, 'G3', .9, .62], [1, 'F3', .8, .48], [2, 'B3', .8, .48]],
+      [[0, 'C3', .9, .62], [1, 'E3', .8, .48], [2, 'G3', .8, .48]],
+      [[0, 'C3', .9, .62], [1, 'G3', .8, .48], [2, 'E3', .8, .48]],
+      [[0, 'F3', .9, .64], [1, 'A3', .8, .5], [2, 'C3', .8, .5]],
+      [[0, 'G3', .9, .64], [1, 'E3', .8, .5], [2, 'D3', .8, .5]],
+      [[0, ['C3', 'E3', 'G3'], 2.8, .66]],
+    ],
+  };
+  const boss = {
+    name: '星核终章 · 双手狂想', tempo: 118, meter: 4, description: 'Boss · 双手和弦切分、交错跑动与高能合奏',
+    right: [
+      [[0, ['D4', 'A4'], .45, .86], [.75, 'F4', .35, .74], [1.25, 'A4', .4, .88], [1.75, ['G4', 'D5'], .65, .94], [2.75, 'C5', .4, .82], [3.5, 'A4', .4, .78]],
+      [[0, ['F4', 'Bb4'], .45, .86], [.75, 'D5', .4, .9], [1.5, ['E4', 'C5'], .55, .88], [2.25, 'G4', .35, .76], [2.75, ['E4', 'A4', 'C#5'], .85, .95]],
+      [[0, 'D5', .35, .88], [.5, 'E5', .35, .92], [1, 'D5', .35, .86], [1.5, ['A4', 'D5'], .55, .92], [2.25, 'C5', .4, .83], [2.75, 'Bb4', .4, .8], [3.25, ['F4', 'A4'], .55, .86]],
+      [[0, ['E4', 'G4', 'C5'], .6, .9], [1, 'Bb4', .35, .8], [1.5, 'A4', .35, .78], [2, ['E4', 'A4', 'C#5'], .55, .92], [2.75, 'E5', .45, .94], [3.5, 'D5', .42, .96]],
+      [[0, ['F4', 'A4', 'D5'], .55, .96], [1, 'C5', .35, .84], [1.5, 'D5', .4, .92], [2, ['G4', 'D5'], .65, .98], [3, 'E5', .35, .88], [3.5, 'C5', .4, .85]],
+      [[0, ['G4', 'D5'], .45, .88], [.75, 'Bb4', .35, .79], [1.25, 'G4', .35, .76], [1.75, ['F4', 'A4', 'C5'], .6, .9], [2.75, 'E5', .45, .9], [3.5, 'C5', .4, .82]],
+      [[0, ['E4', 'A4'], .35, .84], [.5, 'C#5', .35, .88], [1, 'E5', .35, .92], [1.5, 'D5', .4, .96], [2, ['F4', 'A4', 'D5'], .55, .98], [2.75, ['E4', 'A4', 'C#5'], .9, .95]],
+      [[0, ['D4', 'F4', 'A4', 'D5'], 3.5, 1]],
+    ],
+    left: [
+      [[0, ['D3', 'A3'], .5, .92], [.75, 'F3', .35, .72], [1.5, 'D3', .4, .8], [1.75, 'G3', .4, .78], [2.5, 'A3', .4, .78], [3.25, 'F3', .45, .82]],
+      [[0, ['F3', 'Bb3'], .5, .9], [.75, 'F3', .35, .72], [1.5, ['C3', 'G3'], .5, .88], [2.25, 'E3', .35, .72], [2.75, ['E3', 'A3'], .8, .9]],
+      [[0, 'D3', .45, .9], [.5, 'A3', .35, .74], [1, 'F3', .35, .8], [1.5, 'F3', .45, .82], [2.25, 'G3', .35, .76], [2.75, 'D3', .4, .78], [3.25, 'A3', .5, .82]],
+      [[0, ['C3', 'G3'], .55, .88], [1, 'G3', .35, .72], [1.5, 'E3', .35, .76], [2, ['E3', 'A3'], .55, .9], [2.75, 'A3', .4, .78], [3.5, 'G3', .4, .84]],
+      [[0, ['D3', 'A3'], .5, .95], [.75, 'F3', .35, .75], [1.5, 'D3', .4, .82], [2, ['G3', 'Bb3'], .55, .92], [2.75, 'D3', .35, .78], [3.5, 'G3', .4, .8]],
+      [[0, ['G3', 'Bb3'], .45, .88], [.75, 'D3', .35, .74], [1.25, 'G3', .35, .76], [1.75, ['F3', 'A3'], .55, .88], [2.75, 'A3', .4, .78], [3.5, 'F3', .4, .8]],
+      [[0, ['E3', 'A3'], .35, .9], [.5, 'A3', .35, .78], [1, 'A3', .35, .84], [1.5, 'G3', .4, .86], [2, ['D3', 'F3'], .55, .94], [2.75, ['E3', 'G3', 'A3'], .9, .92]],
+      [[0, ['D3', 'F3', 'A3'], 3.5, .95]],
+    ],
   };
   function arrange(song, description = song.description) {
     const meter = song.meter || 4;
@@ -790,7 +1101,8 @@ function piano() {
     arrange(birthday),
     arrange(repertoire.moon, '初级 · 左手分解和弦，右手连奏'),
     arrange(repertoire.engine, '进阶 · 双手切分与和弦'),
-    arrange(repertoire.chase, '挑战 · 半音跑动与密集错位')
+    arrange(repertoire.chase, '挑战 · 半音跑动与密集错位'),
+    arrange(boss),
   ];
   const encores = data.songs.map(song => {
     const phrases = song.phrases || [{notes: song.notes, beats: song.notes.map(() => 1)}];
@@ -829,6 +1141,18 @@ function piano() {
     option.value = value;
     hands.append(option);
   }
+  const modeSelect = element('select');
+  modeSelect.setAttribute('aria-label', '挑战模式');
+  for (const [value, label] of [
+    ['follow', '标准 · 逐步跟弹'],
+    ['sync', '进阶 · 双手合奏'],
+    ['rhythm', '大师 · 实时落键'],
+  ]) {
+    const option = element('option', label);
+    option.value = value;
+    modeSelect.append(option);
+  }
+  modeSelect.value = 'sync';
   const legend = element('span', null, 'birthday-hand-legend');
   legend.append(element('span', '左手', 'roll-left'), element('span', '右手', 'roll-right'));
   let metroTimer, metroEnabled = false;
@@ -907,20 +1231,262 @@ function piano() {
   source.rel = 'noopener noreferrer';
   status.setAttribute('role', 'status');
   const sequence = element('div', null, 'note-queue');
+  const syncBadge = element('span', '双手合奏', 'piano-sync-badge');
+  syncBadge.hidden = true;
+  const metricsBadge = element('span', '连击 0 · 准度 100%', 'piano-metrics mono');
   const rain = element('div', null, 'note-rain');
   const phrases = element('div', null, 'phrase-meter');
   phrases.setAttribute('aria-label', '乐句进度');
   const stand = element('div', null, 'piano-stand');
   const scoreHeader = element('div', null, 'score-header');
+  const queueBar = element('div', null, 'piano-queue-bar');
   const detail = element('span', '', 'score-detail');
   let demo = null;
+  let rhythmRun = null;
+  let rhythmToken = 0;
+  let rhythmLoading = false;
+  let rhythmStartTimer = 0;
+  let rhythmCueTimer = 0;
+  let syncTimer = 0;
+  let combo = 0;
+  let bestCombo = 0;
+  let syncHits = 0;
+  let syncTotal = 0;
   const preview = button('▶ 试听本曲', () => {
     if (demo) { stopPreview(); return; }
     const song = selectedSong();
     if (song) playDemo(song);
   });
+  const rhythmButton = button('▶ 开始实时挑战', () => {
+    if (rhythmRun || rhythmLoading) stopRhythm();
+    else startRhythm();
+  }, 'primary piano-rhythm-btn');
+  rhythmButton.hidden = true;
+  function playBeatClick(accent = false) {
+    try {
+      const context = pianoContext();
+      if (context.state === 'suspended') context.resume().catch(() => {});
+      const now = context.currentTime;
+      const osc = context.createOscillator();
+      const gain = context.createGain();
+      osc.frequency.value = accent ? 1320 : 880;
+      gain.gain.setValueAtTime(accent ? .11 : .06, now);
+      gain.gain.exponentialRampToValueAtTime(.0001, now + .05);
+      osc.connect(gain).connect(context.destination);
+      osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+      osc.start(now);
+      osc.stop(now + .055);
+    } catch {}
+  }
+  function clearSyncTimer() {
+    clearTimeout(syncTimer);
+    syncTimer = 0;
+  }
+  function updateMetricsBadge() {
+    if (rhythmRun) {
+      const judged = rhythmRun.perfect + rhythmRun.good + rhythmRun.miss;
+      const acc = judged ? Math.round((rhythmRun.perfect + rhythmRun.good) / judged * 100) : 100;
+      metricsBadge.hidden = false;
+      metricsBadge.textContent = '连击 ' + rhythmRun.combo + ' · 准度 ' + acc + '% · ' + rhythmRun.score + ' 分';
+      return;
+    }
+    if (modeSelect.value === 'sync' && selectedSong()) {
+      const acc = syncTotal ? Math.round(syncHits / syncTotal * 100) : 100;
+      metricsBadge.hidden = false;
+      metricsBadge.textContent = '连击 ' + combo + ' · 同步准度 ' + acc + '%';
+      return;
+    }
+    if (modeSelect.value === 'rhythm' && selectedSong()) {
+      metricsBadge.hidden = false;
+      metricsBadge.textContent = '实时落键挑战 · 准备就绪';
+      return;
+    }
+    metricsBadge.hidden = true;
+  }
+  function showRhythmCue(text, kind = '') {
+    clearTimeout(rhythmCueTimer);
+    rhythmCue.textContent = text;
+    rhythmCue.className = 'piano-judge-cue' + (kind ? ' is-' + kind : '');
+    rhythmCue.hidden = !text;
+    if (text && !['3', '2', '1'].includes(text)) {
+      rhythmCueTimer = setTimeout(() => {
+        rhythmCue.hidden = true;
+      }, 550);
+    }
+  }
+  function stopRhythm(keepGrade = false) {
+    rhythmToken++;
+    rhythmLoading = false;
+    clearTimeout(rhythmStartTimer);
+    rhythmStartTimer = 0;
+    clearTimeout(rhythmCueTimer);
+    rhythmButton.textContent = '▶ 开始实时挑战';
+    if (!rhythmRun) return;
+    cancelAnimationFrame(rhythmRun.frame);
+    rhythmRun = null;
+    roll.classList.remove('rhythm-live');
+    tempo.disabled = false;
+    for (const key of controls.values()) key.classList.remove('next-note', 'next-left');
+    if (!keepGrade) {
+      rhythmCue.hidden = true;
+      if (active) refresh();
+    } else {
+      updateMetricsBadge();
+    }
+  }
+  async function startRhythm() {
+    const song = selectedSong();
+    if (!song || modeSelect.value !== 'rhythm') return;
+    stopPreview();
+    stopMic();
+    stopMetronome();
+    clearTimeout(advance);
+    clearSyncTimer();
+    stopRhythm();
+    transitioning = false;
+    const token = ++rhythmToken;
+    rhythmLoading = true;
+    rhythmButton.textContent = '■ 取消加载';
+    await sampler.ready().catch(() => null);
+    if (!active || token !== rhythmToken || modeSelect.value !== 'rhythm' || selectedSong() !== song) {
+      if (token === rhythmToken) {
+        rhythmLoading = false;
+        rhythmButton.textContent = '▶ 开始实时挑战';
+      }
+      return;
+    }
+    rhythmLoading = false;
+    const events = selectedEvents(song).map(event => ({ ...event, hit: false, missed: false }));
+    if (!events.length) {
+      rhythmButton.textContent = '▶ 开始实时挑战';
+      return;
+    }
+    const bpm = Number(tempo.value);
+    const msPerBeat = 60000 / bpm;
+    const countdownBeats = 3;
+    const run = {
+      song,
+      events,
+      bpm,
+      msPerBeat,
+      startMs: performance.now() + countdownBeats * msPerBeat,
+      score: 0,
+      combo: 0,
+      bestCombo: 0,
+      perfect: 0,
+      good: 0,
+      miss: 0,
+      lastCount: 4,
+      lastBeatClick: -1,
+      finished: false,
+      frame: 0,
+    };
+    rhythmRun = run;
+    tempo.disabled = true;
+    rhythmButton.textContent = '■ 停止挑战';
+    roll.classList.add('rhythm-live');
+    targetVisibleRange(events.slice(0, 8).map(e => e.note));
+    keyboardWindow.focus({ preventScroll: true });
+
+    function finishRun() {
+      if (rhythmRun !== run || run.finished) return;
+      run.finished = true;
+      cancelAnimationFrame(run.frame);
+      roll.classList.remove('rhythm-live');
+      tempo.disabled = false;
+      for (const key of controls.values()) key.classList.remove('next-note', 'next-left');
+      const total = run.perfect + run.good + run.miss;
+      const hitRate = total ? Math.round((run.perfect + run.good) / total * 100) : 100;
+      const weighted = total ? (run.perfect + run.good * .7) / total : 1;
+      const grade = weighted >= .88 && run.miss <= 2 ? 'S' : hitRate >= 72 ? 'A' : hitRate >= 50 ? 'B' : 'C';
+      const passed = grade !== 'C';
+      let rewardNote = '';
+      if (passed && !isEncore()) {
+        const index = Number(picker.value);
+        if (!completed.has(index)) {
+          completed.add(index);
+          save.pianoLevels = [...completed];
+          if (!save.songs.includes(index)) {
+            save.songs.push(index);
+            save.stars += 3;
+            rewardNote = ' · 获得 3 星核';
+          }
+          persist();
+          celebrate();
+        }
+        candles.textContent = Math.min(12, completed.size * 3) + ' / 12 根蜡烛';
+      }
+      rhythmCue.textContent = '评级 ' + grade + ' · ' + run.score + ' 分';
+      rhythmCue.className = 'piano-judge-cue is-grade';
+      rhythmCue.hidden = false;
+      status.textContent = song.title + ' · 评级 ' + grade + (passed ? '（已通关' + rewardNote + '）' : '（未达 50%，再挑战一次）') +
+        ' · PERFECT ' + run.perfect + ' / GOOD ' + run.good + ' / MISS ' + run.miss + ' · 最大连击 ' + run.bestCombo;
+      rhythmRun = null;
+      rhythmButton.textContent = '▶ 再挑战一次';
+      updateMetricsBadge();
+    }
+
+    function tick(now) {
+      if (rhythmRun !== run || !active) return;
+      const currentBeat = (now - run.startMs) / run.msPerBeat;
+      if (currentBeat < 0) {
+        const count = Math.min(3, Math.max(1, Math.ceil(-currentBeat)));
+        if (count !== run.lastCount) {
+          run.lastCount = count;
+          playBeatClick(count === 3);
+          showRhythmCue(String(count), 'count');
+          status.textContent = song.title + ' · 准备倒数 ' + count + '…';
+        }
+      } else {
+        if (run.lastCount <= 3) {
+          run.lastCount = 99;
+          showRhythmCue('开始！', 'perfect');
+        }
+        const beatIndex = Math.floor(currentBeat);
+        if (metroEnabled && beatIndex !== run.lastBeatClick) {
+          run.lastBeatClick = beatIndex;
+          playBeatClick(beatIndex % (song.meter || 4) === 0);
+        }
+      }
+      for (const ev of run.events) {
+        if (!ev.hit && !ev.missed && (currentBeat - ev.at) * run.msPerBeat > 360) {
+          ev.missed = true;
+          run.miss++;
+          run.combo = 0;
+          showRhythmCue('MISS', 'miss');
+        }
+      }
+      for (const key of controls.values()) key.classList.remove('next-note', 'next-left');
+      const visible = [];
+      for (const ev of run.events) {
+        if (ev.hit || ev.missed) continue;
+        const deltaBeat = ev.at - currentBeat;
+        if (deltaBeat > 4 || deltaBeat < -.45) continue;
+        visible.push({ ...ev, when: Math.max(0, deltaBeat) / 4 });
+        if (Math.abs(deltaBeat * run.msPerBeat) <= 220) {
+          controls.get(ev.note)?.classList.add(ev.hand === 'left' ? 'next-left' : 'next-note');
+        }
+      }
+      drawRoll(visible);
+      progress.max = Math.max(1, song.duration);
+      progress.value = Math.max(0, Math.min(song.duration, currentBeat));
+      const meter = song.meter || 4;
+      const barCount = Math.ceil(song.duration / meter);
+      phrases.textContent = currentBeat < 0
+        ? '倒数预备 · ' + meter + '/4 拍'
+        : '第 ' + Math.min(barCount, Math.floor(currentBeat / meter) + 1) + ' / ' + barCount + ' 小节 · ' + meter + '/4 拍';
+      updateMetricsBadge();
+      if (currentBeat > song.duration + .55 && run.events.every(ev => ev.hit || ev.missed)) {
+        finishRun();
+        return;
+      }
+      run.frame = requestAnimationFrame(tick);
+    }
+    run.frame = requestAnimationFrame(tick);
+  }
   async function playDemo(song) {
     stopMic();
+    stopRhythm();
     stopPreview();
     const playback = { voices: [] };
     demo = playback;
@@ -979,7 +1545,8 @@ function piano() {
   const flashes = new Map();
   let position = 0;
   let groups = [];
-  let octaveShift = 0;
+  let leftBase = 48;
+  let rightBase = 60;
   const playedNotes = new Set();
   let advance;
   let transitioning = false;
@@ -993,10 +1560,40 @@ function piano() {
   const instrument = element('div', null, 'birthday-instrument');
   const roll = element('div', null, 'birthday-roll');
   roll.setAttribute('aria-hidden', 'true');
+  const rhythmCue = element('div', null, 'piano-judge-cue');
+  rhythmCue.hidden = true;
   const isEncore = () => picker.value.startsWith('extra-');
   const selectedSong = () => isEncore() ? encores[Number(picker.value.slice(6))] : picker.value !== '' ? tracks[Number(picker.value)] : null;
   const selectedEvents = song => song.events.filter(event => hands.value === 'both' || event.hand === hands.value);
+  function autoAlignKeyboard(song) {
+    if (!song) {
+      leftBase = 48;
+      rightBase = 60;
+      updateKeyLabels();
+      return;
+    }
+    const leftNotes = song.events.filter(e => e.hand === 'left').map(e => e.note);
+    if (leftNotes.length) {
+      const c2Hits = leftNotes.filter(n => n >= 36 && n <= 47).length;
+      const c3Hits = leftNotes.filter(n => n >= 48 && n <= 59).length;
+      leftBase = c2Hits >= 3 && c2Hits >= c3Hits * .45 ? 36 : 48;
+    } else {
+      leftBase = 48;
+    }
+    const rightNotes = song.events.filter(e => e.hand === 'right').map(e => e.note);
+    if (rightNotes.length) {
+      const c4Hits = rightNotes.filter(n => n >= 60 && n <= 76).length;
+      const c5Hits = rightNotes.filter(n => n >= 72 && n <= 84).length;
+      rightBase = c5Hits > c4Hits ? 72 : 60;
+    } else {
+      rightBase = 60;
+    }
+    updateKeyLabels();
+  }
   function prepareSong(resetSpeed) {
+    clearSyncTimer();
+    stopRhythm();
+    rhythmCue.hidden = true;
     const song = selectedSong();
     const wasEncore = hands.options[0].disabled;
     hands.options[0].disabled = hands.options[2].disabled = isEncore();
@@ -1009,18 +1606,34 @@ function piano() {
     }
     groups = [...byBeat.values()].sort((a, b) => a[0].at - b[0].at);
     position = 0;
+    combo = 0;
+    bestCombo = 0;
+    syncHits = 0;
+    syncTotal = 0;
     playedNotes.clear();
+    autoAlignKeyboard(song);
     if (resetSpeed) setSpeed(song?.bpm ?? 72);
+    rhythmButton.hidden = modeSelect.value !== 'rhythm';
+    rhythmButton.disabled = !song;
+    rhythmButton.textContent = '▶ 开始实时挑战';
     refresh();
   }
   const expectedEvents = () => groups[position]?.filter(event => !playedNotes.has(event.note)) || [];
   function targetVisible(note) {
-    const key = controls.get(note);
-    if (!key) return;
+    targetVisibleRange([note]);
+  }
+  function targetVisibleRange(notes) {
+    const keysFound = notes.map(n => controls.get(n)).filter(Boolean);
+    if (!keysFound.length) return;
     const area = keyboardWindow.getBoundingClientRect();
-    const rect = key.getBoundingClientRect();
-    if (rect.left < area.left || rect.right > area.right) {
-      keyboardWindow.scrollLeft = key.offsetLeft + key.offsetWidth / 2 - area.width / 2;
+    if (!area.width) return;
+    const minLeft = Math.min(...keysFound.map(k => k.offsetLeft));
+    const maxRight = Math.max(...keysFound.map(k => k.offsetLeft + k.offsetWidth));
+    const mid = (minLeft + maxRight) / 2;
+    const viewLeft = keyboardWindow.scrollLeft;
+    const viewRight = viewLeft + area.width;
+    if (minLeft < viewLeft + 8 || maxRight > viewRight - 8) {
+      keyboardWindow.scrollLeft = Math.max(0, mid - area.width / 2);
     }
   }
   function drawRoll(notes) {
@@ -1034,13 +1647,20 @@ function piano() {
     }));
   }
   function refresh(message) {
+    if (rhythmRun) return;
     const song = selectedSong();
     const expected = expectedEvents();
+    const currentGroup = groups[position] || [];
+    const hasLeft = currentGroup.some(event => event.hand === 'left');
+    const hasRight = currentGroup.some(event => event.hand === 'right');
+    syncBadge.hidden = !(song && hands.value === 'both' && hasLeft && hasRight);
     for (const [note, key] of controls) {
       key.classList.toggle('next-note', expected.some(event => event.note === note && event.hand === 'right'));
       key.classList.toggle('next-left', expected.some(event => event.note === note && event.hand === 'left'));
     }
     micButton.disabled = !song;
+    rhythmButton.hidden = modeSelect.value !== 'rhythm';
+    rhythmButton.disabled = !song;
     source.hidden = !song?.source;
     if (song?.source) {
       source.href = song.source;
@@ -1054,15 +1674,19 @@ function piano() {
     preview.disabled = !song;
     progress.max = groups.length || 1;
     progress.value = position;
-    sequence.replaceChildren(...expected.map(({note, hand}) =>
-      element('kbd', nameFor(note).replace('#', '♯'), hand === 'left' ? 'queued-left' : 'queued-current')));
+    sequence.replaceChildren(...expected.map(({note, hand}) => {
+      const badge = element('kbd', null, hand === 'left' ? 'queued-left' : 'queued-current');
+      badge.append(element('span', hand === 'left' ? '左' : '右', 'hand-tag'), nameFor(note).replace('#', '♯'));
+      return badge;
+    }));
     if (!demo) {
-      const origin = groups[position]?.[0].at;
+      const origin = groups[position]?.[0].at ?? 0;
       const upcoming = groups.slice(position).flatMap((group, index) => index ? group : expected);
       drawRoll(upcoming.filter(event => event.at - origin <= 4)
         .map(event => ({...event, when: (event.at - origin) / 4})));
-      if (expected.length) targetVisible(expected.find(event => event.hand === 'right')?.note ?? expected[0].note);
+      if (expected.length) targetVisibleRange(expected.map(event => event.note));
     }
+    updateMetricsBadge();
     status.textContent = message || (song ? song.title + ' · ' + position + ' / ' + groups.length : '自由弹奏');
     candles.textContent = Math.min(12, completed.size * 3) + ' / 12 根蜡烛';
   }
@@ -1088,7 +1712,6 @@ function piano() {
         if (active && !mic) sampler.play(note, context.currentTime, .6, .78);
       }).catch(() => { if (active) micStatus.textContent = '网页琴声暂未加载，可以继续用真实钢琴。'; });
     }
-    flash(judged, expected.find(event => event.note === judged)?.hand);
     const landing = controls.get(judged);
     if (landing) {
       const rect = landing.getBoundingClientRect();
@@ -1108,13 +1731,79 @@ function piano() {
       rain.append(...ash);
       setTimeout(() => { flare.remove(); ash.forEach(particle => particle.remove()); }, 950);
     }
-    if (!song || transitioning || !expected.length) return;
+
+    if (rhythmRun && !rhythmRun.finished) {
+      const currentBeat = (performance.now() - rhythmRun.startMs) / rhythmRun.msPerBeat;
+      let bestEvent = null;
+      let bestAbs = Infinity;
+      for (const ev of rhythmRun.events) {
+        if (ev.note !== judged || ev.hit || ev.missed) continue;
+        const abs = Math.abs((ev.at - currentBeat) * rhythmRun.msPerBeat);
+        if (abs <= 360 && abs < bestAbs) {
+          bestAbs = abs;
+          bestEvent = ev;
+        }
+      }
+      flash(judged, bestEvent?.hand || (judged < 60 ? 'left' : 'right'));
+      if (bestEvent) {
+        bestEvent.hit = true;
+        if (bestAbs <= 190) {
+          rhythmRun.perfect++;
+          rhythmRun.combo++;
+          rhythmRun.score += 100 + Math.min(50, rhythmRun.combo * 2);
+          showRhythmCue('PERFECT!', 'perfect');
+        } else {
+          rhythmRun.good++;
+          rhythmRun.combo++;
+          rhythmRun.score += 60 + Math.min(30, rhythmRun.combo);
+          showRhythmCue('GOOD', 'good');
+        }
+        rhythmRun.bestCombo = Math.max(rhythmRun.bestCombo, rhythmRun.combo);
+        updateMetricsBadge();
+      }
+      return;
+    }
+
+    flash(judged, expected.find(event => event.note === judged)?.hand || (judged < 60 ? 'left' : 'right'));
+    if (!song || transitioning || !expected.length || modeSelect.value === 'rhythm') return;
+    const currentGroup = groups[position] || [];
     if (!expected.some(event => event.note === judged)) {
+      if (currentGroup.some(event => event.note === judged) && playedNotes.has(judged)) return;
+      if (modeSelect.value === 'sync') {
+        combo = 0;
+        syncTotal++;
+      }
       refresh(fromMic ? '听到 ' + nameFor(note) + ' · 请弹亮起的音' : '跟着亮起的键继续。');
       return;
     }
+    const needsSync = modeSelect.value === 'sync' &&
+      hands.value === 'both' &&
+      currentGroup.some(e => e.hand === 'left') &&
+      currentGroup.some(e => e.hand === 'right');
+
     playedNotes.add(note);
-    if (expectedEvents().length) { refresh(); return; }
+    if (expectedEvents().length) {
+      if (needsSync && !syncTimer) {
+        const windowMs = (fromMic || mic) ? 1600 : 750;
+        syncTimer = setTimeout(() => {
+          syncTimer = 0;
+          if (!active || transitioning) return;
+          playedNotes.clear();
+          combo = 0;
+          syncTotal++;
+          refresh('左右手需同时配合按下！');
+        }, windowMs);
+      }
+      refresh();
+      return;
+    }
+    clearSyncTimer();
+    if (modeSelect.value === 'sync') {
+      syncHits++;
+      syncTotal++;
+      combo++;
+      bestCombo = Math.max(bestCombo, combo);
+    }
     playedNotes.clear();
     position++;
     if (position < groups.length) { refresh(); return; }
@@ -1160,6 +1849,11 @@ function piano() {
       return;
     }
     stopPreview();
+    stopRhythm();
+    if (modeSelect.value === 'rhythm') {
+      modeSelect.value = 'sync';
+      rhythmButton.hidden = true;
+    }
     sampler.silence();
     const capture = {};
     mic = capture;
@@ -1200,25 +1894,46 @@ function piano() {
     }
   }
   function updateKeyLabels() {
-    const labels = new Map(Object.entries(pianoKeys).map(([letter, note]) => [note + octaveShift, letter.toUpperCase()]));
+    const leftMap = new Map(Object.entries(leftKeyLabels).map(([offset, letter]) => [leftBase + Number(offset), letter]));
+    const rightMap = new Map(Object.entries(rightKeyLabels).map(([offset, letter]) => [rightBase + Number(offset), letter]));
     for (const [note, key] of controls) {
       const label = nameFor(note).replace('#', '♯');
-      const letter = labels.get(note);
+      const rightLetter = rightMap.get(note);
+      const leftLetter = leftMap.get(note);
+      const letter = rightLetter ?? leftLetter ?? '';
+      const kbd = key.querySelector('kbd');
+      kbd.textContent = letter;
+      kbd.classList.toggle('kbd-right', Boolean(rightLetter));
+      kbd.classList.toggle('kbd-left', !rightLetter && Boolean(leftLetter));
       key.setAttribute('aria-label', label + (letter ? ' ' + letter : ''));
-      key.querySelector('kbd').textContent = letter ?? '';
     }
   }
   let white = 0;
   for (let note = 36; note <= 84; note++) {
     const label = nameFor(note).replace('#', '♯');
     const black = label.includes('♯');
-    const key = button('', () => noteOn(note), black ? 'concert-key black-key' : 'concert-key white-key');
+    const key = element('button', null, (black ? 'concert-key black-key' : 'concert-key white-key') + (note === 60 ? ' middle-c' : ''));
+    key.type = 'button';
+    key.dataset.midi = String(note);
     key.append(element('span', label), element('kbd'));
     if (black) key.style.setProperty('--after', white);
     else white++;
     controls.set(note, key);
     keyboard.append(key);
   }
+  keyboard.addEventListener('pointerdown', event => {
+    const key = event.target.closest('.concert-key');
+    if (!key || (event.pointerType === 'mouse' && event.button !== 0)) return;
+    event.preventDefault();
+    keyboardWindow.focus({ preventScroll: true });
+    noteOn(Number(key.dataset.midi));
+  }, { signal });
+  keyboard.addEventListener('click', event => {
+    if (event.detail !== 0) return;
+    const key = event.target.closest('.concert-key');
+    if (key) noteOn(Number(key.dataset.midi));
+  }, { signal });
+  keyboard.addEventListener('contextmenu', event => event.preventDefault(), { signal });
   updateKeyLabels();
   keyboardWindow.tabIndex = 0;
   keyboardWindow.setAttribute('role', 'group');
@@ -1226,24 +1941,42 @@ function piano() {
   keyboardWindow.setAttribute('aria-describedby', 'piano-keyboard-help');
   keyboardWindow.addEventListener('keydown', event => {
     if (event.repeat || event.isComposing || event.altKey || event.metaKey || event.ctrlKey) return;
-    if (event.code === 'BracketLeft' || event.code === 'BracketRight') {
+    if (event.code === 'Comma' || event.code === 'Period') {
       event.preventDefault();
-      octaveShift = Math.max(-24, Math.min(12, octaveShift + (event.code === 'BracketLeft' ? -12 : 12)));
+      leftBase = Math.max(36, Math.min(60, leftBase + (event.code === 'Comma' ? -12 : 12)));
       updateKeyLabels();
-      targetVisible(65 + octaveShift);
+      targetVisible(leftBase + 5);
       return;
     }
-    const note = pianoKeys[event.key.toLowerCase()] + octaveShift;
-    if (controls.has(note)) { event.preventDefault(); noteOn(note); }
+    if (event.code === 'BracketLeft' || event.code === 'BracketRight') {
+      event.preventDefault();
+      rightBase = Math.max(48, Math.min(72, rightBase + (event.code === 'BracketLeft' ? -12 : 12)));
+      updateKeyLabels();
+      targetVisible(rightBase + 5);
+      return;
+    }
+    const leftOffset = leftKeyOffsets[event.code];
+    if (leftOffset !== undefined) {
+      const note = leftBase + leftOffset;
+      if (controls.has(note)) { event.preventDefault(); noteOn(note); }
+      return;
+    }
+    const rightOffset = rightKeyOffsets[event.code];
+    if (rightOffset !== undefined) {
+      const note = rightBase + rightOffset;
+      if (controls.has(note)) { event.preventDefault(); noteOn(note); }
+    }
   }, { signal });
-  window.addEventListener('pagehide', () => { stopMic(); stopPreview(); stopMetronome(); sampler.silence(); }, { signal });
+  window.addEventListener('pagehide', () => { stopRhythm(); clearSyncTimer(); stopMic(); stopPreview(); stopMetronome(); sampler.silence(); }, { signal });
   document.addEventListener('visibilitychange', () => { if (document.hidden) stopMic(); }, { signal });
-  const resize = new ResizeObserver(() => { if (!demo) refresh(status.textContent); });
+  const resize = new ResizeObserver(() => { if (!demo && !rhythmRun) refresh(status.textContent); });
   resize.observe(keyboard);
   stopChapter = () => {
     listeners.abort();
     active = false;
     clearTimeout(advance);
+    clearSyncTimer();
+    stopRhythm();
     resize.disconnect();
     stopMetronome();
     stopPreview();
@@ -1253,6 +1986,8 @@ function piano() {
   };
   stopChapter.suspend = () => {
     clearTimeout(advance);
+    clearSyncTimer();
+    stopRhythm();
     stopMetronome();
     stopPreview();
     stopMic();
@@ -1270,17 +2005,31 @@ function piano() {
     stopPreview();
     prepareSong(false);
   });
+  modeSelect.addEventListener('change', () => {
+    clearTimeout(advance);
+    transitioning = false;
+    stopPreview();
+    prepareSong(false);
+  });
   const first = tracks.findIndex((_, index) => !completed.has(index));
   picker.value = String(Math.max(first, 0));
   top.append(heading, candles);
   const transport = element('div', null, 'birthday-piano-transport');
-  transport.append(picker, hands, preview, micButton);
+  transport.append(picker, hands, modeSelect, rhythmButton, preview, micButton);
   scoreHeader.append(status, detail, legend);
-  stand.append(scoreHeader, phrases, progress, sequence);
+  queueBar.append(syncBadge, sequence, metricsBadge);
+  stand.append(scoreHeader, phrases, progress, queueBar);
+  const zoneGuide = element('div', null, 'piano-zone-guide');
+  zoneGuide.append(
+    element('span', '左手低音 · 紫 (, / . 移调)', 'zone-left'),
+    element('span', '中央 C4 分界', 'zone-split'),
+    element('span', '右手旋律 · 金 ([ / ] 移调)', 'zone-right')
+  );
   keyboardWindow.append(instrument);
   instrument.append(roll, rain, keyboard);
+  roll.after(rhythmCue);
   const fallback = element('div', null, 'birthday-piano-footer');
-  const keyboardHelp = element('span', '点击或触摸琴键。键盘演奏时先用 Tab 聚焦琴键区，再按标注键位，[ 和 ] 换八度。');
+  const keyboardHelp = element('span', '点击或双手多点触摸琴键。电脑键盘：左手 Z–M / S–J（,/. 移调），右手 Q–P / 2–0（[/] 移调）。');
   keyboardHelp.id = 'piano-keyboard-help';
   fallback.append(keyboardHelp, attribution);
   const settings = element('dialog', null, 'piano-settings');
@@ -1297,7 +2046,7 @@ function piano() {
   actions.append(button('演奏设置', () => settings.showModal()));
   next(actions, 'cake', '去吹蜡烛');
   const pianoMain = element('div', null, 'piano-play-area');
-  pianoMain.append(stand, keyboardWindow);
+  pianoMain.append(stand, zoneGuide, keyboardWindow);
   const pianoControls = element('div', null, 'piano-control-panel');
   pianoControls.append(transport, micStatus);
   const workspace = element('div', null, 'piano-workspace');
@@ -1407,6 +2156,13 @@ const wishRevision = {
 
 function wishStudio(view, results, showEditor, showResults, playPrototype) {
   const studio = element('section', null, 'wish-studio');
+  const aiReady = data.wishAiConfigured === true;
+  const aiBadge = element('p', null, 'wish-ai-badge' + (aiReady ? ' is-ready' : ''));
+  const aiDot = element('span', null, 'wish-ai-dot');
+  aiDot.setAttribute('aria-hidden', 'true');
+  aiBadge.append(aiDot, element('span', aiReady
+    ? '✨ AI 许愿接口已就绪'
+    : '本地示例模式（配置 Vercel 环境变量 AI_API_BASE / AI_API_KEY 后启用实时 AI）'));
   const form = element('form');
   const label = element('label', '你想做一个什么游戏？');
   label.htmlFor = 'wish-idea';
@@ -1422,18 +2178,51 @@ function wishStudio(view, results, showEditor, showResults, playPrototype) {
   status.setAttribute('role', 'status');
   const actions = element('div', null, 'row');
   const output = element('div', null, 'wish-output');
+  const historyBox = element('div', null, 'wish-history');
   let current;
   let last;
   let cancel;
+  const settings = ['轻松', '标准', '进阶'];
   const examples = button('打开示例', () => {
     if (!prompt.value.trim()) prompt.value = '做一个要躲暗礁、收集星核的太空运输游戏。';
     present(wishExample, '示例 · 第一版', true);
     status.textContent = '先试玩第一版，再查看放慢速度后的区别。';
   });
+  function renderHistory() {
+    const items = Array.isArray(save.wishes) ? save.wishes : [];
+    if (!items.length) {
+      historyBox.hidden = true;
+      historyBox.replaceChildren();
+      return;
+    }
+    historyBox.hidden = false;
+    const list = element('ul', null, 'wish-history-list');
+    for (const item of items) {
+      const li = element('li', null, 'wish-history-item');
+      const info = element('div', null, 'wish-history-meta');
+      const diffText = settings[(item.difficulty || 2) - 1] || '标准';
+      info.append(element('strong', item.title), element('span', diffText + ' · 目标 ' + item.goal, 'mono'));
+      const row = element('div', null, 'row wish-history-actions');
+      const review = button('回看', () => {
+        if (item.idea) prompt.value = item.idea;
+        present({
+          ...item,
+          pitch: item.pitch || item.idea || ('目标：' + item.goal),
+          choice: item.choice || '已保存的 AI 原型配置。',
+          reason: item.reason || '可随时回看或继续在此基础上微调。',
+          nextPrompt: item.nextPrompt || item.idea || '',
+        }, '历史原型', false);
+      });
+      const playBtn = button('试玩', () => playPrototype(item, playBtn), 'primary');
+      row.append(review, playBtn);
+      li.append(info, row);
+      list.append(li);
+    }
+    historyBox.replaceChildren(element('h4', '最近生成的原型'), list);
+  }
   function present(result, badge, example) {
     last = current;
     current = result;
-    const settings = ['轻松', '标准', '进阶'];
     const entries = [
       ['规则', result.pitch],
       ['设计选择', result.choice],
@@ -1447,6 +2236,7 @@ function wishStudio(view, results, showEditor, showResults, playPrototype) {
       info.append(entry);
     }
     const details = element('details', null, 'wish-details');
+    details.open = true;
     details.append(element('summary', '规则与设计说明'), info);
     const tools = element('div', null, 'row');
     const usable = button('试玩这一版', () => playPrototype(result, usable), 'primary');
@@ -1465,7 +2255,7 @@ function wishStudio(view, results, showEditor, showResults, playPrototype) {
       tools.append(replay);
     }
     output.replaceChildren(element('p', badge, 'mono'), element('h3', result.title), tools,
-      element('p', '难度 ' + settings[result.difficulty - 1] + ' · 过关目标 ' + result.goal), details);
+      element('p', '难度 ' + settings[(result.difficulty || 2) - 1] + ' · 过关目标 ' + result.goal), details);
     results.scrollTop = 0;
     send.textContent = '用这句反馈再做一版';
     if (!view.hidden || !results.hidden) showResults();
@@ -1487,6 +2277,22 @@ function wishStudio(view, results, showEditor, showResults, playPrototype) {
       const result = await response.json();
       if (cancel.signal.aborted) return;
       if (!response.ok) { status.textContent = result.message || '这一版还没生成，可以打开示例。'; return; }
+      const entry = {
+        title: result.title,
+        template: result.template,
+        difficulty: result.difficulty,
+        goal: result.goal,
+        palette: result.palette,
+        pitch: result.pitch,
+        choice: result.choice,
+        reason: result.reason,
+        nextPrompt: result.nextPrompt,
+        idea,
+      };
+      const existing = Array.isArray(save.wishes) ? save.wishes : [];
+      save.wishes = [entry, ...existing.filter(item => !(item.title === entry.title && item.idea === entry.idea))].slice(0, 8);
+      persist();
+      renderHistory();
       present(result, 'AI 原型', false);
       status.textContent = '这一版已经可以试玩。';
     } catch (error) {
@@ -1499,7 +2305,8 @@ function wishStudio(view, results, showEditor, showResults, playPrototype) {
   });
   actions.append(send, examples);
   form.append(label, prompt, actions, status);
-  studio.append(element('h3', '一句话，做出第一版'), form);
+  studio.append(element('h3', '一句话，做出第一版'), aiBadge, form, historyBox);
+  renderHistory();
   view.append(studio);
   results.append(output);
   return {

@@ -1,5 +1,5 @@
 const { handleBlessings, checkModeratorAttempt } = require('../lib/birthday-blessings.cjs');
-const { generate } = require('../lib/wish-ai.cjs');
+const { generate, isConfigured } = require('../lib/wish-ai.cjs');
 const { createHmac, timingSafeEqual } = require('node:crypto');
 const { readFile } = require('node:fs/promises');
 const { extname, join } = require('node:path');
@@ -123,9 +123,11 @@ module.exports = async (req, res) => {
       return reply(res, 403, { message: '家庭口令不正确。' });
     }
     if (part === 'wish' && req.method === 'POST') {
-      if (!scope) return reply(res, 403, { message: '先到船员页输入家庭口令，再来生成。' });
+      if (/^(1|true)$/i.test(String(process.env.WISH_REQUIRE_SESSION || '').trim()) && !scope) {
+        return reply(res, 403, { message: '先到船员页输入家庭口令，再来生成。' });
+      }
       const fields = await body(req).catch(() => null);
-      const [status, result] = await generate(fields);
+      const [status, result] = await generate(fields, visitorAddress(req));
       return reply(res, status, result);
     }
     if (part === 'blessings-session' && req.method === 'POST') {
@@ -176,6 +178,7 @@ module.exports = async (req, res) => {
       const family = await sample('family/index.json');
       return reply(res, 200, {
         privateAccess: !!scope,
+        wishAiConfigured: isConfigured(),
         copy,
         guideArt: scope ? process.env.BIRTHDAY_GUIDE_MEDIA || null : null,
         songs: scope ? privateContent('BIRTHDAY_SONGS_JSON', await sample('songs.json')) : await sample('songs.json'),

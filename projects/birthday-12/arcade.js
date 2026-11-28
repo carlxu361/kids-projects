@@ -69,6 +69,14 @@ const BirthdayArcade = (() => {
     feedback.setAttribute('role', 'status');
     const controls = document.createElement('div');
     controls.className = 'game-controls';
+    const controlKeys = config.controls.map(([, key]) => key);
+    controls.dataset.layout = controlKeys.length === 2 && controlKeys.includes('ArrowLeft') && controlKeys.includes('ArrowRight')
+      ? 'lr'
+      : controlKeys.length === 3 && controlKeys.includes('ArrowLeft') && controlKeys.includes('ArrowRight') && controlKeys.includes(' ')
+        ? 'lr-fire'
+        : controlKeys.includes('ArrowUp') && controlKeys.includes('ArrowDown')
+          ? 'dpad-actions'
+          : 'lanes';
     const screen = document.createElement('div');
     screen.className = 'cabinet-screen';
     screen.append(canvas);
@@ -78,6 +86,9 @@ const BirthdayArcade = (() => {
 
     const ctx = canvas.getContext('2d');
     const held = new Set();
+    const activePointers = new Map();
+    const activeKeyboard = new Set();
+    const controlButtons = new Map();
     const listeners = new AbortController();
     const { signal } = listeners;
     let active = true;
@@ -85,9 +96,28 @@ const BirthdayArcade = (() => {
     let previous = 0;
     let game;
 
+    function syncKey(key) {
+      const down = active && (activeKeyboard.has(key) || (activePointers.get(key)?.size || 0) > 0);
+      if (down && !held.has(key)) {
+        held.add(key);
+        game.press?.(key);
+      } else if (!down && held.has(key)) {
+        held.delete(key);
+      }
+      const stillDown = active && held.has(key);
+      controlButtons.get(key)?.classList.toggle('is-pressed', stillDown);
+    }
+
+    function releaseAll() {
+      activePointers.clear();
+      activeKeyboard.clear();
+      held.clear();
+      for (const btn of controlButtons.values()) btn.classList.remove('is-pressed');
+    }
+
     function finish(points, victory) {
       active = false;
-      held.clear();
+      releaseAll();
       const prize = onResult(points, victory);
       feedback.textContent = (victory ? '挑战完成' : '本局结束') + ' · ' + points + ' 分' +
         (prize ? ' · 首通获得 2 星核' : '');
@@ -119,7 +149,7 @@ const BirthdayArcade = (() => {
 
     function restart() {
       cancelAnimationFrame(animation);
-      held.clear();
+      releaseAll();
       active = true;
       previous = 0;
       game = config.create(finish);
@@ -129,36 +159,72 @@ const BirthdayArcade = (() => {
       animation = requestAnimationFrame(draw);
     }
 
-    function press(key) {
-      if (!active) return;
-      if (!held.has(key)) game.press?.(key);
-      held.add(key);
-    }
-
-    const keys = new Set(config.controls.map(([, key]) => key));
+    const keys = new Set(controlKeys);
     root.addEventListener('keydown', event => {
       const key = event.key.toLowerCase().startsWith('arrow') ? event.key : event.key.toLowerCase();
       if (!keys.has(key) || (event.target !== canvas && key === ' ')) return;
       event.preventDefault();
-      press(key);
+      if (!active) return;
+      activeKeyboard.add(key);
+      syncKey(key);
     }, { signal });
-    document.addEventListener('keyup', event => held.delete(event.key.length === 1 ? event.key.toLowerCase() : event.key), { signal });
-    window.addEventListener('blur', () => held.clear(), { signal });
-    root.addEventListener('focusout', event => { if (!root.contains(event.relatedTarget)) held.clear(); }, { signal });
+    document.addEventListener('keyup', event => {
+      const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+      if (!activeKeyboard.delete(key)) return;
+      syncKey(key);
+    }, { signal });
+    window.addEventListener('blur', releaseAll, { signal });
+    root.addEventListener('focusout', event => { if (!root.contains(event.relatedTarget)) releaseAll(); }, { signal });
+    const padMeta = {
+      ArrowLeft: ['pad-left', '向左'],
+      ArrowRight: ['pad-right', '向右'],
+      ArrowUp: ['pad-up', '向上'],
+      ArrowDown: ['pad-down', '向下'],
+      ' ': ['pad-primary', null],
+      r: ['pad-secondary', null],
+    };
     for (const [caption, key] of config.controls) {
       const control = document.createElement('button');
-      control.textContent = caption;
+      control.type = 'button';
+      const [semantic, aria] = padMeta[key] || ['pad-lane', caption];
+      control.className = 'pad-btn ' + semantic;
+      control.dataset.key = key;
+      control.setAttribute('aria-label', aria || caption);
+      const glyph = document.createElement('span');
+      glyph.className = 'pad-glyph';
+      glyph.textContent = caption;
+      control.append(glyph);
+      controlButtons.set(key, control);
       control.addEventListener('pointerdown', event => {
-        control.setPointerCapture(event.pointerId);
-        press(key);
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        event.preventDefault();
+        if (!active) return;
+        try { control.setPointerCapture(event.pointerId); } catch {}
+        let pointers = activePointers.get(key);
+        if (!pointers) {
+          pointers = new Set();
+          activePointers.set(key, pointers);
+        }
+        pointers.add(event.pointerId);
+        syncKey(key);
       }, { signal });
-      const release = () => held.delete(key);
-      control.addEventListener('pointerup', release, { signal });
-      control.addEventListener('lostpointercapture', release, { signal });
+      const releasePointer = event => {
+        const pointers = activePointers.get(key);
+        if (!pointers || !pointers.delete(event.pointerId)) return;
+        if (!pointers.size) activePointers.delete(key);
+        syncKey(key);
+      };
+      control.addEventListener('pointerup', releasePointer, { signal });
+      control.addEventListener('pointercancel', releasePointer, { signal });
+      control.addEventListener('lostpointercapture', releasePointer, { signal });
+      control.addEventListener('contextmenu', event => event.preventDefault(), { signal });
       control.addEventListener('click', event => {
-        if (event.detail !== 0) return;
-        press(key);
-        release();
+        if (event.detail !== 0 || !active) return;
+        game.press?.(key);
+        control.classList.add('is-pressed');
+        setTimeout(() => {
+          if (!held.has(key)) control.classList.remove('is-pressed');
+        }, 120);
       }, { signal });
       controls.append(control);
     }
@@ -177,7 +243,7 @@ const BirthdayArcade = (() => {
       resolution.disconnect();
       listeners.abort();
       cancelAnimationFrame(animation);
-      held.clear();
+      releaseAll();
     };
   }
 
@@ -195,7 +261,7 @@ const BirthdayArcade = (() => {
     }
     serve();
     return {
-      hint: '← → 或移动鼠标控制球拍。球拍边缘能打出更斜的球。',
+      hint: '← → 或拖动画面控制球拍。球拍边缘能打出更斜的球。',
       aim: x => { paddle = clamp(x, paddleWidth / 2, W - paddleWidth / 2); },
       update(dt, keys) {
         time += dt;
